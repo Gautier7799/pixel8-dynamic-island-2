@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: Generate Android APK for Pixel 8
@@ -24,6 +27,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.4'
+          cache-disabled: true
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -1678,8 +1682,49 @@ jobs:
                       android:exported="false"
                       android:foregroundServiceType="specialUse" />
 
-                  <!-- التسجيل الرسمي لخدمة قراءة الإشعارات والموسيقى في نظام Android -->
+                  <!-- تصحيح action الرسمي لنظام أندرويد لظهور التطبيق في إعدادات الوصول للإشعارات والموسيقى -->
                   <service
                       android:name=".NotificationReceiverService"
-                      android:label="Dynamic Island Listener"
-                      android:permission
+                      android:label="Dynamic Island Notification Access"
+                      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.service.notification.NotificationListenerService" />
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      # 14. أمر البناء النظيف للـ APK
+      - name: Build Debug APK
+        run: |
+          gradle assembleDebug -x test -x lint --stacktrace
+          mkdir -p release-output
+          cp app/build/outputs/apk/debug/*.apk release-output/DynamicIsland-Pixel8-Pro.apk
+
+      # 15. رفع حزمة الـ APK كـ Artifact
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DynamicIsland-Pixel8-Pro-APK
+          path: release-output/DynamicIsland-Pixel8-Pro.apk
+          if-no-files-found: error
+
+      # 16. إنشاء إصدار رسمي (GitHub Release) لتنزيل الـ APK مباشرة بنقرة واحدة
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: latest
+          name: "Dynamic Island Pixel 8 Pro (Latest APK)"
+          body: |
+            ### 🚀 Dynamic Island Pixel 8 Pro - الإصدار الأحدث
+            - تصميم **Material You (M3)** الكامل لعناصر الموسيقى والإشعارات.
+            - أيقونات فيكتور نقية ومتوافقة مع لون وهوية الجزيرة.
+            - حمل ملف **DynamicIsland-Pixel8-Pro.apk** أدناه وثبته مباشرة على هاتفك!
+          files: release-output/DynamicIsland-Pixel8-Pro.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
