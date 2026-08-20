@@ -23,23 +23,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إنشاء بيئة ومصادر التطبيق كاملة لضمان عدم حدوث أي نقص
-      - name: Setup Complete Android Project
+      # إصلاح ملفات المشروع وتفعيل AndroidX وإصلاح الـ Classpath
+      - name: Configure Android Project & AndroidX
         run: |
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/java/com/dynamicisland/pixel8
 
-          # 1. إعداد build.gradle.kts الرئيسي
-          cat << 'EOF' > build.gradle.kts
-          plugins {
-              id("com.android.application") version "8.2.2" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-          }
+          # 1. تفعيل AndroidX و Jetifier لحل مشكلة support-core-utils نهائياً
+          cat << 'EOF' > gradle.properties
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           EOF
 
-          # 2. إعداد settings.gradle.kts
+          # 2. ملف settings.gradle.kts
           cat << 'EOF' > settings.gradle.kts
           pluginManagement {
               repositories {
@@ -59,7 +57,15 @@ jobs:
           include(":app")
           EOF
 
-          # 3. إعداد app/build.gradle.kts
+          # 3. ملف build.gradle.kts الرئيسي
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.2.2" apply false
+              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+          }
+          EOF
+
+          # 4. ملف app/build.gradle.kts بإصدارات متوافقة وخالية من التعارض
           cat << 'EOF' > app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -99,7 +105,7 @@ jobs:
           }
           EOF
 
-          # 4. إعداد AndroidManifest.xml
+          # 5. ملف AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -125,7 +131,7 @@ jobs:
           </manifest>
           EOF
 
-          # 5. إعداد MainActivity.kt
+          # 6. ملف MainActivity.kt
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -140,17 +146,10 @@ jobs:
           }
           EOF
 
-          # 6. إعداد الواجهة والموارد
+          # 7. ملفات الموارد
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">Pixel 8 Dynamic Island</string>
-          </resources>
-          EOF
-
-          cat << 'EOF' > app/src/main/res/values/colors.xml
-          <resources>
-              <color name="black">#FF000000</color>
-              <color name="white">#FFFFFFFF</color>
           </resources>
           EOF
 
@@ -176,14 +175,14 @@ jobs:
           gradle wrapper --gradle-version 8.4
           chmod +x gradlew
 
-      # تنفيذ أمر التجميع
+      # أمر البناء المباشر
       - name: Build Debug APK
         run: ./gradlew assembleDebug -x test -x lint
 
-      # رفع ملف الـ APK الناتج للتنزيل
-      - name: Upload APK Artifact
+      # رفع ملف الـ APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland-Pixel8-APK
+          name: DynamicIsland-Pixel8.apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
