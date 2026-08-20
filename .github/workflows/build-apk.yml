@@ -23,21 +23,21 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إصلاح ملفات المشروع وتفعيل AndroidX وإصلاح الـ Classpath
-      - name: Configure Android Project & AndroidX
+      # إعداد ملفات المشروع وضبط التوافق
+      - name: Setup Project Structure
         run: |
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/java/com/dynamicisland/pixel8
+          mkdir -p app/src/main/java/com/dynamicisland/pixel8/services
 
-          # 1. تفعيل AndroidX و Jetifier لحل مشكلة support-core-utils نهائياً
+          # 1. إعداد gradle.properties
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
           android.enableJetifier=true
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           EOF
 
-          # 2. ملف settings.gradle.kts
+          # 2. إعداد settings.gradle.kts
           cat << 'EOF' > settings.gradle.kts
           pluginManagement {
               repositories {
@@ -57,7 +57,7 @@ jobs:
           include(":app")
           EOF
 
-          # 3. ملف build.gradle.kts الرئيسي
+          # 3. إعداد build.gradle.kts الرئيسي
           cat << 'EOF' > build.gradle.kts
           plugins {
               id("com.android.application") version "8.2.2" apply false
@@ -65,7 +65,7 @@ jobs:
           }
           EOF
 
-          # 4. ملف app/build.gradle.kts بإصدارات متوافقة وخالية من التعارض
+          # 4. إعداد app/build.gradle.kts
           cat << 'EOF' > app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -105,7 +105,7 @@ jobs:
           }
           EOF
 
-          # 5. ملف AndroidManifest.xml
+          # 5. إعداد AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -116,7 +116,7 @@ jobs:
 
               <application
                   android:allowBackup="true"
-                  android:label="Pixel 8 Dynamic Island"
+                  android:label="Pixel 8 Island"
                   android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
 
                   <activity
@@ -131,7 +131,7 @@ jobs:
           </manifest>
           EOF
 
-          # 6. ملف MainActivity.kt
+          # 6. إعداد MainActivity.kt
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -146,10 +146,10 @@ jobs:
           }
           EOF
 
-          # 7. ملفات الموارد
+          # 7. إعداد الموارد والواجهة
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Pixel 8 Dynamic Island</string>
+              <string name="app_name">Pixel 8 Island</string>
           </resources>
           EOF
 
@@ -172,17 +172,15 @@ jobs:
           EOF
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          gradle wrapper --gradle-version 8.4
-          chmod +x gradlew
 
-      # أمر البناء المباشر
+      # 8. البناء مباشرة عبر gradle الرسمي بدون wrapper
       - name: Build Debug APK
-        run: ./gradlew assembleDebug -x test -x lint
+        run: gradle assembleDebug -x test -x lint --stacktrace
 
-      # رفع ملف الـ APK
-      - name: Upload APK
+      # 9. رفع ملف الـ APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland-Pixel8.apk
+          name: DynamicIsland-Pixel8-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
