@@ -28,8 +28,6 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # بناء المحرك الجديد مع تصحيح ربط خدمة الإشعارات والموسيقى في نظام أندرويد بالكامل
-      # ونزول الجزيرة المتوسعة تحت شريط الحالة لمنع تداخل الساعة وأيقونات الشبكة والبطارية
       - name: Build Pixel 8 Pro Dynamic Island Luxury App
         run: |
           rm -rf app/src/main/res
@@ -91,8 +89,8 @@ jobs:
                   applicationId = "com.dynamicisland.pixel8"
                   minSdk = 28
                   targetSdk = 34
-                  versionCode = 12
-                  versionName = "4.0.0"
+                  versionCode = 14
+                  versionName = "4.2.0"
               }
 
               buildTypes {
@@ -153,7 +151,7 @@ jobs:
           </resources>
           EOF
 
-          # 7. الأشكال والرسومات الدائرية بالكامل (Arrondi)
+          # 7. الأشكال والرسومات الدائرية وأيقونات Material You النظيفة
           cat << 'EOF' > app/src/main/res/drawable/bg_round_pill_button.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -221,6 +219,52 @@ jobs:
               <corners android:radius="100dp" />
               <stroke android:width="0.8dp" android:color="#323846" />
           </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_m3_play_button.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <ripple xmlns:android="http://schemas.android.com/apk/res/android"
+              android:color="#40FFFFFF">
+              <item>
+                  <shape android:shape="rectangle">
+                      <solid android:color="#20242D" />
+                      <corners android:radius="100dp" />
+                      <stroke android:width="1dp" android:color="#363C4A" />
+                  </shape>
+              </item>
+          </ripple>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_m3_icon_btn.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <ripple xmlns:android="http://schemas.android.com/apk/res/android"
+              android:color="#30FFFFFF">
+              <item>
+                  <shape android:shape="oval">
+                      <solid android:color="#14171E" />
+                  </shape>
+              </item>
+          </ripple>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_m3_progress_bar.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+              <item android:id="@android:id/background">
+                  <shape android:shape="rectangle">
+                      <corners android:radius="100dp" />
+                      <solid android:color="#222631" />
+                  </shape>
+              </item>
+              <item android:id="@android:id/progress">
+                  <clip>
+                      <shape android:shape="rectangle">
+                          <corners android:radius="100dp" />
+                          <solid android:color="#1DB954" />
+                      </shape>
+                  </clip>
+              </item>
+          </layer-list>
           EOF
 
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
@@ -307,7 +351,51 @@ jobs:
           </vector>
           EOF
 
-          # 8. واجهة الجزيرة التفاعلية (معزولة بالكامل دون تداخل مع الساعة وأيقونات شريط الحالة)
+          cat << 'EOF' > app/src/main/res/drawable/ic_skip_previous.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#C8CCD6" android:pathData="M6,6h2v12H6zm3.5,6l8.5,6V6z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_play_arrow.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#FFFFFF" android:pathData="M8,5v14l11,-7z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_pause.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#FFFFFF" android:pathData="M6,19h4V5H6v14zm8,-14v14h4V5h-4z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_skip_next.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#C8CCD6" android:pathData="M6,18l8.5,-6L6,6v12zM16,6v12h2V6h-2z"/>
+          </vector>
+          EOF
+
+          # 8. واجهة الجزيرة التفاعلية
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -316,7 +404,7 @@ jobs:
               android:layout_height="match_parent"
               android:background="#000000">
 
-              <!-- حالة السكون الافتراضية (Idle State - فوق الكاميرا فقط) -->
+              <!-- حالة السكون الافتراضية -->
               <View
                   android:id="@+id/layoutIdle"
                   android:layout_width="match_parent"
@@ -324,7 +412,7 @@ jobs:
                   android:background="#000000"
                   android:visibility="visible" />
 
-              <!-- كبسولة التنبيه المصغرة الممتدة (Compact Pill - عرض 135dp فقط في منتصف الكاميرا لا يصل للساعة أو البطارية) -->
+              <!-- كبسولة التنبيه المصغرة الممتدة -->
               <LinearLayout
                   android:id="@+id/layoutCompact"
                   android:layout_width="match_parent"
@@ -365,7 +453,7 @@ jobs:
                       android:textStyle="bold" />
               </LinearLayout>
 
-              <!-- بطاقة التوسع الفاخرة المستقلة (Expanded Card - تفتح تحت شريط الحالة بمساحة فسيحة معزولة 100%) -->
+              <!-- بطاقة التوسع الفاخرة المستقلة بنمط Material You -->
               <LinearLayout
                   android:id="@+id/layoutExpanded"
                   android:layout_width="match_parent"
@@ -375,7 +463,7 @@ jobs:
                   android:paddingStart="16dp"
                   android:paddingEnd="16dp"
                   android:paddingTop="12dp"
-                  android:paddingBottom="12dp"
+                  android:paddingBottom="10dp"
                   android:gravity="center_vertical"
                   android:visibility="gone">
 
@@ -386,10 +474,10 @@ jobs:
                       android:gravity="center_vertical">
 
                       <FrameLayout
-                          android:layout_width="38dp"
-                          android:layout_height="38dp"
+                          android:layout_width="40dp"
+                          android:layout_height="40dp"
                           android:background="@drawable/bg_action_chip"
-                          android:padding="6dp">
+                          android:padding="7dp">
                           <ImageView
                               android:id="@+id/ivExpandedBadge"
                               android:layout_width="match_parent"
@@ -409,9 +497,10 @@ jobs:
                               android:id="@+id/tvExpandedHeader"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:textColor="#C8CCD6"
+                              android:textColor="#FFFFFF"
                               android:textSize="14sp"
                               android:textStyle="bold"
+                              android:fontFamily="sans-serif-medium"
                               android:text="Spotify Music"
                               android:maxLines="1"
                               android:ellipsize="end" />
@@ -431,58 +520,73 @@ jobs:
                           android:id="@+id/tvExpandedExtra"
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:textColor="#C8CCD6"
+                          android:textColor="#1DB954"
                           android:textSize="12sp"
+                          android:fontFamily="monospace"
                           android:text="02:45" />
                   </LinearLayout>
 
-                  <!-- أزرار الإجراءات التفاعلية للتحكم الحقيقي في الموسيقى -->
+                  <!-- شريط تقدم الموسيقى النحيف بنمط Material You -->
+                  <ProgressBar
+                      android:id="@+id/pbMusicProgress"
+                      style="?android:attr/progressBarStyleHorizontal"
+                      android:layout_width="match_parent"
+                      android:layout_height="3dp"
+                      android:layout_marginTop="8dp"
+                      android:layout_marginBottom="4dp"
+                      android:progressDrawable="@drawable/bg_m3_progress_bar"
+                      android:progress="45"
+                      android:max="100" />
+
+                  <!-- أزرار الإجراءات التفاعلية بنمط Material You الموحد -->
                   <LinearLayout
                       android:id="@+id/layoutExpandedActions"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:orientation="horizontal"
                       android:gravity="center"
-                      android:layout_marginTop="12dp">
+                      android:layout_marginTop="6dp">
 
-                      <androidx.appcompat.widget.AppCompatButton
+                      <ImageButton
                           android:id="@+id/btnActionPrev"
-                          android:layout_width="0dp"
-                          android:layout_height="34dp"
-                          android:layout_weight="1"
-                          android:text="⏮️ السابق"
-                          android:textSize="11sp"
-                          android:background="@drawable/bg_action_chip"
-                          android:textColor="#C8CCD6"
-                          android:layout_marginEnd="6dp" />
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:background="@drawable/bg_m3_icon_btn"
+                          android:src="@drawable/ic_skip_previous"
+                          android:scaleType="centerInside"
+                          android:contentDescription="Previous" />
 
-                      <androidx.appcompat.widget.AppCompatButton
+                      <Space
+                          android:layout_width="20dp"
+                          android:layout_height="1dp" />
+
+                      <ImageButton
                           android:id="@+id/btnActionPlayPause"
-                          android:layout_width="0dp"
-                          android:layout_height="34dp"
-                          android:layout_weight="1"
-                          android:text="⏯️ تشغيل/إيقاف"
-                          android:textSize="11sp"
-                          android:background="@drawable/bg_round_pill_button"
-                          android:textColor="#003258"
-                          android:textStyle="bold"
-                          android:layout_marginEnd="6dp" />
+                          android:layout_width="48dp"
+                          android:layout_height="38dp"
+                          android:background="@drawable/bg_m3_play_button"
+                          android:src="@drawable/ic_pause"
+                          android:scaleType="centerInside"
+                          android:contentDescription="Play/Pause" />
 
-                      <androidx.appcompat.widget.AppCompatButton
+                      <Space
+                          android:layout_width="20dp"
+                          android:layout_height="1dp" />
+
+                      <ImageButton
                           android:id="@+id/btnActionNext"
-                          android:layout_width="0dp"
-                          android:layout_height="34dp"
-                          android:layout_weight="1"
-                          android:text="⏭️ التالي"
-                          android:textSize="11sp"
-                          android:background="@drawable/bg_action_chip"
-                          android:textColor="#C8CCD6" />
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:background="@drawable/bg_m3_icon_btn"
+                          android:src="@drawable/ic_skip_next"
+                          android:scaleType="centerInside"
+                          android:contentDescription="Next" />
                   </LinearLayout>
               </LinearLayout>
           </FrameLayout>
           EOF
 
-          # 9. واجهة تطبيق Google Pixel الرسمية
+          # 9. واجهة تطبيق Google Pixel الرئيسية
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -875,7 +979,7 @@ jobs:
           </ScrollView>
           EOF
 
-          # 10. كود MainActivity.kt مع الفحص التلقائي للصلاحيات
+          # 10. كود MainActivity.kt
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -894,7 +998,6 @@ jobs:
           import android.widget.TextView
           import android.widget.Toast
           import androidx.appcompat.app.AppCompatActivity
-          import androidx.core.app.NotificationManagerCompat
 
           class MainActivity : AppCompatActivity() {
 
@@ -1106,7 +1209,7 @@ jobs:
           }
           EOF
 
-          # 11. محرك الجزيرة المطور مع النزول تحت شريط الحالة والتحكم الحقيقي في الموسيقى
+          # 11. محرك الجزيرة المطور مع نظام Material You وأزرار التحكم
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
           package com.dynamicisland.pixel8
 
@@ -1134,8 +1237,9 @@ jobs:
           import android.view.View
           import android.view.WindowManager
           import android.view.animation.OvershootInterpolator
-          import android.widget.Button
+          import android.widget.ImageButton
           import android.widget.ImageView
+          import android.widget.ProgressBar
           import android.widget.TextView
           import androidx.core.app.NotificationCompat
 
@@ -1152,6 +1256,7 @@ jobs:
                   private var currentAnimator: ValueAnimator? = null
 
                   var isExpanded = false
+                  private var isPlayingMedia = true
 
                   const val DEFAULT_BORDER_COLOR = 0xFFC8CCD6.toInt()
                   const val SOLID_BLACK_COLOR = 0xFF000000.toInt()
@@ -1202,26 +1307,27 @@ jobs:
                       islandView?.clipToOutline = true
                       islandView?.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
 
-                      // أزرار التحكم في الموسيقى
-                      val btnPrev = islandView?.findViewById<Button>(R.id.btnActionPrev)
-                      val btnPlayPause = islandView?.findViewById<Button>(R.id.btnActionPlayPause)
-                      val btnNext = islandView?.findViewById<Button>(R.id.btnActionNext)
-
-                      val audioManager = context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                      // تجهيز أزرار التحكم بالموسيقى بنمط Material You المتناسق
+                      val btnPrev = islandView?.findViewById<ImageButton>(R.id.btnActionPrev)
+                      val btnPlayPause = islandView?.findViewById<ImageButton>(R.id.btnActionPlayPause)
+                      val btnNext = islandView?.findViewById<ImageButton>(R.id.btnActionNext)
 
                       btnPrev?.setOnClickListener {
-                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
-                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                          sendMediaKeyEvent(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
                       }
 
                       btnPlayPause?.setOnClickListener {
-                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
-                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                          isPlayingMedia = !isPlayingMedia
+                          if (isPlayingMedia) {
+                              btnPlayPause.setImageResource(R.drawable.ic_pause)
+                          } else {
+                              btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
+                          }
+                          sendMediaKeyEvent(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                       }
 
                       btnNext?.setOnClickListener {
-                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT))
-                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_NEXT))
+                          sendMediaKeyEvent(context, KeyEvent.KEYCODE_MEDIA_NEXT)
                       }
 
                       islandView?.setOnClickListener {
@@ -1241,6 +1347,16 @@ jobs:
 
                       try {
                           windowManager?.addView(islandView, params)
+                      } catch (e: Exception) {
+                          e.printStackTrace()
+                      }
+                  }
+
+                  private fun sendMediaKeyEvent(context: Context, keyCode: Int) {
+                      try {
+                          val audioManager = context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, keyCode))
                       } catch (e: Exception) {
                           e.printStackTrace()
                       }
@@ -1268,7 +1384,6 @@ jobs:
                       }
                   }
 
-                  // كبسولة تنبيه مقتضبة محصورة بين الكاميرا والرموز فقط
                   fun showCompactEvent(context: Context, iconRes: Int, title: String, value: String, borderColor: Int = DEFAULT_BORDER_COLOR) {
                       if (islandView == null) startOverlay(context)
                       val view = islandView ?: return
@@ -1295,7 +1410,6 @@ jobs:
                       val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                       val y = prefs.getInt("pos_y", 8)
 
-                      // عرض 135dp فقط يحافظ عليها في منتصف ثقب الكاميرا ولا يقترب من الساعة أو البطارية
                       animateIsland(context, targetWidthDp = 135, targetHeightDp = 30, targetPosY = y)
 
                       mainHandler.removeCallbacksAndMessages(null)
@@ -1304,7 +1418,6 @@ jobs:
                       }, 4000)
                   }
 
-                  // بطاقة التوسع: تنزل للأسفل تحت شريط الحالة (Y = 48dp) لمنع أي تداخل مع الساعة وLTE
                   fun showExpandedEvent(
                       context: Context,
                       iconRes: Int,
@@ -1338,8 +1451,8 @@ jobs:
                       tvExtra?.text = extra
                       tvExtra?.setTextColor(borderColor)
 
-                      // تنزل تحت شريط الحالة بالكامل (Y = 48dp) مع أبعاد فسيحة
-                      animateIsland(context, targetWidthDp = 330, targetHeightDp = 105, targetPosY = 48)
+                      // تنزل تحت شريط الحالة (Y = 48dp) مع مساحة رحبة وأزرار Material You فسيحة
+                      animateIsland(context, targetWidthDp = 340, targetHeightDp = 104, targetPosY = 48)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1482,10 +1595,6 @@ jobs:
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/NotificationReceiverService.kt
           package com.dynamicisland.pixel8
 
-          import android.media.MediaMetadata
-          import android.media.session.MediaController
-          import android.media.session.MediaSessionManager
-          import android.media.session.PlaybackState
           import android.os.Handler
           import android.os.Looper
           import android.service.notification.NotificationListenerService
@@ -1537,7 +1646,7 @@ jobs:
           }
           EOF
 
-          # 13. ملف AndroidManifest.xml مع التعريف القياسي الرسمي لخدمة NotificationListenerService
+          # 13. ملف AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -1573,26 +1682,4 @@ jobs:
                   <service
                       android:name=".NotificationReceiverService"
                       android:label="Dynamic Island Listener"
-                      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.service.notification.NotificationListenerService" />
-                      </intent-filter>
-                  </service>
-              </application>
-          </manifest>
-          EOF
-
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-      # 14. أمر البناء النظيف للـ APK
-      - name: Build Debug APK
-        run: gradle assembleDebug -x test -x lint --stacktrace
-
-      # 15. رفع حزمة الـ APK
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: DynamicIsland-Pixel8-Pro-APK
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+                      android:permission
