@@ -28,7 +28,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إعادة بناء وتطوير المحرك بالكامل: أزرار دائرية ومحيط ديناميكي ذكي
+      # إعادة بناء المحرك: خلفية سوداء نقية معتمة تحجب شريط الحالة وتخفيف وهج اللون الأبيض
       - name: Build Pixel 8 Pro Dynamic Island Luxury App
         run: |
           rm -rf app/src/main/res
@@ -90,8 +90,8 @@ jobs:
                   applicationId = "com.dynamicisland.pixel8"
                   minSdk = 28
                   targetSdk = 34
-                  versionCode = 7
-                  versionName = "3.5.0"
+                  versionCode = 8
+                  versionName = "3.6.0"
               }
 
               buildTypes {
@@ -119,23 +119,23 @@ jobs:
           }
           EOF
 
-          # 5. منظومة ألوان Pixel Material You
+          # 5. منظومة ألوان Pixel Material You مع أبيض لؤلؤي ناعم وأسود معتم 100%
           cat << 'EOF' > app/src/main/res/values/colors.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <color name="m3_surface">#0E1015</color>
-              <color name="m3_surface_container">#1A1D24</color>
-              <color name="m3_surface_container_high">#242831</color>
-              <color name="m3_primary">#A8C7FA</color>
-              <color name="m3_on_primary">#062E6F</color>
-              <color name="m3_primary_container">#0842A0</color>
-              <color name="m3_text_primary">#F0F1F5</color>
-              <color name="m3_text_secondary">#C3C6CF</color>
-              <color name="m3_text_tertiary">#8D9199</color>
-              <color name="m3_outline_variant">#2E333D</color>
+              <color name="m3_surface">#0A0C10</color>
+              <color name="m3_surface_container">#161920</color>
+              <color name="m3_surface_container_high">#20242D</color>
+              <color name="m3_primary">#9ECAFF</color>
+              <color name="m3_on_primary">#003258</color>
+              <color name="m3_primary_container">#00497D</color>
+              <color name="m3_text_primary">#E1E3E9</color>
+              <color name="m3_text_secondary">#BEC2CD</color>
+              <color name="m3_text_tertiary">#868C98</color>
+              <color name="m3_outline_variant">#282D37</color>
               <color name="true_black">#000000</color>
-              <color name="white">#FFFFFF</color>
-              <color name="island_default_border">#FFFFFFFF</color>
+              <color name="soft_white">#DCE0E8</color> <!-- أبيض لؤلؤي ناعم مخفض السطوع -->
+              <color name="island_default_border">#DCE0E8</color>
               <color name="island_whatsapp">#25D366</color>
               <color name="island_spotify">#1DB954</color>
               <color name="island_charging">#34D399</color>
@@ -155,7 +155,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#A8C7FA" />
+              <solid android:color="#9ECAFF" />
               <corners android:radius="100dp" />
           </shape>
           EOF
@@ -164,9 +164,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#005324" />
+              <solid android:color="#003918" />
               <corners android:radius="100dp" />
-              <stroke android:width="1dp" android:color="#34D399" />
+              <stroke android:width="1.2dp" android:color="#34D399" />
           </shape>
           EOF
 
@@ -174,9 +174,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#0A3818" />
+              <solid android:color="#082A13" />
               <corners android:radius="100dp" />
-              <stroke android:width="1dp" android:color="#1DB954" />
+              <stroke android:width="1.2dp" android:color="#1DB954" />
           </shape>
           EOF
 
@@ -184,9 +184,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#003549" />
+              <solid android:color="#002838" />
               <corners android:radius="100dp" />
-              <stroke android:width="1dp" android:color="#38BDF8" />
+              <stroke android:width="1.2dp" android:color="#38BDF8" />
           </shape>
           EOF
 
@@ -194,9 +194,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#07421B" />
+              <solid android:color="#053314" />
               <corners android:radius="100dp" />
-              <stroke android:width="1dp" android:color="#25D366" />
+              <stroke android:width="1.2dp" android:color="#25D366" />
           </shape>
           EOF
 
@@ -204,9 +204,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#1A1D24" />
+              <solid android:color="#161920" />
               <corners android:radius="28dp" />
-              <stroke android:width="1dp" android:color="#2E333D" />
+              <stroke android:width="1dp" android:color="#282D37" />
           </shape>
           EOF
 
@@ -217,9 +217,9 @@ jobs:
               android:height="108dp"
               android:viewportWidth="108"
               android:viewportHeight="108">
-              <path android:fillColor="#0E1015" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#A8C7FA" android:pathData="M24,42h60a12,12 0 0,1 12,12v0a12,12 0 0,1 -12,12h-60a12,12 0 0,1 -12,-12v0a12,12 0 0,1 12,-12z"/>
-              <path android:fillColor="#062E6F" android:pathData="M38,50a4,4 0 1,1 0,8 4,4 0 0,1 0,-8z"/>
+              <path android:fillColor="#0A0C10" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#9ECAFF" android:pathData="M24,42h60a12,12 0 0,1 12,12v0a12,12 0 0,1 -12,12h-60a12,12 0 0,1 -12,-12v0a12,12 0 0,1 12,-12z"/>
+              <path android:fillColor="#003258" android:pathData="M38,50a4,4 0 1,1 0,8 4,4 0 0,1 0,-8z"/>
           </vector>
           EOF
 
@@ -294,13 +294,14 @@ jobs:
           </vector>
           EOF
 
-          # 8. واجهة الجزيرة التفاعلية
+          # 8. واجهة الجزيرة التفاعلية (معتمة 100% وأبعاد مريحة تمنع تداخل شريط الحالة)
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:id="@+id/islandRoot"
               android:layout_width="match_parent"
-              android:layout_height="match_parent">
+              android:layout_height="match_parent"
+              android:elevation="24dp">
 
               <!-- حالة السكون الافتراضية (Idle State) -->
               <LinearLayout
@@ -323,14 +324,14 @@ jobs:
                   android:layout_height="match_parent"
                   android:gravity="center_vertical"
                   android:orientation="horizontal"
-                  android:paddingStart="12dp"
-                  android:paddingEnd="12dp"
+                  android:paddingStart="14dp"
+                  android:paddingEnd="14dp"
                   android:visibility="gone">
 
                   <ImageView
                       android:id="@+id/ivCompactIcon"
-                      android:layout_width="18dp"
-                      android:layout_height="18dp"
+                      android:layout_width="20dp"
+                      android:layout_height="20dp"
                       android:src="@drawable/ic_bolt" />
 
                   <TextView
@@ -338,9 +339,9 @@ jobs:
                       android:layout_width="0dp"
                       android:layout_height="wrap_content"
                       android:layout_weight="1"
-                      android:layout_marginStart="8dp"
-                      android:textColor="#FFFFFF"
-                      android:textSize="12sp"
+                      android:layout_marginStart="10dp"
+                      android:textColor="#E1E3E9"
+                      android:textSize="13sp"
                       android:fontFamily="sans-serif-medium"
                       android:maxLines="1"
                       android:ellipsize="end" />
@@ -349,18 +350,21 @@ jobs:
                       android:id="@+id/tvCompactValue"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:textColor="#FFFFFF"
-                      android:textSize="12sp"
+                      android:textColor="#34D399"
+                      android:textSize="13sp"
                       android:textStyle="bold" />
               </LinearLayout>
 
-              <!-- بطاقة التوسع الفاخرة للتحكم والقراءة (Expanded Card) -->
+              <!-- بطاقة التوسع الفاخرة للتحكم والقراءة (Expanded Card - حجب كامل لشريط الحالة) -->
               <LinearLayout
                   android:id="@+id/layoutExpanded"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
                   android:orientation="vertical"
-                  android:padding="16dp"
+                  android:paddingStart="18dp"
+                  android:paddingEnd="18dp"
+                  android:paddingTop="14dp"
+                  android:paddingBottom="14dp"
                   android:gravity="center_vertical"
                   android:visibility="gone">
 
@@ -372,10 +376,10 @@ jobs:
 
                       <ImageView
                           android:id="@+id/ivExpandedBadge"
-                          android:layout_width="38dp"
-                          android:layout_height="38dp"
+                          android:layout_width="40dp"
+                          android:layout_height="40dp"
                           android:padding="6dp"
-                          android:background="#000000"
+                          android:background="#0A0C10"
                           android:src="@drawable/ic_spotify" />
 
                       <LinearLayout
@@ -389,7 +393,7 @@ jobs:
                               android:id="@+id/tvExpandedHeader"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:textColor="#FFFFFF"
+                              android:textColor="#E1E3E9"
                               android:textSize="14sp"
                               android:textStyle="bold"
                               android:text="Spotify Music"
@@ -399,59 +403,63 @@ jobs:
                               android:id="@+id/tvExpandedSubtext"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:textColor="#E0E0E0"
+                              android:textColor="#BEC2CD"
                               android:textSize="12sp"
                               android:text="Starboy • The Weeknd"
-                              android:maxLines="2" />
+                              android:maxLines="1"
+                              android:ellipsize="end" />
                       </LinearLayout>
 
                       <TextView
                           android:id="@+id/tvExpandedExtra"
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:textColor="#FFFFFF"
+                          android:textColor="#E1E3E9"
                           android:textSize="12sp"
                           android:text="02:45" />
                   </LinearLayout>
 
-                  <!-- أزرار الإجراءات التفاعلية الدائرية -->
+                  <!-- أزرار الإجراءات التفاعلية الدائرية الكروية -->
                   <LinearLayout
                       android:id="@+id/layoutExpandedActions"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:orientation="horizontal"
                       android:gravity="center"
-                      android:layout_marginTop="12dp">
+                      android:layout_marginTop="10dp">
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnAction1"
-                          android:layout_width="wrap_content"
+                          android:layout_width="0dp"
                           android:layout_height="36dp"
+                          android:layout_weight="1"
                           android:text="⏮️ السابق"
                           android:textSize="11sp"
-                          android:backgroundTint="#242831"
-                          android:textColor="#FFFFFF"
-                          android:layout_marginEnd="8dp" />
+                          android:background="@drawable/bg_card_m3"
+                          android:textColor="#E1E3E9"
+                          android:layout_marginEnd="6dp" />
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnAction2"
-                          android:layout_width="wrap_content"
+                          android:layout_width="0dp"
                           android:layout_height="36dp"
+                          android:layout_weight="1"
                           android:text="⏸️ إيقاف"
                           android:textSize="11sp"
-                          android:backgroundTint="#A8C7FA"
-                          android:textColor="#062E6F"
+                          android:background="@drawable/bg_round_pill_button"
+                          android:textColor="#003258"
                           android:textStyle="bold"
-                          android:layout_marginEnd="8dp" />
+                          android:layout_marginEnd="6dp" />
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnAction3"
-                          android:layout_width="wrap_content"
+                          android:layout_width="0dp"
                           android:layout_height="36dp"
+                          android:layout_weight="1"
                           android:text="⏭️ التالي"
                           android:textSize="11sp"
-                          android:backgroundTint="#242831"
-                          android:textColor="#FFFFFF" />
+                          android:background="@drawable/bg_card_m3"
+                          android:textColor="#E1E3E9" />
                   </LinearLayout>
               </LinearLayout>
           </FrameLayout>
@@ -971,7 +979,7 @@ jobs:
                           R.drawable.ic_bolt,
                           "الشاحن متصل",
                           "85%",
-                          0xFF34D399.toInt() // أخضر للشحن
+                          0xFF34D399.toInt()
                       )
                   }
 
@@ -982,7 +990,7 @@ jobs:
                           "Spotify Music",
                           "Starboy • The Weeknd",
                           "02:45",
-                          0xFF1DB954.toInt() // أخضر Spotify المميز
+                          0xFF1DB954.toInt()
                       )
                   }
 
@@ -992,7 +1000,7 @@ jobs:
                           R.drawable.ic_headphones,
                           "Pixel Buds Pro",
                           "100%",
-                          0xFF38BDF8.toInt() // أزرق سماوي للسماعات
+                          0xFF38BDF8.toInt()
                       )
                   }
 
@@ -1003,14 +1011,14 @@ jobs:
                           "💬 WhatsApp (أحمد)",
                           "السلام عليكم، الجزيرة تعمل بكامل طاقتها مع المحيط الملون!",
                           "الآن",
-                          0xFF25D366.toInt() // أخضر WhatsApp
+                          0xFF25D366.toInt()
                       )
                   }
               }
           }
           EOF
 
-          # 11. محرك الجزيرة المطور مع الرسم الديناميكي للمحيط (Stroke Color)
+          # 11. محرك الجزيرة المطور مع خلفية سوداء نقية معتمة 100% وأبيض لؤلؤي ناعم
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
           package com.dynamicisland.pixel8
 
@@ -1046,16 +1054,18 @@ jobs:
 
                   var isExpanded = false
 
-                  // لون المحيط الافتراضي (أبيض ناصع)
-                  const val DEFAULT_BORDER_COLOR = 0xFFFFFFFF.toInt()
+                  // لون أبيض لؤلؤي ناعم مخفض السطوع لمنع التوهج المزعج
+                  const val DEFAULT_BORDER_COLOR = 0xFFDCE0E8.toInt()
+                  // أسود نقي معتم 100% لحجب شريط الحالة بالكامل
+                  const val SOLID_BLACK_COLOR = 0xFF000000.toInt()
 
                   fun createIslandDrawable(borderColor: Int, cornerRadiusDp: Float, context: Context): GradientDrawable {
                       val density = context.resources.displayMetrics.density
                       return GradientDrawable().apply {
                           shape = GradientDrawable.RECTANGLE
-                          setColor(0xFF000000.toInt()) // الخلفية سوداء معتمة نقية
+                          setColor(SOLID_BLACK_COLOR) // أسود معتم 100% غير شفاف إطلاقاً
                           cornerRadius = cornerRadiusDp * density
-                          setStroke((1.5f * density).toInt(), borderColor) // الإطار الأبيض أو الملون
+                          setStroke((1.4f * density).toInt(), borderColor)
                       }
                   }
 
@@ -1092,7 +1102,7 @@ jobs:
                       val inflater = LayoutInflater.from(context.applicationContext)
                       islandView = inflater.inflate(R.layout.view_pixel8_island, null)
 
-                      // تطبيق الإطار الأبيض الدائري الافتراضي
+                      // تطبيق الخلفية السوداء المعتمة 100% مع الإطار اللؤلؤي الناعم
                       islandView?.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
 
                       islandView?.setOnClickListener {
@@ -1143,7 +1153,7 @@ jobs:
                       if (islandView == null) startOverlay(context)
                       val view = islandView ?: return
 
-                      // تغيير لون الإطار حسب الحدث
+                      // خلفية سوداء معتمة مع إطار ملون
                       view.background = createIslandDrawable(borderColor, 100f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
@@ -1163,7 +1173,8 @@ jobs:
                       tvValue?.text = value
                       tvValue?.setTextColor(borderColor)
 
-                      animateDimensions(context, targetWidthDp = 180, targetHeightDp = 34)
+                      // عرض وارتفاع متناسق يغطي محيط الكاميرا
+                      animateDimensions(context, targetWidthDp = 190, targetHeightDp = 36)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1183,7 +1194,7 @@ jobs:
                       val view = islandView ?: return
                       isExpanded = true
 
-                      // تغيير شكل ولون الإطار في وضع التوسع
+                      // خلفية سوداء نقية معتمة تحجب عناصر شريط الحالة بالكامل
                       view.background = createIslandDrawable(borderColor, 28f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
@@ -1205,7 +1216,8 @@ jobs:
                       tvExtra?.text = extra
                       tvExtra?.setTextColor(borderColor)
 
-                      animateDimensions(context, targetWidthDp = 300, targetHeightDp = 92)
+                      // أبعاد مريحة (عرض 320dp وارتفاع 96dp) تتسع لكافة النصوص والأزرار وتحجب الأيقونات الخلفية
+                      animateDimensions(context, targetWidthDp = 320, targetHeightDp = 96)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1217,7 +1229,7 @@ jobs:
                       val view = islandView ?: return
                       isExpanded = false
 
-                      // إعادة الإطار الأبيض الناصع الكروي في وضع السكون
+                      // إعادة الخلفية السوداء المعتمة والإطار اللؤلؤي الناعم
                       view.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
@@ -1278,7 +1290,7 @@ jobs:
                           showCompactEvent(
                               context,
                               R.drawable.ic_bolt,
-                              "الشاحن السريع متصل",
+                              "الشاحن متصل",
                               "$pct%",
                               0xFF34D399.toInt()
                           )
@@ -1307,7 +1319,7 @@ jobs:
           }
           EOF
 
-          # 12. خدمة مراقبة وتلوين الإشعارات الحية حسب التطبيق (Dynamic App Color)
+          # 12. خدمة مراقبة وتلوين الإشعارات الحية
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/NotificationReceiverService.kt
           package com.dynamicisland.pixel8
 
@@ -1329,7 +1341,6 @@ jobs:
                   val text = extras.getCharSequence("android.text")?.toString() ?: ""
                   val pkg = sbn.packageName ?: ""
 
-                  // كشف وتلوين إطار الجزيرة حسب التطبيق الوارد
                   val (color, iconRes) = when {
                       pkg.contains("whatsapp", ignoreCase = true) -> Pair(0xFF25D366.toInt(), R.drawable.ic_whatsapp)
                       pkg.contains("spotify", ignoreCase = true) -> Pair(0xFF1DB954.toInt(), R.drawable.ic_spotify)
@@ -1337,7 +1348,7 @@ jobs:
                       pkg.contains("youtube", ignoreCase = true) -> Pair(0xFFFF0000.toInt(), R.drawable.ic_spotify)
                       pkg.contains("instagram", ignoreCase = true) -> Pair(0xFFE1306C.toInt(), R.drawable.ic_launcher_foreground)
                       pkg.contains("facebook", ignoreCase = true) -> Pair(0xFF1877F2.toInt(), R.drawable.ic_launcher_foreground)
-                      pkg.contains("x.android", ignoreCase = true) || pkg.contains("twitter", ignoreCase = true) -> Pair(0xFFFFFFFF.toInt(), R.drawable.ic_launcher_foreground)
+                      pkg.contains("x.android", ignoreCase = true) || pkg.contains("twitter", ignoreCase = true) -> Pair(IslandOverlayService.DEFAULT_BORDER_COLOR, R.drawable.ic_launcher_foreground)
                       else -> Pair(IslandOverlayService.DEFAULT_BORDER_COLOR, R.drawable.ic_launcher_foreground)
                   }
 
