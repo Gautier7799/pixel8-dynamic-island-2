@@ -28,17 +28,30 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إصلاح ملفات الموارد وإنشاء الأيقونات الرسمية المطلوبة
-      - name: Generate Missing App Resources & Icons
+      # تنظيف الملفات الخاطئة وإنشاء الموارد النظيفة 100%
+      - name: Clean & Fix Resources
         run: |
-          mkdir -p app/src/main/res/values
+          # 1. مسح أي ملف تالف في مجلد drawable لحذف الملف المشكلة
+          rm -rf app/src/main/res/drawable
           mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/mipmap-anydpi-v26
-          mkdir -p app/src/main/res/mipmap-hdpi
-          mkdir -p app/src/main/java/com/dynamicisland/pixel8/services
 
-          # 1. إنشاء الأيقونة المطلوبة ic_launcher.xml لحل خطأ AAPT
+          # 2. إنشاء الملف النظيف بالاسم الصحيح bg_island_capsule.xml
+          cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#000000" />
+              <corners android:radius="24dp" />
+              <stroke
+                  android:width="1dp"
+                  android:color="#33FFFFFF" />
+          </shape>
+          EOF
+
+          # 3. إنشاء أيقونة التطبيق الرسمية
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -71,60 +84,7 @@ jobs:
           </adaptive-icon>
           EOF
 
-          # 2. ملف الخلفية
-          cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"
-              android:shape="rectangle">
-              <solid android:color="#000000" />
-              <corners android:radius="24dp" />
-              <stroke
-                  android:width="1dp"
-                  android:color="#33FFFFFF" />
-          </shape>
-          EOF
-
-          # 3. تعديل AndroidManifest.xml النظيف والصحيح تماماً
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-              <application
-                  android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
-                  android:roundIcon="@mipmap/ic_launcher_round"
-                  android:label="Pixel 8 Island"
-                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-
-                  <service
-                      android:name=".services.Pixel8IslandOverlayService"
-                      android:enabled="true"
-                      android:exported="false" />
-              </application>
-          </manifest>
-          EOF
-
-          # 4. إعداد gradle.properties
-          cat << 'EOF' > gradle.properties
-          android.useAndroidX=true
-          android.enableJetifier=true
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          EOF
-
-          # 5. إعداد الألوان والنصوص
+          # 4. ملفات القيم والألوان
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">Pixel 8 Island</string>
@@ -138,13 +98,20 @@ jobs:
           </resources>
           EOF
 
+          # 5. ضبط AndroidX
+          cat << 'EOF' > gradle.properties
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          EOF
+
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       # 6. البناء الرسمي للـ APK
       - name: Build Debug APK
         run: gradle assembleDebug -x test -x lint --stacktrace
 
-      # 7. رفع ملف الـ APK النهائي للتحميل
+      # 7. رفع ملف الـ APK
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
