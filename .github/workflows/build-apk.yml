@@ -23,161 +23,42 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إعداد ملفات المشروع وضبط التوافق
-      - name: Setup Project Structure
+      # تنظيف الأسماء الخاطئة وإنشاء الموارد بأسماء صحيحة 100%
+      - name: Clean & Fix Android Resources
         run: |
+          # 1. تنظيف أي ملفات بأسماء غير صالحة في مجلد drawable
+          rm -rf app/src/main/res/drawable/*
+          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/layout
-          mkdir -p app/src/main/java/com/dynamicisland/pixel8/services
 
-          # 1. إعداد gradle.properties
+          # 2. إنشاء ملف bg_island_capsule.xml بالاسم الصحيح النظيف
+          cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#000000" />
+              <corners android:radius="24dp" />
+              <stroke
+                  android:width="1dp"
+                  android:color="#33FFFFFF" />
+          </shape>
+          EOF
+
+          # 3. ضبط gradle.properties
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
           android.enableJetifier=true
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           EOF
 
-          # 2. إعداد settings.gradle.kts
-          cat << 'EOF' > settings.gradle.kts
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "DynamicIslandPixel8"
-          include(":app")
-          EOF
-
-          # 3. إعداد build.gradle.kts الرئيسي
-          cat << 'EOF' > build.gradle.kts
-          plugins {
-              id("com.android.application") version "8.2.2" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-          }
-          EOF
-
-          # 4. إعداد app/build.gradle.kts
-          cat << 'EOF' > app/build.gradle.kts
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
-
-          android {
-              namespace = "com.dynamicisland.pixel8"
-              compileSdk = 34
-
-              defaultConfig {
-                  applicationId = "com.dynamicisland.pixel8"
-                  minSdk = 26
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0.0"
-              }
-
-              buildTypes {
-                  release {
-                      isMinifyEnabled = false
-                  }
-              }
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-          }
-
-          dependencies {
-              implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.appcompat:appcompat:1.6.1")
-              implementation("com.google.android.material:material:1.11.0")
-          }
-          EOF
-
-          # 5. إعداد AndroidManifest.xml
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.dynamicisland.pixel8">
-
-              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-              <application
-                  android:allowBackup="true"
-                  android:label="Pixel 8 Island"
-                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
-          </manifest>
-          EOF
-
-          # 6. إعداد MainActivity.kt
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
-          package com.dynamicisland.pixel8
-
-          import android.os.Bundle
-          import androidx.appcompat.app.AppCompatActivity
-
-          class MainActivity : AppCompatActivity() {
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-                  setContentView(R.layout.activity_main)
-              }
-          }
-          EOF
-
-          # 7. إعداد الموارد والواجهة
-          cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources>
-              <string name="app_name">Pixel 8 Island</string>
-          </resources>
-          EOF
-
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:gravity="center"
-              android:orientation="vertical"
-              android:background="#121212">
-
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="Pixel 8 Dynamic Island Ready"
-                  android:textColor="#FFFFFF"
-                  android:textSize="20sp" />
-          </LinearLayout>
-          EOF
-
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # 8. البناء مباشرة عبر gradle الرسمي بدون wrapper
+      # 4. أمر البناء النظيف
       - name: Build Debug APK
         run: gradle assembleDebug -x test -x lint --stacktrace
 
-      # 9. رفع ملف الـ APK
+      # 5. رفع ملف الـ APK
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
