@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-apk:
-    name: Generate Signed Android APK
+    name: Generate Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -28,108 +28,18 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Configure Complete Application Code & Settings
+      # تنظيف وحذف أي ملف تالف بالكامل وبناء موارد التطبيق
+      - name: Clean & Build Complete App
         run: |
+          # 1. حذف مجلد res بالكامل لضمان التخلص من أي ملف باسم خاطئ نهائياً
+          rm -rf app/src/main/res
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/mipmap-anydpi-v26
           mkdir -p app/src/main/java/com/dynamicisland/pixel8
 
-          # 1. إعداد gradle.properties
-          cat << 'EOF' > gradle.properties
-          android.useAndroidX=true
-          android.enableJetifier=true
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          EOF
-
-          # 2. إنشاء مفتاح توقيع رقمي معتمد (Keystore) لتجاوز تحذيرات Play Protect
-          keytool -genkey -v -keystore app/release.keystore -alias dynamicisland -keyalg RSA -keysize 2048 -validity 10000 -storepass pixel8island -keypass pixel8island -dname "CN=Dynamic Island 2, OU=Mobile, O=Pixel8, L=Global, S=Global, C=US"
-
-          # 3. إعداد settings.gradle.kts
-          cat << 'EOF' > settings.gradle.kts
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "DynamicIslandPixel8"
-          include(":app")
-          EOF
-
-          # 4. إعداد build.gradle.kts الرئيسي
-          cat << 'EOF' > build.gradle.kts
-          plugins {
-              id("com.android.application") version "8.2.2" apply false
-              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-          }
-          EOF
-
-          # 5. إعداد app/build.gradle.kts مع التوقيع الرقمي الرسمي (Release Signing)
-          cat << 'EOF' > app/build.gradle.kts
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
-
-          android {
-              namespace = "com.dynamicisland.pixel8"
-              compileSdk = 34
-
-              defaultConfig {
-                  applicationId = "com.dynamicisland.pixel8"
-                  minSdk = 26
-                  targetSdk = 34
-                  versionCode = 2
-                  versionName = "2.0.0"
-              }
-
-              signingConfigs {
-                  create("release") {
-                      storeFile = file("release.keystore")
-                      storePassword = "pixel8island"
-                      keyAlias = "dynamicisland"
-                      keyPassword = "pixel8island"
-                  }
-              }
-
-              buildTypes {
-                  release {
-                      isMinifyEnabled = false
-                      signingConfig = signingConfigs.getByName("release")
-                  }
-                  debug {
-                      signingConfig = signingConfigs.getByName("release")
-                  }
-              }
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-          }
-
-          dependencies {
-              implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.appcompat:appcompat:1.6.1")
-              implementation("com.google.android.material:material:1.11.0")
-              implementation("androidx.cardview:cardview:1.0.0")
-          }
-          EOF
-
-          # 6. ملف أيقونة التطبيق والكبسولة
+          # 2. ملف الأيقونات الرسمية
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -158,6 +68,7 @@ jobs:
           </adaptive-icon>
           EOF
 
+          # 3. خلفية الكبسولة بالاسم الصحيح النظيف
           cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -168,7 +79,7 @@ jobs:
           </shape>
           EOF
 
-          # 7. واجهة الجزيرة التفاعلية
+          # 4. واجهة الجزيرة التفاعلية
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -203,11 +114,10 @@ jobs:
           </LinearLayout>
           EOF
 
-          # 8. واجهة الإعدادات الشاملة (Settings & Calibration UI)
+          # 5. شاشة الإعدادات والمعايرة التفاعلية
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:background="#0F0F14"
@@ -219,7 +129,6 @@ jobs:
                   android:orientation="vertical"
                   android:padding="20dp">
 
-                  <!-- Header -->
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
@@ -231,20 +140,10 @@ jobs:
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="Google Pixel 8 Professional Edition"
+                      android:text="Google Pixel 8 Edition"
                       android:textColor="#8E8E93"
                       android:textSize="13sp"
                       android:layout_marginBottom="20dp" />
-
-                  <!-- قسم الصلاحيات -->
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:text="الصلاحيات المطلوبة"
-                      android:textColor="#D0BCFF"
-                      android:textSize="14sp"
-                      android:textStyle="bold"
-                      android:layout_marginBottom="8dp" />
 
                   <Button
                       android:id="@+id/btnOverlayPermission"
@@ -264,16 +163,6 @@ jobs:
                       android:textColor="#FFFFFF"
                       android:layout_marginBottom="16dp" />
 
-                  <!-- قسم معايرة القياسات والموقع (Calibration) -->
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:text="معايرة الموقع والقياسات (Pixel 8)"
-                      android:textColor="#D0BCFF"
-                      android:textSize="14sp"
-                      android:textStyle="bold"
-                      android:layout_marginBottom="8dp" />
-
                   <LinearLayout
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
@@ -282,7 +171,6 @@ jobs:
                       android:padding="16dp"
                       android:layout_marginBottom="16dp">
 
-                      <!-- التحكم بالعرض -->
                       <TextView
                           android:id="@+id/tvWidthLabel"
                           android:layout_width="wrap_content"
@@ -299,7 +187,6 @@ jobs:
                           android:progress="80"
                           android:layout_marginBottom="12dp" />
 
-                      <!-- التحكم بالارتفاع -->
                       <TextView
                           android:id="@+id/tvHeightLabel"
                           android:layout_width="wrap_content"
@@ -316,12 +203,11 @@ jobs:
                           android:progress="26"
                           android:layout_marginBottom="12dp" />
 
-                      <!-- التحكم بالإزاحة الرأسية Y -->
                       <TextView
                           android:id="@+id/tvPosYLabel"
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:text="المسافة من أعلى الشاشة (Y): 6 dp"
+                          android:text="المسافة من أعلى الشاشة: 6 dp"
                           android:textColor="#FFFFFF"
                           android:textSize="12sp" />
 
@@ -333,7 +219,6 @@ jobs:
                           android:progress="6" />
                   </LinearLayout>
 
-                  <!-- أزرار التشغيل والاختبار -->
                   <Button
                       android:id="@+id/btnStartService"
                       android:layout_width="match_parent"
@@ -355,7 +240,7 @@ jobs:
           </ScrollView>
           EOF
 
-          # 9. كود MainActivity.kt مع إدارة الإعدادات وحفظها في SharedPreferences
+          # 6. كود شاشة التحكم MainActivity.kt
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -395,7 +280,6 @@ jobs:
                   val tvHeight = findViewById<TextView>(R.id.tvHeightLabel)
                   val tvPosY = findViewById<TextView>(R.id.tvPosYLabel)
 
-                  // استرجاع الإعدادات المحفوظة
                   val savedWidth = prefs.getInt("island_width", 80)
                   val savedHeight = prefs.getInt("island_height", 26)
                   val savedPosY = prefs.getInt("island_pos_y", 6)
@@ -406,7 +290,7 @@ jobs:
 
                   tvWidth.text = "عرض الجزيرة: $savedWidth dp"
                   tvHeight.text = "ارتفاع الجزيرة: $savedHeight dp"
-                  tvPosY.text = "المسافة من أعلى الشاشة (Y): $savedPosY dp"
+                  tvPosY.text = "المسافة من أعلى الشاشة: $savedPosY dp"
 
                   sbWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                       override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
@@ -432,7 +316,7 @@ jobs:
 
                   sbPosY.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                       override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
-                          tvPosY.text = "المسافة من أعلى الشاشة (Y): $v dp"
+                          tvPosY.text = "المسافة من أعلى الشاشة: $v dp"
                           prefs.edit().putInt("island_pos_y", v).apply()
                           DynamicNotificationService.updateDimensions(this@MainActivity)
                       }
@@ -448,7 +332,7 @@ jobs:
                           )
                           startActivity(intent)
                       } else {
-                          Toast.makeText(this, "إذن الظهور مفعّل بالفعل!", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "إذن الظهور مفعّل مسبقاً!", Toast.LENGTH_SHORT).show()
                       }
                   }
 
@@ -472,7 +356,7 @@ jobs:
           }
           EOF
 
-          # 10. كود DynamicNotificationService.kt المتكامل
+          # 7. كود DynamicNotificationService.kt
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/DynamicNotificationService.kt
           package com.dynamicisland.pixel8
 
@@ -613,7 +497,7 @@ jobs:
           }
           EOF
 
-          # 11. ملف AndroidManifest مع تعريف الخدمات والأيقونات
+          # 8. ملف AndroidManifest.xml النظيف
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -649,7 +533,14 @@ jobs:
           </manifest>
           EOF
 
-          # 12. ملفات القيم والألوان
+          # 9. إعداد gradle.properties
+          cat << 'EOF' > gradle.properties
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          EOF
+
+          # 10. ملفات النصوص والألوان
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">Dynamic Island 2</string>
@@ -665,14 +556,14 @@ jobs:
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # 13. البناء والتوقيع الرسمي
-      - name: Build Signed Release APK
-        run: gradle assembleRelease -x test -x lint --stacktrace
+      # 11. أمر البناء
+      - name: Build Debug APK
+        run: gradle assembleDebug -x test -x lint --stacktrace
 
-      # 14. رفع حزمة الـ APK الموقعة والجاهزة
-      - name: Upload Signed APK
+      # 12. رفع ملف الـ APK النهائي
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland2-Signed-Pixel8-APK
-          path: app/build/outputs/apk/release/*.apk
+          name: DynamicIsland2-Pixel8-APK
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
