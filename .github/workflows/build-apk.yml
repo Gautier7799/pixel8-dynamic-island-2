@@ -28,7 +28,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إعادة بناء المحرك: خلفية سوداء نقية معتمة تحجب شريط الحالة وتخفيف وهج اللون الأبيض
+      # بناء المحرك الجديد: عزل كامل 100% لخلفية شريط الحالة وتخفيف وهج البياض
       - name: Build Pixel 8 Pro Dynamic Island Luxury App
         run: |
           rm -rf app/src/main/res
@@ -90,8 +90,8 @@ jobs:
                   applicationId = "com.dynamicisland.pixel8"
                   minSdk = 28
                   targetSdk = 34
-                  versionCode = 8
-                  versionName = "3.6.0"
+                  versionCode = 10
+                  versionName = "3.8.0"
               }
 
               buildTypes {
@@ -124,18 +124,17 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <color name="m3_surface">#0A0C10</color>
-              <color name="m3_surface_container">#161920</color>
-              <color name="m3_surface_container_high">#20242D</color>
+              <color name="m3_surface_container">#14171E</color>
+              <color name="m3_surface_container_high">#1E222B</color>
               <color name="m3_primary">#9ECAFF</color>
               <color name="m3_on_primary">#003258</color>
               <color name="m3_primary_container">#00497D</color>
-              <color name="m3_text_primary">#E1E3E9</color>
-              <color name="m3_text_secondary">#BEC2CD</color>
-              <color name="m3_text_tertiary">#868C98</color>
-              <color name="m3_outline_variant">#282D37</color>
-              <color name="true_black">#000000</color>
-              <color name="soft_white">#DCE0E8</color> <!-- أبيض لؤلؤي ناعم مخفض السطوع -->
-              <color name="island_default_border">#DCE0E8</color>
+              <color name="m3_text_primary">#D0D4DC</color> <!-- أبيض لؤلؤي ناعم ومريح -->
+              <color name="m3_text_secondary">#ACB1BC</color>
+              <color name="m3_text_tertiary">#7D838F</color>
+              <color name="m3_outline_variant">#242933</color>
+              <color name="island_black">#000000</color> <!-- أسود نقي معتم 100% -->
+              <color name="island_border_soft">#D0D4DC</color>
               <color name="island_whatsapp">#25D366</color>
               <color name="island_spotify">#1DB954</color>
               <color name="island_charging">#34D399</color>
@@ -150,7 +149,7 @@ jobs:
           </resources>
           EOF
 
-          # 7. الأيقونات والرسومات الدائرية بالكامل (Arrondi)
+          # 7. الأشكال والرسومات الدائرية بالكامل (Arrondi)
           cat << 'EOF' > app/src/main/res/drawable/bg_round_pill_button.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -164,7 +163,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#003918" />
+              <solid android:color="#003315" />
               <corners android:radius="100dp" />
               <stroke android:width="1.2dp" android:color="#34D399" />
           </shape>
@@ -174,7 +173,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#082A13" />
+              <solid android:color="#062410" />
               <corners android:radius="100dp" />
               <stroke android:width="1.2dp" android:color="#1DB954" />
           </shape>
@@ -184,7 +183,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#002838" />
+              <solid android:color="#002230" />
               <corners android:radius="100dp" />
               <stroke android:width="1.2dp" android:color="#38BDF8" />
           </shape>
@@ -194,7 +193,7 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#053314" />
+              <solid android:color="#042C11" />
               <corners android:radius="100dp" />
               <stroke android:width="1.2dp" android:color="#25D366" />
           </shape>
@@ -204,9 +203,19 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#161920" />
-              <corners android:radius="28dp" />
-              <stroke android:width="1dp" android:color="#282D37" />
+              <solid android:color="#14171E" />
+              <corners android:radius="26dp" />
+              <stroke android:width="1dp" android:color="#242933" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_action_chip.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#1C202B" />
+              <corners android:radius="100dp" />
+              <stroke android:width="0.8dp" android:color="#323846" />
           </shape>
           EOF
 
@@ -294,38 +303,33 @@ jobs:
           </vector>
           EOF
 
-          # 8. واجهة الجزيرة التفاعلية (معتمة 100% وأبعاد مريحة تمنع تداخل شريط الحالة)
+          # 8. واجهة الجزيرة المحصنة (خلفية سوداء معتمة 100% بدون أي شفافية)
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:id="@+id/islandRoot"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:elevation="24dp">
+              android:background="#000000">
 
               <!-- حالة السكون الافتراضية (Idle State) -->
-              <LinearLayout
+              <View
                   android:id="@+id/layoutIdle"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
-                  android:gravity="center"
-                  android:orientation="horizontal"
-                  android:visibility="visible">
-                  <View
-                      android:layout_width="14dp"
-                      android:layout_height="14dp"
-                      android:background="#000000" />
-              </LinearLayout>
+                  android:background="#000000"
+                  android:visibility="visible" />
 
-              <!-- كبسولة التنبيه المصغرة الممتدة (Compact Island) -->
+              <!-- كبسولة التنبيه المصغرة الممتدة (Compact Pill - مسافات محسوبة لمنع الاصطدام مع LTE والبطارية) -->
               <LinearLayout
                   android:id="@+id/layoutCompact"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
+                  android:background="#000000"
                   android:gravity="center_vertical"
                   android:orientation="horizontal"
-                  android:paddingStart="14dp"
-                  android:paddingEnd="14dp"
+                  android:paddingStart="12dp"
+                  android:paddingEnd="12dp"
                   android:visibility="gone">
 
                   <ImageView
@@ -339,9 +343,11 @@ jobs:
                       android:layout_width="0dp"
                       android:layout_height="wrap_content"
                       android:layout_weight="1"
-                      android:layout_marginStart="10dp"
-                      android:textColor="#E1E3E9"
-                      android:textSize="13sp"
+                      android:layout_marginStart="8dp"
+                      android:layout_marginEnd="8dp"
+                      android:gravity="center"
+                      android:textColor="#D0D4DC"
+                      android:textSize="12sp"
                       android:fontFamily="sans-serif-medium"
                       android:maxLines="1"
                       android:ellipsize="end" />
@@ -351,20 +357,21 @@ jobs:
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
                       android:textColor="#34D399"
-                      android:textSize="13sp"
+                      android:textSize="12sp"
                       android:textStyle="bold" />
               </LinearLayout>
 
-              <!-- بطاقة التوسع الفاخرة للتحكم والقراءة (Expanded Card - حجب كامل لشريط الحالة) -->
+              <!-- بطاقة التوسع الفاخرة المستقلة (Expanded Card - معتمة 100% بمساحة فسيحة) -->
               <LinearLayout
                   android:id="@+id/layoutExpanded"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
+                  android:background="#000000"
                   android:orientation="vertical"
-                  android:paddingStart="18dp"
-                  android:paddingEnd="18dp"
-                  android:paddingTop="14dp"
-                  android:paddingBottom="14dp"
+                  android:paddingStart="16dp"
+                  android:paddingEnd="16dp"
+                  android:paddingTop="12dp"
+                  android:paddingBottom="12dp"
                   android:gravity="center_vertical"
                   android:visibility="gone">
 
@@ -374,36 +381,42 @@ jobs:
                       android:orientation="horizontal"
                       android:gravity="center_vertical">
 
-                      <ImageView
-                          android:id="@+id/ivExpandedBadge"
-                          android:layout_width="40dp"
-                          android:layout_height="40dp"
-                          android:padding="6dp"
-                          android:background="#0A0C10"
-                          android:src="@drawable/ic_spotify" />
+                      <FrameLayout
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:background="@drawable/bg_action_chip"
+                          android:padding="6dp">
+                          <ImageView
+                              android:id="@+id/ivExpandedBadge"
+                              android:layout_width="match_parent"
+                              android:layout_height="match_parent"
+                              android:src="@drawable/ic_spotify" />
+                      </FrameLayout>
 
                       <LinearLayout
                           android:layout_width="0dp"
                           android:layout_height="wrap_content"
                           android:layout_weight="1"
                           android:layout_marginStart="12dp"
+                          android:layout_marginEnd="8dp"
                           android:orientation="vertical">
 
                           <TextView
                               android:id="@+id/tvExpandedHeader"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:textColor="#E1E3E9"
+                              android:textColor="#D0D4DC"
                               android:textSize="14sp"
                               android:textStyle="bold"
                               android:text="Spotify Music"
-                              android:maxLines="1" />
+                              android:maxLines="1"
+                              android:ellipsize="end" />
 
                           <TextView
                               android:id="@+id/tvExpandedSubtext"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:textColor="#BEC2CD"
+                              android:textColor="#ACB1BC"
                               android:textSize="12sp"
                               android:text="Starboy • The Weeknd"
                               android:maxLines="1"
@@ -414,35 +427,35 @@ jobs:
                           android:id="@+id/tvExpandedExtra"
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:textColor="#E1E3E9"
+                          android:textColor="#D0D4DC"
                           android:textSize="12sp"
                           android:text="02:45" />
                   </LinearLayout>
 
-                  <!-- أزرار الإجراءات التفاعلية الدائرية الكروية -->
+                  <!-- أزرار الإجراءات التفاعلية الدائرية الكروية المنسقة بدون قطع -->
                   <LinearLayout
                       android:id="@+id/layoutExpandedActions"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:orientation="horizontal"
                       android:gravity="center"
-                      android:layout_marginTop="10dp">
+                      android:layout_marginTop="12dp">
 
                       <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnAction1"
                           android:layout_width="0dp"
-                          android:layout_height="36dp"
+                          android:layout_height="34dp"
                           android:layout_weight="1"
                           android:text="⏮️ السابق"
                           android:textSize="11sp"
-                          android:background="@drawable/bg_card_m3"
-                          android:textColor="#E1E3E9"
+                          android:background="@drawable/bg_action_chip"
+                          android:textColor="#D0D4DC"
                           android:layout_marginEnd="6dp" />
 
                       <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnAction2"
                           android:layout_width="0dp"
-                          android:layout_height="36dp"
+                          android:layout_height="34dp"
                           android:layout_weight="1"
                           android:text="⏸️ إيقاف"
                           android:textSize="11sp"
@@ -454,18 +467,18 @@ jobs:
                       <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnAction3"
                           android:layout_width="0dp"
-                          android:layout_height="36dp"
+                          android:layout_height="34dp"
                           android:layout_weight="1"
                           android:text="⏭️ التالي"
                           android:textSize="11sp"
-                          android:background="@drawable/bg_card_m3"
-                          android:textColor="#E1E3E9" />
+                          android:background="@drawable/bg_action_chip"
+                          android:textColor="#D0D4DC" />
                   </LinearLayout>
               </LinearLayout>
           </FrameLayout>
           EOF
 
-          # 9. واجهة تطبيق Google Pixel الرسمية الفاخرة بأزرار Arrondi دائرية
+          # 9. واجهة تطبيق Google Pixel الرسمية
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -519,7 +532,7 @@ jobs:
                           <TextView
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:text="Google Pixel 8 Pro • Material You"
+                              android:text="Google Pixel 8 Pro • Pitch Black Edition"
                               android:textColor="@color/m3_primary"
                               android:textSize="13sp" />
                       </LinearLayout>
@@ -691,7 +704,7 @@ jobs:
                               android:id="@+id/tvWidthLabel"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:text="80 dp"
+                              android:text="75 dp"
                               android:textColor="@color/m3_primary"
                               android:textSize="13sp"
                               android:textStyle="bold" />
@@ -702,7 +715,7 @@ jobs:
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:max="140"
-                          android:progress="80"
+                          android:progress="75"
                           android:progressTint="@color/m3_primary"
                           android:thumbTint="@color/m3_primary"
                           android:layout_marginBottom="16dp" />
@@ -725,7 +738,7 @@ jobs:
                               android:id="@+id/tvHeightLabel"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:text="26 dp"
+                              android:text="27 dp"
                               android:textColor="@color/m3_primary"
                               android:textSize="13sp"
                               android:textStyle="bold" />
@@ -736,7 +749,7 @@ jobs:
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:max="45"
-                          android:progress="26"
+                          android:progress="27"
                           android:progressTint="@color/m3_primary"
                           android:thumbTint="@color/m3_primary"
                           android:layout_marginBottom="16dp" />
@@ -759,7 +772,7 @@ jobs:
                               android:id="@+id/tvPosYLabel"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:text="6 dp"
+                              android:text="8 dp"
                               android:textColor="@color/m3_primary"
                               android:textSize="13sp"
                               android:textStyle="bold" />
@@ -770,7 +783,7 @@ jobs:
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:max="30"
-                          android:progress="6"
+                          android:progress="8"
                           android:progressTint="@color/m3_primary"
                           android:thumbTint="@color/m3_primary" />
                   </LinearLayout>
@@ -787,7 +800,7 @@ jobs:
                       android:textSize="16sp"
                       android:layout_marginBottom="24dp" />
 
-                  <!-- استوديو التجارب التفاعلية بأزرار Arrondi دائرية ملونة -->
+                  <!-- استوديو التجارب التفاعلية -->
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
@@ -900,9 +913,9 @@ jobs:
                   val tvHeight = findViewById<TextView>(R.id.tvHeightLabel)
                   val tvPosY = findViewById<TextView>(R.id.tvPosYLabel)
 
-                  val savedWidth = prefs.getInt("width", 80)
-                  val savedHeight = prefs.getInt("height", 26)
-                  val savedPosY = prefs.getInt("pos_y", 6)
+                  val savedWidth = prefs.getInt("width", 75)
+                  val savedHeight = prefs.getInt("height", 27)
+                  val savedPosY = prefs.getInt("pos_y", 8)
 
                   sbWidth.progress = savedWidth
                   sbHeight.progress = savedHeight
@@ -1009,7 +1022,7 @@ jobs:
                           this,
                           R.drawable.ic_whatsapp,
                           "💬 WhatsApp (أحمد)",
-                          "السلام عليكم، الجزيرة تعمل بكامل طاقتها مع المحيط الملون!",
+                          "السلام عليكم، تم عزل الخلفية بالكامل وتخفيض السطوع!",
                           "الآن",
                           0xFF25D366.toInt()
                       )
@@ -1018,7 +1031,7 @@ jobs:
           }
           EOF
 
-          # 11. محرك الجزيرة المطور مع خلفية سوداء نقية معتمة 100% وأبيض لؤلؤي ناعم
+          # 11. محرك الجزيرة المطور بعزل كامل وأبعاد منسقة بدون أي تداخل
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
           package com.dynamicisland.pixel8
 
@@ -1054,18 +1067,18 @@ jobs:
 
                   var isExpanded = false
 
-                  // لون أبيض لؤلؤي ناعم مخفض السطوع لمنع التوهج المزعج
-                  const val DEFAULT_BORDER_COLOR = 0xFFDCE0E8.toInt()
-                  // أسود نقي معتم 100% لحجب شريط الحالة بالكامل
+                  // أبيض لؤلؤي ناعم غير متوهج ومريح للعين
+                  const val DEFAULT_BORDER_COLOR = 0xFFD0D4DC.toInt()
+                  // أسود معتم 100%
                   const val SOLID_BLACK_COLOR = 0xFF000000.toInt()
 
                   fun createIslandDrawable(borderColor: Int, cornerRadiusDp: Float, context: Context): GradientDrawable {
                       val density = context.resources.displayMetrics.density
                       return GradientDrawable().apply {
                           shape = GradientDrawable.RECTANGLE
-                          setColor(SOLID_BLACK_COLOR) // أسود معتم 100% غير شفاف إطلاقاً
+                          setColor(SOLID_BLACK_COLOR) // أسود معتم بالكامل
                           cornerRadius = cornerRadiusDp * density
-                          setStroke((1.4f * density).toInt(), borderColor)
+                          setStroke((1.2f * density).toInt(), borderColor)
                       }
                   }
 
@@ -1079,9 +1092,9 @@ jobs:
                       val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 
                       val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val w = prefs.getInt("width", 80)
-                      val h = prefs.getInt("height", 26)
-                      val y = prefs.getInt("pos_y", 6)
+                      val w = prefs.getInt("width", 75)
+                      val h = prefs.getInt("height", 27)
+                      val y = prefs.getInt("pos_y", 8)
                       val density = context.resources.displayMetrics.density
 
                       val params = WindowManager.LayoutParams(
@@ -1102,7 +1115,7 @@ jobs:
                       val inflater = LayoutInflater.from(context.applicationContext)
                       islandView = inflater.inflate(R.layout.view_pixel8_island, null)
 
-                      // تطبيق الخلفية السوداء المعتمة 100% مع الإطار اللؤلؤي الناعم
+                      islandView?.clipToOutline = true
                       islandView?.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
 
                       islandView?.setOnClickListener {
@@ -1133,9 +1146,9 @@ jobs:
                       val params = layoutParams ?: return
 
                       val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val w = prefs.getInt("width", 80)
-                      val h = prefs.getInt("height", 26)
-                      val y = prefs.getInt("pos_y", 6)
+                      val w = prefs.getInt("width", 75)
+                      val h = prefs.getInt("height", 27)
+                      val y = prefs.getInt("pos_y", 8)
                       val density = context.resources.displayMetrics.density
 
                       if (!isExpanded) {
@@ -1149,11 +1162,11 @@ jobs:
                       }
                   }
 
+                  // كبسولة تنبيه متناسقة محجوزة حول الكاميرا فقط بدون الاصطدام بشريط الحالة
                   fun showCompactEvent(context: Context, iconRes: Int, title: String, value: String, borderColor: Int = DEFAULT_BORDER_COLOR) {
                       if (islandView == null) startOverlay(context)
                       val view = islandView ?: return
 
-                      // خلفية سوداء معتمة مع إطار ملون
                       view.background = createIslandDrawable(borderColor, 100f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
@@ -1173,8 +1186,11 @@ jobs:
                       tvValue?.text = value
                       tvValue?.setTextColor(borderColor)
 
-                      // عرض وارتفاع متناسق يغطي محيط الكاميرا
-                      animateDimensions(context, targetWidthDp = 190, targetHeightDp = 36)
+                      val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                      val y = prefs.getInt("pos_y", 8)
+
+                      // عرض 180dp فقط يمنع الوصول لأيقونات LTE والبطارية والساعة تماماً
+                      animateIsland(context, targetWidthDp = 180, targetHeightDp = 34, targetPosY = y)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1182,6 +1198,7 @@ jobs:
                       }, 4000)
                   }
 
+                  // بطاقة التوسع مع حركة نزول خفيفة نحو الأسفل لتوفير مساحة لجميع الأزرار
                   fun showExpandedEvent(
                       context: Context,
                       iconRes: Int,
@@ -1194,8 +1211,7 @@ jobs:
                       val view = islandView ?: return
                       isExpanded = true
 
-                      // خلفية سوداء نقية معتمة تحجب عناصر شريط الحالة بالكامل
-                      view.background = createIslandDrawable(borderColor, 28f, context)
+                      view.background = createIslandDrawable(borderColor, 26f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
                       val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
@@ -1216,8 +1232,11 @@ jobs:
                       tvExtra?.text = extra
                       tvExtra?.setTextColor(borderColor)
 
-                      // أبعاد مريحة (عرض 320dp وارتفاع 96dp) تتسع لكافة النصوص والأزرار وتحجب الأيقونات الخلفية
-                      animateDimensions(context, targetWidthDp = 320, targetHeightDp = 96)
+                      val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                      val baseY = prefs.getInt("pos_y", 8)
+
+                      // تنزل البطاقة بمقدار إضافي لتحت مع مساحة فسيحة (عرض 335dp وارتفاع 102dp)
+                      animateIsland(context, targetWidthDp = 335, targetHeightDp = 102, targetPosY = baseY + 4)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1229,7 +1248,6 @@ jobs:
                       val view = islandView ?: return
                       isExpanded = false
 
-                      // إعادة الخلفية السوداء المعتمة والإطار اللؤلؤي الناعم
                       view.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
@@ -1241,13 +1259,14 @@ jobs:
                       layoutIdle?.visibility = View.VISIBLE
 
                       val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val w = prefs.getInt("width", 80)
-                      val h = prefs.getInt("height", 26)
+                      val w = prefs.getInt("width", 75)
+                      val h = prefs.getInt("height", 27)
+                      val y = prefs.getInt("pos_y", 8)
 
-                      animateDimensions(context, targetWidthDp = w, targetHeightDp = h)
+                      animateIsland(context, targetWidthDp = w, targetHeightDp = h, targetPosY = y)
                   }
 
-                  private fun animateDimensions(context: Context, targetWidthDp: Int, targetHeightDp: Int) {
+                  private fun animateIsland(context: Context, targetWidthDp: Int, targetHeightDp: Int, targetPosY: Int) {
                       val wm = windowManager ?: return
                       val view = islandView ?: return
                       val params = layoutParams ?: return
@@ -1257,6 +1276,8 @@ jobs:
                       val endWidth = (targetWidthDp * density).toInt()
                       val startHeight = params.height
                       val endHeight = (targetHeightDp * density).toInt()
+                      val startY = params.y
+                      val endY = (targetPosY * density).toInt()
 
                       currentAnimator?.cancel()
                       val animator = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -1266,6 +1287,7 @@ jobs:
                               val frac = va.animatedFraction
                               params.width = (startWidth + (endWidth - startWidth) * frac).toInt()
                               params.height = (startHeight + (endHeight - startHeight) * frac).toInt()
+                              params.y = (startY + (endY - startY) * frac).toInt()
                               try {
                                   wm.updateViewLayout(view, params)
                               } catch (e: Exception) {}
