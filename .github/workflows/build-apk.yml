@@ -11,28 +11,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. جلب الكود
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 2. إعداد Java 17
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # 3. تثبيت إصدار Gradle 8.4 المتوافق 100% مع أندرويد
+      - name: Setup Gradle 8.4
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+
+      # 4. إعداد Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # تنظيف الأسماء الخاطئة وإنشاء الموارد بأسماء صحيحة 100%
-      - name: Clean & Fix Android Resources
+      # 5. تنظيف وتجهيز موارد المشروع
+      - name: Configure Android Project
         run: |
-          # 1. تنظيف أي ملفات بأسماء غير صالحة في مجلد drawable
-          rm -rf app/src/main/res/drawable/*
-          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/java/com/dynamicisland/pixel8
 
-          # 2. إنشاء ملف bg_island_capsule.xml بالاسم الصحيح النظيف
+          # تنظيف أسماء الملفات الخاطئة في drawable إن وجدت
+          rm -rf app/src/main/res/drawable/*
+
+          # ملف الخلفية الصحيح
           cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -45,7 +56,7 @@ jobs:
           </shape>
           EOF
 
-          # 3. ضبط gradle.properties
+          # ضبط إعدادات AndroidX
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
           android.enableJetifier=true
@@ -54,12 +65,12 @@ jobs:
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # 4. أمر البناء النظيف
+      # 6. البناء بدون أخطاء التوافق
       - name: Build Debug APK
-        run: gradle assembleDebug -x test -x lint --stacktrace
+        run: gradle assembleDebug -x test -x lint
 
-      # 5. رفع ملف الـ APK
-      - name: Upload APK Artifact
+      # 7. رفع وتجهيز ملف الـ APK للتحميل
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DynamicIsland-Pixel8-APK
