@@ -28,7 +28,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إعادة بناء كاملة مع Foreground Service وإلغاء تنبيه النظام، وضبط Z-Order وطبقة أسود معتمة فوق شريط الحالة
+      # بناء المحرك الجديد مع تصحيح ربط خدمة الإشعارات والموسيقى في نظام أندرويد بالكامل
+      # ونزول الجزيرة المتوسعة تحت شريط الحالة لمنع تداخل الساعة وأيقونات الشبكة والبطارية
       - name: Build Pixel 8 Pro Dynamic Island Luxury App
         run: |
           rm -rf app/src/main/res
@@ -90,8 +91,8 @@ jobs:
                   applicationId = "com.dynamicisland.pixel8"
                   minSdk = 28
                   targetSdk = 34
-                  versionCode = 11
-                  versionName = "3.9.0"
+                  versionCode = 12
+                  versionName = "4.0.0"
               }
 
               buildTypes {
@@ -116,10 +117,11 @@ jobs:
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("com.google.android.material:material:1.11.0")
+              implementation("androidx.media:media:1.7.0")
           }
           EOF
 
-          # 5. منظومة الألوان الفاخرة مع أبيض لؤلؤي ناعم مخفض الوهج وأسود نقي معتم
+          # 5. منظومة الألوان
           cat << 'EOF' > app/src/main/res/values/colors.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -129,11 +131,11 @@ jobs:
               <color name="m3_primary">#9ECAFF</color>
               <color name="m3_on_primary">#003258</color>
               <color name="m3_primary_container">#00497D</color>
-              <color name="m3_text_primary">#C8CCD6</color> <!-- أبيض لؤلؤي ناعم جداً مريح للعين -->
+              <color name="m3_text_primary">#C8CCD6</color>
               <color name="m3_text_secondary">#9DA3B0</color>
               <color name="m3_text_tertiary">#6E7482</color>
               <color name="m3_outline_variant">#222731</color>
-              <color name="island_black">#000000</color> <!-- أسود داكن نقي معتم 100% -->
+              <color name="island_black">#000000</color>
               <color name="island_border_soft">#C8CCD6</color>
               <color name="island_whatsapp">#25D366</color>
               <color name="island_spotify">#1DB954</color>
@@ -147,7 +149,7 @@ jobs:
           <resources>
               <string name="app_name">Dynamic Island</string>
               <string name="channel_name">Dynamic Island Service</string>
-              <string name="channel_desc">خدمة تشغيل الجزيرة التفاعلية فوق الشاشة</string>
+              <string name="channel_desc">تشغيل الجزيرة التفاعلية فوق الشاشة</string>
           </resources>
           EOF
 
@@ -305,7 +307,7 @@ jobs:
           </vector>
           EOF
 
-          # 8. واجهة الجزيرة التفاعلية (معتمة 100% بدون أي تداخل مع شريط الحالة)
+          # 8. واجهة الجزيرة التفاعلية (معزولة بالكامل دون تداخل مع الساعة وأيقونات شريط الحالة)
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -314,7 +316,7 @@ jobs:
               android:layout_height="match_parent"
               android:background="#000000">
 
-              <!-- حالة السكون الافتراضية (Idle State) -->
+              <!-- حالة السكون الافتراضية (Idle State - فوق الكاميرا فقط) -->
               <View
                   android:id="@+id/layoutIdle"
                   android:layout_width="match_parent"
@@ -322,7 +324,7 @@ jobs:
                   android:background="#000000"
                   android:visibility="visible" />
 
-              <!-- كبسولة التنبيه المصغرة الممتدة (Compact Pill - عرض 155dp فقط يمنع الوصول لأي رمز في شريط الحالة) -->
+              <!-- كبسولة التنبيه المصغرة الممتدة (Compact Pill - عرض 135dp فقط في منتصف الكاميرا لا يصل للساعة أو البطارية) -->
               <LinearLayout
                   android:id="@+id/layoutCompact"
                   android:layout_width="match_parent"
@@ -330,14 +332,14 @@ jobs:
                   android:background="#000000"
                   android:gravity="center_vertical"
                   android:orientation="horizontal"
-                  android:paddingStart="10dp"
-                  android:paddingEnd="10dp"
+                  android:paddingStart="8dp"
+                  android:paddingEnd="8dp"
                   android:visibility="gone">
 
                   <ImageView
                       android:id="@+id/ivCompactIcon"
-                      android:layout_width="18dp"
-                      android:layout_height="18dp"
+                      android:layout_width="16dp"
+                      android:layout_height="16dp"
                       android:src="@drawable/ic_bolt" />
 
                   <TextView
@@ -345,11 +347,11 @@ jobs:
                       android:layout_width="0dp"
                       android:layout_height="wrap_content"
                       android:layout_weight="1"
-                      android:layout_marginStart="6dp"
-                      android:layout_marginEnd="6dp"
+                      android:layout_marginStart="4dp"
+                      android:layout_marginEnd="4dp"
                       android:gravity="center"
                       android:textColor="#C8CCD6"
-                      android:textSize="12sp"
+                      android:textSize="11sp"
                       android:fontFamily="sans-serif-medium"
                       android:maxLines="1"
                       android:ellipsize="end" />
@@ -359,11 +361,11 @@ jobs:
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
                       android:textColor="#34D399"
-                      android:textSize="12sp"
+                      android:textSize="11sp"
                       android:textStyle="bold" />
               </LinearLayout>
 
-              <!-- بطاقة التوسع الفاخرة المستقلة (Expanded Card - تنزل تحت شريط الحالة وتغطي كل شيء بدون قطع) -->
+              <!-- بطاقة التوسع الفاخرة المستقلة (Expanded Card - تفتح تحت شريط الحالة بمساحة فسيحة معزولة 100%) -->
               <LinearLayout
                   android:id="@+id/layoutExpanded"
                   android:layout_width="match_parent"
@@ -434,7 +436,7 @@ jobs:
                           android:text="02:45" />
                   </LinearLayout>
 
-                  <!-- أزرار الإجراءات التفاعلية الدائرية الكروية المنسقة بدون قطع -->
+                  <!-- أزرار الإجراءات التفاعلية للتحكم الحقيقي في الموسيقى -->
                   <LinearLayout
                       android:id="@+id/layoutExpandedActions"
                       android:layout_width="match_parent"
@@ -444,7 +446,7 @@ jobs:
                       android:layout_marginTop="12dp">
 
                       <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btnAction1"
+                          android:id="@+id/btnActionPrev"
                           android:layout_width="0dp"
                           android:layout_height="34dp"
                           android:layout_weight="1"
@@ -455,11 +457,11 @@ jobs:
                           android:layout_marginEnd="6dp" />
 
                       <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btnAction2"
+                          android:id="@+id/btnActionPlayPause"
                           android:layout_width="0dp"
                           android:layout_height="34dp"
                           android:layout_weight="1"
-                          android:text="⏸️ إيقاف"
+                          android:text="⏯️ تشغيل/إيقاف"
                           android:textSize="11sp"
                           android:background="@drawable/bg_round_pill_button"
                           android:textColor="#003258"
@@ -467,7 +469,7 @@ jobs:
                           android:layout_marginEnd="6dp" />
 
                       <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btnAction3"
+                          android:id="@+id/btnActionNext"
                           android:layout_width="0dp"
                           android:layout_height="34dp"
                           android:layout_weight="1"
@@ -534,7 +536,7 @@ jobs:
                           <TextView
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:text="Google Pixel 8 Pro • Pitch Black Edition"
+                              android:text="Google Pixel 8 Pro • Final Edition"
                               android:textColor="@color/m3_primary"
                               android:textSize="13sp" />
                       </LinearLayout>
@@ -588,7 +590,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="الظهور فوق التطبيقات"
+                                  android:text="1. الظهور فوق التطبيقات"
                                   android:textColor="@color/m3_text_primary"
                                   android:textSize="15sp"
                                   android:textStyle="bold" />
@@ -602,6 +604,7 @@ jobs:
                           </LinearLayout>
 
                           <TextView
+                              android:id="@+id/tvOverlayAction"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
                               android:text="تفعيل ❯"
@@ -646,7 +649,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="الوصول إلى الإشعارات والموسيقى"
+                                  android:text="2. الوصول إلى الإشعارات والموسيقى"
                                   android:textColor="@color/m3_text_primary"
                                   android:textSize="15sp"
                                   android:textStyle="bold" />
@@ -654,12 +657,13 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="لقراءة الرسائل وتلوين الجزيرة حسب التطبيق"
+                                  android:text="لقراءة الأغاني ورسائل واتساب وعرضها تلقائياً"
                                   android:textColor="@color/m3_text_tertiary"
                                   android:textSize="12sp" />
                           </LinearLayout>
 
                           <TextView
+                              android:id="@+id/tvNotifAction"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
                               android:text="تفعيل ❯"
@@ -871,10 +875,11 @@ jobs:
           </ScrollView>
           EOF
 
-          # 10. كود MainActivity.kt
+          # 10. كود MainActivity.kt مع الفحص التلقائي للصلاحيات
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
+          import android.content.ComponentName
           import android.content.Context
           import android.content.Intent
           import android.content.SharedPreferences
@@ -884,14 +889,21 @@ jobs:
           import android.provider.Settings
           import android.view.View
           import android.widget.Button
+          import android.widget.ImageView
           import android.widget.SeekBar
           import android.widget.TextView
           import android.widget.Toast
           import androidx.appcompat.app.AppCompatActivity
+          import androidx.core.app.NotificationManagerCompat
 
           class MainActivity : AppCompatActivity() {
 
               private lateinit var prefs: SharedPreferences
+
+              private lateinit var ivStatusOverlay: ImageView
+              private lateinit var ivStatusNotif: ImageView
+              private lateinit var tvOverlayAction: TextView
+              private lateinit var tvNotifAction: TextView
 
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
@@ -902,6 +914,11 @@ jobs:
                   val btnOverlay = findViewById<View>(R.id.btnOverlayPermission)
                   val btnNotification = findViewById<View>(R.id.btnNotificationPermission)
                   val btnStart = findViewById<Button>(R.id.btnStartService)
+
+                  ivStatusOverlay = findViewById(R.id.ivStatusOverlay)
+                  ivStatusNotif = findViewById(R.id.ivStatusNotif)
+                  tvOverlayAction = findViewById(R.id.tvOverlayAction)
+                  tvNotifAction = findViewById(R.id.tvNotifAction)
 
                   val btnTestCharging = findViewById<Button>(R.id.btnTestCharging)
                   val btnTestMusic = findViewById<Button>(R.id.btnTestMusic)
@@ -973,11 +990,7 @@ jobs:
                   }
 
                   btnNotification.setOnClickListener {
-                      try {
-                          startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                      } catch (e: Exception) {
-                          Toast.makeText(this, "ابحث عن 'الوصول إلى الإشعارات' في الإعدادات", Toast.LENGTH_SHORT).show()
-                      }
+                      openNotificationAccessSettings()
                   }
 
                   btnStart.setOnClickListener {
@@ -1036,10 +1049,64 @@ jobs:
                       )
                   }
               }
+
+              override fun onResume() {
+                  super.onResume()
+                  checkPermissionsStatus()
+              }
+
+              private fun checkPermissionsStatus() {
+                  val overlayGranted = Settings.canDrawOverlays(this)
+                  if (overlayGranted) {
+                      tvOverlayAction.text = "مفعّل ✓"
+                      tvOverlayAction.setTextColor(0xFF6DD58C.toInt())
+                  } else {
+                      tvOverlayAction.text = "تفعيل ❯"
+                      tvOverlayAction.setTextColor(0xFF9ECAFF.toInt())
+                  }
+
+                  val notifGranted = isNotificationServiceEnabled()
+                  if (notifGranted) {
+                      tvNotifAction.text = "مفعّل ✓"
+                      tvNotifAction.setTextColor(0xFF6DD58C.toInt())
+                  } else {
+                      tvNotifAction.text = "تفعيل ❯"
+                      tvNotifAction.setTextColor(0xFF9ECAFF.toInt())
+                  }
+              }
+
+              private fun isNotificationServiceEnabled(): Boolean {
+                  val pkgName = packageName
+                  val flat = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+                  if (flat != null && flat.isNotEmpty()) {
+                      val names = flat.split(":")
+                      for (name in names) {
+                          val cn = ComponentName.unflattenFromString(name)
+                          if (cn != null && cn.packageName == pkgName) {
+                              return true
+                          }
+                      }
+                  }
+                  return false
+              }
+
+              private fun openNotificationAccessSettings() {
+                  try {
+                      val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                      startActivity(intent)
+                  } catch (e: Exception) {
+                      try {
+                          val intent = Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                          startActivity(intent)
+                      } catch (e2: Exception) {
+                          Toast.makeText(this, "ابحث عن 'الوصول إلى الإشعارات' في إعدادات النظام", Toast.LENGTH_LONG).show()
+                      }
+                  }
+              }
           }
           EOF
 
-          # 11. محرك الجزيرة المطور كخدمة Foreground Service رسمية مع حجب حقيقي لشريط الحالة
+          # 11. محرك الجزيرة المطور مع النزول تحت شريط الحالة والتحكم الحقيقي في الموسيقى
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
           package com.dynamicisland.pixel8
 
@@ -1055,16 +1122,19 @@ jobs:
           import android.content.IntentFilter
           import android.graphics.PixelFormat
           import android.graphics.drawable.GradientDrawable
+          import android.media.AudioManager
           import android.os.BatteryManager
           import android.os.Build
           import android.os.Handler
           import android.os.IBinder
           import android.os.Looper
           import android.view.Gravity
+          import android.view.KeyEvent
           import android.view.LayoutInflater
           import android.view.View
           import android.view.WindowManager
           import android.view.animation.OvershootInterpolator
+          import android.widget.Button
           import android.widget.ImageView
           import android.widget.TextView
           import androidx.core.app.NotificationCompat
@@ -1083,9 +1153,7 @@ jobs:
 
                   var isExpanded = false
 
-                  // أبيض لؤلؤي ناعم مخفض السطوع
                   const val DEFAULT_BORDER_COLOR = 0xFFC8CCD6.toInt()
-                  // أسود معتم 100%
                   const val SOLID_BLACK_COLOR = 0xFF000000.toInt()
 
                   fun createIslandDrawable(borderColor: Int, cornerRadiusDp: Float, context: Context): GradientDrawable {
@@ -1133,6 +1201,28 @@ jobs:
 
                       islandView?.clipToOutline = true
                       islandView?.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
+
+                      // أزرار التحكم في الموسيقى
+                      val btnPrev = islandView?.findViewById<Button>(R.id.btnActionPrev)
+                      val btnPlayPause = islandView?.findViewById<Button>(R.id.btnActionPlayPause)
+                      val btnNext = islandView?.findViewById<Button>(R.id.btnActionNext)
+
+                      val audioManager = context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+
+                      btnPrev?.setOnClickListener {
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                      }
+
+                      btnPlayPause?.setOnClickListener {
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                      }
+
+                      btnNext?.setOnClickListener {
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_NEXT))
+                          audioManager?.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_NEXT))
+                      }
 
                       islandView?.setOnClickListener {
                           if (!isExpanded) {
@@ -1205,8 +1295,8 @@ jobs:
                       val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                       val y = prefs.getInt("pos_y", 8)
 
-                      // عرض 155dp فقط يمنع الوصول لأيقونات LTE والبطارية والساعة تماماً
-                      animateIsland(context, targetWidthDp = 155, targetHeightDp = 32, targetPosY = y)
+                      // عرض 135dp فقط يحافظ عليها في منتصف ثقب الكاميرا ولا يقترب من الساعة أو البطارية
+                      animateIsland(context, targetWidthDp = 135, targetHeightDp = 30, targetPosY = y)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1214,7 +1304,7 @@ jobs:
                       }, 4000)
                   }
 
-                  // بطاقة التوسع مع حركة نزول تحت شريط الحالة
+                  // بطاقة التوسع: تنزل للأسفل تحت شريط الحالة (Y = 48dp) لمنع أي تداخل مع الساعة وLTE
                   fun showExpandedEvent(
                       context: Context,
                       iconRes: Int,
@@ -1248,11 +1338,8 @@ jobs:
                       tvExtra?.text = extra
                       tvExtra?.setTextColor(borderColor)
 
-                      val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val baseY = prefs.getInt("pos_y", 8)
-
-                      // تنزل البطاقة تحت شريط الحالة بمسافة فسيحة (عرض 335dp وارتفاع 102dp)
-                      animateIsland(context, targetWidthDp = 335, targetHeightDp = 102, targetPosY = baseY + 6)
+                      // تنزل تحت شريط الحالة بالكامل (Y = 48dp) مع أبعاد فسيحة
+                      animateIsland(context, targetWidthDp = 330, targetHeightDp = 105, targetPosY = 48)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1298,7 +1385,7 @@ jobs:
                       currentAnimator?.cancel()
                       val animator = ValueAnimator.ofFloat(0f, 1f).apply {
                           duration = 280
-                          interpolator = OvershootInterpolator(1.1f)
+                          interpolator = OvershootInterpolator(1.05f)
                           addUpdateListener { va ->
                               val frac = va.animatedFraction
                               params.width = (startWidth + (endWidth - startWidth) * frac).toInt()
@@ -1391,14 +1478,22 @@ jobs:
           }
           EOF
 
-          # 12. خدمة مراقبة وتلوين الإشعارات الحية
+          # 12. خدمة مراقبة وقراءة الموسيقى والإشعارات الحية في النظام
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/NotificationReceiverService.kt
           package com.dynamicisland.pixel8
 
+          import android.media.MediaMetadata
+          import android.media.session.MediaController
+          import android.media.session.MediaSessionManager
+          import android.media.session.PlaybackState
+          import android.os.Handler
+          import android.os.Looper
           import android.service.notification.NotificationListenerService
           import android.service.notification.StatusBarNotification
 
           class NotificationReceiverService : NotificationListenerService() {
+
+              private val handler = Handler(Looper.getMainLooper())
 
               override fun onListenerConnected() {
                   super.onListenerConnected()
@@ -1409,11 +1504,10 @@ jobs:
                   super.onNotificationPosted(sbn)
                   val notif = sbn?.notification ?: return
                   val extras = notif.extras ?: return
-                  val title = extras.getString("android.title") ?: return
+                  val title = extras.getString("android.title") ?: extras.getCharSequence("android.title")?.toString() ?: return
                   val text = extras.getCharSequence("android.text")?.toString() ?: ""
                   val pkg = sbn.packageName ?: ""
 
-                  // تجاهل إشعار التطبيق نفسه
                   if (pkg == packageName) return
 
                   val (color, iconRes) = when {
@@ -1428,20 +1522,22 @@ jobs:
                   }
 
                   if (title.isNotBlank()) {
-                      IslandOverlayService.showExpandedEvent(
-                          this,
-                          iconRes,
-                          title,
-                          text,
-                          "الآن",
-                          color
-                      )
+                      handler.post {
+                          IslandOverlayService.showExpandedEvent(
+                              applicationContext,
+                              iconRes,
+                              title,
+                              text,
+                              "الآن",
+                              color
+                          )
+                      }
                   }
               }
           }
           EOF
 
-          # 13. ملف AndroidManifest.xml مع صلاحيات الـ Foreground Service
+          # 13. ملف AndroidManifest.xml مع التعريف القياسي الرسمي لخدمة NotificationListenerService
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -1473,12 +1569,14 @@ jobs:
                       android:exported="false"
                       android:foregroundServiceType="specialUse" />
 
+                  <!-- التسجيل الرسمي لخدمة قراءة الإشعارات والموسيقى في نظام Android -->
                   <service
                       android:name=".NotificationReceiverService"
+                      android:label="Dynamic Island Listener"
                       android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
                       android:exported="true">
                       <intent-filter>
-                          <action android:name="android.intent.action.NotificationListenerService" />
+                          <action android:name="android.service.notification.NotificationListenerService" />
                       </intent-filter>
                   </service>
               </application>
