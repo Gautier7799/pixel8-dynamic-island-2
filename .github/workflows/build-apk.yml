@@ -1,4 +1,4 @@
-name: Build Dynamic Island Pixel 8 APK
+name: Build Dynamic Island Pixel 8 Pro Edition APK
 
 on:
   push:
@@ -28,8 +28,8 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # تنظيف وإعداد كود أندرويد الحديث المخصص لـ Pixel
-      - name: Build Pixel 8 Engine
+      # إعادة تصميم وبناء تطبيق بمستوى جوجل الرسمي Material You 3
+      - name: Build Pixel 8 Pro Dynamic Island Luxury App
         run: |
           rm -rf app/src/main/res
           rm -rf app/src/main/java
@@ -37,6 +37,7 @@ jobs:
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/mipmap-anydpi-v26
+          mkdir -p app/src/main/res/anim
           mkdir -p app/src/main/java/com/dynamicisland/pixel8
 
           # 1. إعداد gradle.properties
@@ -74,7 +75,7 @@ jobs:
           }
           EOF
 
-          # 4. إعداد app/build.gradle.kts
+          # 4. إعداد app/build.gradle.kts مع أحدث مكتبات Material 3 و Core KTX
           cat << 'EOF' > app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -89,8 +90,8 @@ jobs:
                   applicationId = "com.dynamicisland.pixel8"
                   minSdk = 28
                   targetSdk = 34
-                  versionCode = 4
-                  versionName = "2.2.0"
+                  versionCode = 6
+                  versionName = "3.0.0"
               }
 
               buildTypes {
@@ -115,10 +116,95 @@ jobs:
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("com.google.android.material:material:1.11.0")
+              implementation("androidx.cardview:cardview:1.0.0")
           }
           EOF
 
-          # 5. الأيقونات الرسمية
+          # 5. منظومة الألوان الفاخرة Material You M3
+          cat << 'EOF' > app/src/main/res/values/colors.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="m3_surface">#111318</color>
+              <color name="m3_surface_container">#1D2024</color>
+              <color name="m3_surface_container_high">#272A2F</color>
+              <color name="m3_surface_container_highest">#32353A</color>
+              <color name="m3_primary">#A8C7FA</color>
+              <color name="m3_on_primary">#062E6F</color>
+              <color name="m3_primary_container">#0842A0</color>
+              <color name="m3_on_primary_container">#D3E3FD</color>
+              <color name="m3_secondary">#7FCFFF</color>
+              <color name="m3_secondary_container">#004D68</color>
+              <color name="m3_tertiary">#6DD58C</color>
+              <color name="m3_tertiary_container">#005324</color>
+              <color name="m3_text_primary">#E1E2E8</color>
+              <color name="m3_text_secondary">#C3C6CF</color>
+              <color name="m3_text_tertiary">#8D9199</color>
+              <color name="m3_outline">#43474E</color>
+              <color name="m3_outline_variant">#2B2F36</color>
+              <color name="true_black">#000000</color>
+              <color name="white">#FFFFFF</color>
+              <color name="battery_green">#34D399</color>
+              <color name="music_pink">#F43F5E</color>
+              <color name="bluetooth_blue">#38BDF8</color>
+          </resources>
+          EOF
+
+          # 6. نصوص التطبيق الاحترافية
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">Dynamic Island Pro</string>
+          </resources>
+          EOF
+
+          # 7. بطاقات وتأثيرات Material You 3 الدائرية الفاخرة
+          cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#000000" />
+              <corners android:radius="100dp" />
+              <stroke android:width="1.2dp" android:color="#33FFFFFF" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_island_expanded.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#0C0E12" />
+              <corners android:radius="26dp" />
+              <stroke android:width="1.2dp" android:color="#44FFFFFF" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_card_m3.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#1D2024" />
+              <corners android:radius="24dp" />
+              <stroke android:width="1dp" android:color="#2B2F36" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_chip_active.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#0842A0" />
+              <corners android:radius="14dp" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_pill_button.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#A8C7FA" />
+              <corners android:radius="100dp" />
+          </shape>
+          EOF
+
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -126,15 +212,16 @@ jobs:
               android:height="108dp"
               android:viewportWidth="108"
               android:viewportHeight="108">
-              <path android:fillColor="#000000" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M24,44h60a10,10 0 0,1 10,10v0a10,10 0 0,1 -10,10h-60a10,10 0 0,1 -10,-10v0a10,10 0 0,1 10,-10z"/>
+              <path android:fillColor="#111318" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#A8C7FA" android:pathData="M24,42h60a12,12 0 0,1 12,12v0a12,12 0 0,1 -12,12h-60a12,12 0 0,1 -12,-12v0a12,12 0 0,1 12,-12z"/>
+              <path android:fillColor="#062E6F" android:pathData="M38,50a4,4 0 1,1 0,8 4,4 0 0,1 0,-8z"/>
           </vector>
           EOF
 
           cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/black"/>
+              <background android:drawable="@color/m3_surface"/>
               <foreground android:drawable="@drawable/ic_launcher_foreground"/>
           </adaptive-icon>
           EOF
@@ -142,64 +229,226 @@ jobs:
           cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/black"/>
+              <background android:drawable="@color/m3_surface"/>
               <foreground android:drawable="@drawable/ic_launcher_foreground"/>
           </adaptive-icon>
           EOF
 
-          # 6. خلفية الكبسولة
-          cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
+          # أيقونات Vectorial عالية الدقة للميزات
+          cat << 'EOF' > app/src/main/res/drawable/ic_bolt.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"
-              android:shape="rectangle">
-              <solid android:color="#000000" />
-              <corners android:radius="100dp" />
-              <stroke android:width="1dp" android:color="#44FFFFFF" />
-          </shape>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#34D399" android:pathData="M7,2v11h3v9l7,-12h-4l4,-8z"/>
+          </vector>
           EOF
 
-          # 7. واجهة الجزيرة التفاعلية (view_pixel8_island.xml)
+          cat << 'EOF' > app/src/main/res/drawable/ic_music.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#F43F5E" android:pathData="M12,3v10.55c-0.59,-0.34 -1.27,-0.55 -2,-0.55 -2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4V7h4V3h-6z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_headphones.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#38BDF8" android:pathData="M12,3a9,9 0 0,0 -9,9v7a3,3 0 0,0 3,3h1a2,2 0 0,0 2,-2v-4a2,2 0 0,0 -2,-2H5v-2a7,7 0 0,1 14,0v2h-2a2,2 0 0,0 -2,2v4a2,2 0 0,0 2,2h1a3,3 0 0,0 3,-3v-7a9,9 0 0,0 -9,-9z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_check_circle.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#6DD58C" android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM10,17l-5,-5 1.41,-1.41L10,14.17l7.59,-7.59L19,8l-9,9z"/>
+          </vector>
+          EOF
+
+          # 8. واجهة الجزيرة الفاخرة
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/islandContainer"
+          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/islandRoot"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="@drawable/bg_island_capsule"
-              android:gravity="center"
-              android:orientation="horizontal"
-              android:paddingStart="8dp"
-              android:paddingEnd="8dp">
+              android:background="@drawable/bg_island_capsule">
 
-              <TextView
-                  android:id="@+id/tvNotificationTitle"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:textColor="#FFFFFF"
-                  android:textSize="12sp"
-                  android:textStyle="bold"
-                  android:visibility="gone"
-                  android:maxLines="1" />
+              <!-- حالة السكون الافتراضية (Idle State) -->
+              <LinearLayout
+                  android:id="@+id/layoutIdle"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:gravity="center"
+                  android:orientation="horizontal"
+                  android:visibility="visible">
+                  <View
+                      android:layout_width="14dp"
+                      android:layout_height="14dp"
+                      android:background="#000000" />
+              </LinearLayout>
 
-              <TextView
-                  android:id="@+id/tvNotificationText"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:textColor="#DDDDDD"
-                  android:textSize="11sp"
-                  android:layout_marginStart="4dp"
-                  android:visibility="gone"
-                  android:maxLines="1" />
-          </LinearLayout>
+              <!-- كبسولة التنبيه المصغرة الممتدة (Compact Island) -->
+              <LinearLayout
+                  android:id="@+id/layoutCompact"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:gravity="center_vertical"
+                  android:orientation="horizontal"
+                  android:paddingStart="12dp"
+                  android:paddingEnd="12dp"
+                  android:visibility="gone">
+
+                  <ImageView
+                      android:id="@+id/ivCompactIcon"
+                      android:layout_width="18dp"
+                      android:layout_height="18dp"
+                      android:src="@drawable/ic_bolt" />
+
+                  <TextView
+                      android:id="@+id/tvCompactTitle"
+                      android:layout_width="0dp"
+                      android:layout_height="wrap_content"
+                      android:layout_weight="1"
+                      android:layout_marginStart="8dp"
+                      android:textColor="#FFFFFF"
+                      android:textSize="12sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:maxLines="1"
+                      android:ellipsize="end" />
+
+                  <TextView
+                      android:id="@+id/tvCompactValue"
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:textColor="#34D399"
+                      android:textSize="12sp"
+                      android:textStyle="bold" />
+              </LinearLayout>
+
+              <!-- بطاقة التوسع الفاخرة للتحكم والقراءة (Expanded Card) -->
+              <LinearLayout
+                  android:id="@+id/layoutExpanded"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:orientation="vertical"
+                  android:padding="16dp"
+                  android:gravity="center_vertical"
+                  android:visibility="gone">
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal"
+                      android:gravity="center_vertical">
+
+                      <ImageView
+                          android:id="@+id/ivExpandedBadge"
+                          android:layout_width="38dp"
+                          android:layout_height="38dp"
+                          android:padding="8dp"
+                          android:background="@drawable/bg_island_capsule"
+                          android:src="@drawable/ic_music" />
+
+                      <LinearLayout
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_weight="1"
+                          android:layout_marginStart="12dp"
+                          android:orientation="vertical">
+
+                          <TextView
+                              android:id="@+id/tvExpandedHeader"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:textColor="#FFFFFF"
+                              android:textSize="14sp"
+                              android:textStyle="bold"
+                              android:text="Spotify Music"
+                              android:maxLines="1" />
+
+                          <TextView
+                              android:id="@+id/tvExpandedSubtext"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:textColor="#C3C6CF"
+                              android:textSize="12sp"
+                              android:text="Starboy • The Weeknd"
+                              android:maxLines="2" />
+                      </LinearLayout>
+
+                      <TextView
+                          android:id="@+id/tvExpandedExtra"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:textColor="#A8C7FA"
+                          android:textSize="12sp"
+                          android:text="02:45" />
+                  </LinearLayout>
+
+                  <!-- أزرار الإجراءات التفاعلية -->
+                  <LinearLayout
+                      android:id="@+id/layoutExpandedActions"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal"
+                      android:gravity="center"
+                      android:layout_marginTop="12dp">
+
+                      <Button
+                          android:id="@+id/btnAction1"
+                          android:layout_width="wrap_content"
+                          android:layout_height="36dp"
+                          android:text="⏮️ السابق"
+                          android:textSize="11sp"
+                          android:backgroundTint="#272A2F"
+                          android:textColor="#FFFFFF"
+                          android:layout_marginEnd="8dp" />
+
+                      <Button
+                          android:id="@+id/btnAction2"
+                          android:layout_width="wrap_content"
+                          android:layout_height="36dp"
+                          android:text="⏸️ إيقاف"
+                          android:textSize="11sp"
+                          android:backgroundTint="#0842A0"
+                          android:textColor="#D3E3FD"
+                          android:layout_marginEnd="8dp" />
+
+                      <Button
+                          android:id="@+id/btnAction3"
+                          android:layout_width="wrap_content"
+                          android:layout_height="36dp"
+                          android:text="⏭️ التالي"
+                          android:textSize="11sp"
+                          android:backgroundTint="#272A2F"
+                          android:textColor="#FFFFFF" />
+                  </LinearLayout>
+              </LinearLayout>
+          </FrameLayout>
           EOF
 
-          # 8. واجهة الإعدادات الشاملة مع تنبيه فك القيود (activity_main.xml)
+          # 9. واجهة تطبيق Google Pixel الرسمية الفاخرة (Material You 3 activity_main.xml)
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="#0C0C10"
+              android:background="@color/m3_surface"
               android:fillViewport="true">
 
               <LinearLayout
@@ -208,82 +457,222 @@ jobs:
                   android:orientation="vertical"
                   android:padding="20dp">
 
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:text="Dynamic Island 2"
-                      android:textColor="#FFFFFF"
-                      android:textSize="24sp"
-                      android:textStyle="bold" />
-
-                  <TextView
-                      android:layout_width="wrap_content"
-                      android:layout_height="wrap_content"
-                      android:text="Google Pixel 8 Modern Edition"
-                      android:textColor="#9E9EA4"
-                      android:textSize="13sp"
-                      android:layout_marginBottom="16dp" />
-
-                  <!-- صندوق إرشادات فك القيود لهواتف Pixel الحديثة -->
+                  <!-- Header Pixel 8 Pro Style -->
                   <LinearLayout
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
-                      android:background="#1E1A2C"
-                      android:padding="12dp"
-                      android:orientation="vertical"
-                      android:layout_marginBottom="16dp">
+                      android:orientation="horizontal"
+                      android:gravity="center_vertical"
+                      android:layout_marginTop="8dp"
+                      android:layout_marginBottom="24dp">
 
-                      <TextView
-                          android:layout_width="wrap_content"
-                          android:layout_height="wrap_content"
-                          android:text="💡 ملاحظة لهواتف Pixel الحديثة:"
-                          android:textColor="#D0BCFF"
-                          android:textStyle="bold"
-                          android:textSize="13sp"
-                          android:layout_marginBottom="4dp" />
+                      <FrameLayout
+                          android:layout_width="54dp"
+                          android:layout_height="54dp"
+                          android:background="@drawable/bg_island_capsule"
+                          android:padding="4dp">
+                          <ImageView
+                              android:layout_width="match_parent"
+                              android:layout_height="match_parent"
+                              android:src="@drawable/ic_launcher_foreground" />
+                      </FrameLayout>
 
-                      <TextView
-                          android:layout_width="wrap_content"
+                      <LinearLayout
+                          android:layout_width="0dp"
                           android:layout_height="wrap_content"
-                          android:text="إذا ظهر خيار الإشعارات باللون الرمادي: اذهب لإعدادات التطبيق واضغط على النقاط الثلاث (⋮) في الأعلى ثم اختر 'السماح بالإعدادات المقيدة'."
-                          android:textColor="#E6E1E5"
-                          android:textSize="12sp" />
+                          android:layout_weight="1"
+                          android:layout_marginStart="16dp"
+                          android:orientation="vertical">
+
+                          <TextView
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="Dynamic Island"
+                              android:textColor="@color/m3_text_primary"
+                              android:textSize="24sp"
+                              android:fontFamily="sans-serif-medium"
+                              android:textStyle="bold" />
+
+                          <TextView
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="Google Pixel 8 Pro • Material You"
+                              android:textColor="@color/m3_primary"
+                              android:textSize="13sp" />
+                      </LinearLayout>
                   </LinearLayout>
 
-                  <Button
-                      android:id="@+id/btnOverlayPermission"
-                      android:layout_width="match_parent"
-                      android:layout_height="54dp"
-                      android:text="1. إذن الظهور فوق التطبيقات"
-                      android:backgroundTint="#242436"
-                      android:textColor="#FFFFFF"
+                  <!-- بطاقة حالة وتفعيل الصلاحيات بأسلوب Google Settings -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="إعدادات وصلاحيات النظام"
+                      android:textColor="@color/m3_text_secondary"
+                      android:textSize="13sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:layout_marginStart="6dp"
                       android:layout_marginBottom="8dp" />
 
-                  <Button
-                      android:id="@+id/btnNotificationPermission"
-                      android:layout_width="match_parent"
-                      android:layout_height="54dp"
-                      android:text="2. إذن قراءة الإشعارات"
-                      android:backgroundTint="#242436"
-                      android:textColor="#FFFFFF"
-                      android:layout_marginBottom="16dp" />
-
-                  <!-- لوحة المعايرة -->
                   <LinearLayout
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:orientation="vertical"
-                      android:background="#161622"
+                      android:background="@drawable/bg_card_m3"
                       android:padding="16dp"
-                      android:layout_marginBottom="16dp">
+                      android:layout_marginBottom="20dp">
 
-                      <TextView
-                          android:id="@+id/tvWidthLabel"
-                          android:layout_width="wrap_content"
+                      <!-- صلاحية 1: الظهور فوق التطبيقات -->
+                      <LinearLayout
+                          android:id="@+id/btnOverlayPermission"
+                          android:layout_width="match_parent"
                           android:layout_height="wrap_content"
-                          android:text="عرض الجزيرة: 80 dp"
-                          android:textColor="#FFFFFF"
-                          android:textSize="12sp" />
+                          android:orientation="horizontal"
+                          android:gravity="center_vertical"
+                          android:clickable="true"
+                          android:focusable="true"
+                          android:background="?attr/selectableItemBackground"
+                          android:paddingTop="8dp"
+                          android:paddingBottom="12dp">
+
+                          <ImageView
+                              android:id="@+id/ivStatusOverlay"
+                              android:layout_width="26dp"
+                              android:layout_height="26dp"
+                              android:src="@drawable/ic_check_circle" />
+
+                          <LinearLayout
+                              android:layout_width="0dp"
+                              android:layout_height="wrap_content"
+                              android:layout_weight="1"
+                              android:layout_marginStart="14dp"
+                              android:orientation="vertical">
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:text="الظهور فوق التطبيقات"
+                                  android:textColor="@color/m3_text_primary"
+                                  android:textSize="15sp"
+                                  android:textStyle="bold" />
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:text="مطلوب لرسم الجزيرة فوق الكاميرا"
+                                  android:textColor="@color/m3_text_tertiary"
+                                  android:textSize="12sp" />
+                          </LinearLayout>
+
+                          <TextView
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="تفعيل ❯"
+                              android:textColor="@color/m3_primary"
+                              android:textSize="13sp"
+                              android:fontFamily="sans-serif-medium" />
+                      </LinearLayout>
+
+                      <View
+                          android:layout_width="match_parent"
+                          android:layout_height="1dp"
+                          android:background="@color/m3_outline_variant"
+                          android:layout_marginTop="4dp"
+                          android:layout_marginBottom="4dp" />
+
+                      <!-- صلاحية 2: قراءة الإشعارات والموسيقى -->
+                      <LinearLayout
+                          android:id="@+id/btnNotificationPermission"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:orientation="horizontal"
+                          android:gravity="center_vertical"
+                          android:clickable="true"
+                          android:focusable="true"
+                          android:background="?attr/selectableItemBackground"
+                          android:paddingTop="12dp"
+                          android:paddingBottom="8dp">
+
+                          <ImageView
+                              android:id="@+id/ivStatusNotif"
+                              android:layout_width="26dp"
+                              android:layout_height="26dp"
+                              android:src="@drawable/ic_check_circle" />
+
+                          <LinearLayout
+                              android:layout_width="0dp"
+                              android:layout_height="wrap_content"
+                              android:layout_weight="1"
+                              android:layout_marginStart="14dp"
+                              android:orientation="vertical">
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:text="الوصول إلى الإشعارات والموسيقى"
+                                  android:textColor="@color/m3_text_primary"
+                                  android:textSize="15sp"
+                                  android:textStyle="bold" />
+
+                              <TextView
+                                  android:layout_width="wrap_content"
+                                  android:layout_height="wrap_content"
+                                  android:text="لقراءة الرسائل وعرض مشغل الموسيقى"
+                                  android:textColor="@color/m3_text_tertiary"
+                                  android:textSize="12sp" />
+                          </LinearLayout>
+
+                          <TextView
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="تفعيل ❯"
+                              android:textColor="@color/m3_primary"
+                              android:textSize="13sp"
+                              android:fontFamily="sans-serif-medium" />
+                      </LinearLayout>
+                  </LinearLayout>
+
+                  <!-- بطاقة المعايرة الهندسية لكاميرا Pixel 8 -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="معايرة ثقب الكاميرا (Precision Calibration)"
+                      android:textColor="@color/m3_text_secondary"
+                      android:textSize="13sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:layout_marginStart="6dp"
+                      android:layout_marginBottom="8dp" />
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="vertical"
+                      android:background="@drawable/bg_card_m3"
+                      android:padding="18dp"
+                      android:layout_marginBottom="20dp">
+
+                      <!-- عرض الجزيرة -->
+                      <LinearLayout
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:orientation="horizontal"
+                          android:layout_marginBottom="6dp">
+                          <TextView
+                              android:layout_width="0dp"
+                              android:layout_height="wrap_content"
+                              android:layout_weight="1"
+                              android:text="عرض الجزيرة في وضع السكون"
+                              android:textColor="@color/m3_text_primary"
+                              android:textSize="13sp"
+                              android:fontFamily="sans-serif-medium" />
+                          <TextView
+                              android:id="@+id/tvWidthLabel"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="80 dp"
+                              android:textColor="@color/m3_primary"
+                              android:textSize="13sp"
+                              android:textStyle="bold" />
+                      </LinearLayout>
 
                       <SeekBar
                           android:id="@+id/sbWidth"
@@ -291,62 +680,156 @@ jobs:
                           android:layout_height="wrap_content"
                           android:max="140"
                           android:progress="80"
-                          android:layout_marginBottom="12dp" />
+                          android:progressTint="@color/m3_primary"
+                          android:thumbTint="@color/m3_primary"
+                          android:layout_marginBottom="16dp" />
 
-                      <TextView
-                          android:id="@+id/tvHeightLabel"
-                          android:layout_width="wrap_content"
+                      <!-- ارتفاع الجزيرة -->
+                      <LinearLayout
+                          android:layout_width="match_parent"
                           android:layout_height="wrap_content"
-                          android:text="ارتفاع الجزيرة: 26 dp"
-                          android:textColor="#FFFFFF"
-                          android:textSize="12sp" />
+                          android:orientation="horizontal"
+                          android:layout_marginBottom="6dp">
+                          <TextView
+                              android:layout_width="0dp"
+                              android:layout_height="wrap_content"
+                              android:layout_weight="1"
+                              android:text="ارتفاع الجزيرة"
+                              android:textColor="@color/m3_text_primary"
+                              android:textSize="13sp"
+                              android:fontFamily="sans-serif-medium" />
+                          <TextView
+                              android:id="@+id/tvHeightLabel"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="26 dp"
+                              android:textColor="@color/m3_primary"
+                              android:textSize="13sp"
+                              android:textStyle="bold" />
+                      </LinearLayout>
 
                       <SeekBar
                           android:id="@+id/sbHeight"
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
-                          android:max="50"
+                          android:max="45"
                           android:progress="26"
-                          android:layout_marginBottom="12dp" />
+                          android:progressTint="@color/m3_primary"
+                          android:thumbTint="@color/m3_primary"
+                          android:layout_marginBottom="16dp" />
 
-                      <TextView
-                          android:id="@+id/tvPosYLabel"
-                          android:layout_width="wrap_content"
+                      <!-- المسافة الرأسية Y -->
+                      <LinearLayout
+                          android:layout_width="match_parent"
                           android:layout_height="wrap_content"
-                          android:text="المسافة من أعلى الشاشة: 6 dp"
-                          android:textColor="#FFFFFF"
-                          android:textSize="12sp" />
+                          android:orientation="horizontal"
+                          android:layout_marginBottom="6dp">
+                          <TextView
+                              android:layout_width="0dp"
+                              android:layout_height="wrap_content"
+                              android:layout_weight="1"
+                              android:text="المسافة من أعلى الشاشة (Y-Offset)"
+                              android:textColor="@color/m3_text_primary"
+                              android:textSize="13sp"
+                              android:fontFamily="sans-serif-medium" />
+                          <TextView
+                              android:id="@+id/tvPosYLabel"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="6 dp"
+                              android:textColor="@color/m3_primary"
+                              android:textSize="13sp"
+                              android:textStyle="bold" />
+                      </LinearLayout>
 
                       <SeekBar
                           android:id="@+id/sbPosY"
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
                           android:max="30"
-                          android:progress="6" />
+                          android:progress="6"
+                          android:progressTint="@color/m3_primary"
+                          android:thumbTint="@color/m3_primary" />
                   </LinearLayout>
 
+                  <!-- زر التشغيل الأساسي المبتكر بنمط Material 3 Pill Button -->
                   <Button
                       android:id="@+id/btnStartService"
                       android:layout_width="match_parent"
                       android:layout_height="56dp"
-                      android:text="تشغيل الجزيرة الآن فوراً"
-                      android:backgroundTint="#7F52FF"
-                      android:textColor="#FFFFFF"
+                      android:text="تشغيل الجزيرة الآن"
+                      android:backgroundTint="@color/m3_primary"
+                      android:textColor="@color/m3_on_primary"
                       android:textStyle="bold"
-                      android:layout_marginBottom="10dp" />
+                      android:textSize="16sp"
+                      android:layout_marginBottom="24dp" />
 
-                  <Button
-                      android:id="@+id/btnTestNotification"
+                  <!-- استوديو التجارب التفاعلية Material You -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="استوديو التجارب الحية (Interactive Test Studio)"
+                      android:textColor="@color/m3_text_secondary"
+                      android:textSize="13sp"
+                      android:fontFamily="sans-serif-medium"
+                      android:layout_marginStart="6dp"
+                      android:layout_marginBottom="8dp" />
+
+                  <GridLayout
                       android:layout_width="match_parent"
-                      android:layout_height="50dp"
-                      android:text="إرسال إشعار تجريبي (Test)"
-                      android:backgroundTint="#242436"
-                      android:textColor="#D0BCFF" />
+                      android:layout_height="wrap_content"
+                      android:columnCount="2"
+                      android:rowCount="2">
+
+                      <Button
+                          android:id="@+id/btnTestCharging"
+                          android:layout_width="0dp"
+                          android:layout_height="52dp"
+                          android:layout_columnWeight="1"
+                          android:layout_margin="4dp"
+                          android:text="⚡ أنيميشن الشحن"
+                          android:textSize="12sp"
+                          android:backgroundTint="#005324"
+                          android:textColor="#34D399" />
+
+                      <Button
+                          android:id="@+id/btnTestMusic"
+                          android:layout_width="0dp"
+                          android:layout_height="52dp"
+                          android:layout_columnWeight="1"
+                          android:layout_margin="4dp"
+                          android:text="🎵 مشغل الموسيقى"
+                          android:textSize="12sp"
+                          android:backgroundTint="#4E1428"
+                          android:textColor="#FB7185" />
+
+                      <Button
+                          android:id="@+id/btnTestHeadphones"
+                          android:layout_width="0dp"
+                          android:layout_height="52dp"
+                          android:layout_columnWeight="1"
+                          android:layout_margin="4dp"
+                          android:text="🎧 سماعات Buds"
+                          android:textSize="12sp"
+                          android:backgroundTint="#004D68"
+                          android:textColor="#38BDF8" />
+
+                      <Button
+                          android:id="@+id/btnTestNotification"
+                          android:layout_width="0dp"
+                          android:layout_height="52dp"
+                          android:layout_columnWeight="1"
+                          android:layout_margin="4dp"
+                          android:text="💬 رسالة WhatsApp"
+                          android:textSize="12sp"
+                          android:backgroundTint="#272A2F"
+                          android:textColor="#D3E3FD" />
+                  </GridLayout>
               </LinearLayout>
           </ScrollView>
           EOF
 
-          # 9. كود شاشة التحكم MainActivity.kt
+          # 10. كود MainActivity.kt مع إدارة الحركات والإعدادات
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -354,9 +837,9 @@ jobs:
           import android.content.Intent
           import android.content.SharedPreferences
           import android.net.Uri
-          import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
+          import android.view.View
           import android.widget.Button
           import android.widget.SeekBar
           import android.widget.TextView
@@ -373,10 +856,14 @@ jobs:
 
                   prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
 
-                  val btnOverlay = findViewById<Button>(R.id.btnOverlayPermission)
-                  val btnNotification = findViewById<Button>(R.id.btnNotificationPermission)
+                  val btnOverlay = findViewById<View>(R.id.btnOverlayPermission)
+                  val btnNotification = findViewById<View>(R.id.btnNotificationPermission)
                   val btnStart = findViewById<Button>(R.id.btnStartService)
-                  val btnTest = findViewById<Button>(R.id.btnTestNotification)
+
+                  val btnTestCharging = findViewById<Button>(R.id.btnTestCharging)
+                  val btnTestMusic = findViewById<Button>(R.id.btnTestMusic)
+                  val btnTestHeadphones = findViewById<Button>(R.id.btnTestHeadphones)
+                  val btnTestNotification = findViewById<Button>(R.id.btnTestNotification)
 
                   val sbWidth = findViewById<SeekBar>(R.id.sbWidth)
                   val sbHeight = findViewById<SeekBar>(R.id.sbHeight)
@@ -394,16 +881,16 @@ jobs:
                   sbHeight.progress = savedHeight
                   sbPosY.progress = savedPosY
 
-                  tvWidth.text = "عرض الجزيرة: $savedWidth dp"
-                  tvHeight.text = "ارتفاع الجزيرة: $savedHeight dp"
-                  tvPosY.text = "المسافة من أعلى الشاشة: $savedPosY dp"
+                  tvWidth.text = "$savedWidth dp"
+                  tvHeight.text = "$savedHeight dp"
+                  tvPosY.text = "$savedPosY dp"
 
                   sbWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                       override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                           val w = if (progress < 40) 40 else progress
-                          tvWidth.text = "عرض الجزيرة: $w dp"
+                          tvWidth.text = "$w dp"
                           prefs.edit().putInt("width", w).apply()
-                          IslandOverlayService.updateLayout(this@MainActivity)
+                          IslandOverlayService.updateSize(this@MainActivity)
                       }
                       override fun onStartTrackingTouch(sb: SeekBar?) {}
                       override fun onStopTrackingTouch(sb: SeekBar?) {}
@@ -412,9 +899,9 @@ jobs:
                   sbHeight.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                       override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
                           val h = if (progress < 16) 16 else progress
-                          tvHeight.text = "ارتفاع الجزيرة: $h dp"
+                          tvHeight.text = "$h dp"
                           prefs.edit().putInt("height", h).apply()
-                          IslandOverlayService.updateLayout(this@MainActivity)
+                          IslandOverlayService.updateSize(this@MainActivity)
                       }
                       override fun onStartTrackingTouch(sb: SeekBar?) {}
                       override fun onStopTrackingTouch(sb: SeekBar?) {}
@@ -422,9 +909,9 @@ jobs:
 
                   sbPosY.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                       override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                          tvPosY.text = "المسافة من أعلى الشاشة: $progress dp"
+                          tvPosY.text = "$progress dp"
                           prefs.edit().putInt("pos_y", progress).apply()
-                          IslandOverlayService.updateLayout(this@MainActivity)
+                          IslandOverlayService.updateSize(this@MainActivity)
                       }
                       override fun onStartTrackingTouch(sb: SeekBar?) {}
                       override fun onStopTrackingTouch(sb: SeekBar?) {}
@@ -438,7 +925,7 @@ jobs:
                           )
                           startActivity(intent)
                       } else {
-                          Toast.makeText(this, "إذن الظهور مفعّل بالفعل!", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "إذن الظهور مفعّل مسبقاً!", Toast.LENGTH_SHORT).show()
                       }
                   }
 
@@ -446,38 +933,62 @@ jobs:
                       try {
                           startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                       } catch (e: Exception) {
-                          Toast.makeText(this, "يرجى فتح إعدادات الإشعارات للتطبيق", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "ابحث عن 'الوصول إلى الإشعارات' في الإعدادات", Toast.LENGTH_SHORT).show()
                       }
                   }
 
                   btnStart.setOnClickListener {
                       if (!Settings.canDrawOverlays(this)) {
-                          Toast.makeText(this, "يرجى منح إذن الظهور أولاً (الزر 1)", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "يرجى منح إذن الظهور أولاً", Toast.LENGTH_SHORT).show()
                       } else {
                           IslandOverlayService.startOverlay(this)
-                          Toast.makeText(this, "تم تشغيل الجزيرة بنجاح!", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "تم تشغيل Dynamic Island بنجاح!", Toast.LENGTH_SHORT).show()
                       }
                   }
 
-                  btnTest.setOnClickListener {
-                      IslandOverlayService.expandWithNotification(this, "💬 WhatsApp", "رسالة جديدة على Pixel 8!")
+                  btnTestCharging.setOnClickListener {
+                      IslandOverlayService.showCompactEvent(this, R.drawable.ic_bolt, "الشاحن السريع", "85%")
+                  }
+
+                  btnTestMusic.setOnClickListener {
+                      IslandOverlayService.showExpandedEvent(
+                          this,
+                          R.drawable.ic_music,
+                          "Spotify Music",
+                          "Starboy • The Weeknd",
+                          "02:45"
+                      )
+                  }
+
+                  btnTestHeadphones.setOnClickListener {
+                      IslandOverlayService.showCompactEvent(this, R.drawable.ic_headphones, "Pixel Buds Pro", "100%")
+                  }
+
+                  btnTestNotification.setOnClickListener {
+                      IslandOverlayService.showExpandedEvent(
+                          this,
+                          R.drawable.ic_launcher_foreground,
+                          "💬 WhatsApp (أحمد)",
+                          "السلام عليكم، الجزيرة تعمل بكامل طاقتها وأناقتها!",
+                          "الآن"
+                      )
                   }
               }
           }
           EOF
 
-          # 10. خدمة IslandOverlayService.kt المحدثة خصيصاً للرسم الفوري والمباشر
+          # 11. محرك الجزيرة المطور مع حركات iOS الفيزيائية واللمس التفاعلي
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
           package com.dynamicisland.pixel8
 
-          import android.app.Notification
-          import android.app.NotificationChannel
-          import android.app.NotificationManager
+          import android.animation.ValueAnimator
           import android.app.Service
+          import android.content.BroadcastReceiver
           import android.content.Context
           import android.content.Intent
+          import android.content.IntentFilter
           import android.graphics.PixelFormat
-          import android.os.Build
+          import android.os.BatteryManager
           import android.os.Handler
           import android.os.IBinder
           import android.os.Looper
@@ -485,8 +996,9 @@ jobs:
           import android.view.LayoutInflater
           import android.view.View
           import android.view.WindowManager
+          import android.view.animation.OvershootInterpolator
+          import android.widget.ImageView
           import android.widget.TextView
-          import androidx.core.app.NotificationCompat
 
           class IslandOverlayService : Service() {
 
@@ -495,10 +1007,13 @@ jobs:
                   private var islandView: View? = null
                   private var layoutParams: WindowManager.LayoutParams? = null
                   private val mainHandler = Handler(Looper.getMainLooper())
+                  private var currentAnimator: ValueAnimator? = null
+
+                  var isExpanded = false
 
                   fun startOverlay(context: Context) {
                       if (islandView != null) {
-                          updateLayout(context)
+                          updateSize(context)
                           return
                       }
 
@@ -531,7 +1046,17 @@ jobs:
                       islandView = inflater.inflate(R.layout.view_pixel8_island, null)
 
                       islandView?.setOnClickListener {
-                          expandWithNotification(context, "Pixel 8 Island", "استجابة لمس فورية")
+                          if (!isExpanded) {
+                              showExpandedEvent(
+                                  context,
+                                  R.drawable.ic_launcher_foreground,
+                                  "Dynamic Island Pixel 8",
+                                  "انقر مجدداً للطي أو اسحب للتحكم",
+                                  "مفعّل"
+                              )
+                          } else {
+                              collapseToIdle(context)
+                          }
                       }
 
                       try {
@@ -541,7 +1066,7 @@ jobs:
                       }
                   }
 
-                  fun updateLayout(context: Context) {
+                  fun updateSize(context: Context) {
                       val wm = windowManager ?: return
                       val view = islandView ?: return
                       val params = layoutParams ?: return
@@ -552,63 +1077,168 @@ jobs:
                       val y = prefs.getInt("pos_y", 6)
                       val density = context.resources.displayMetrics.density
 
-                      params.width = (w * density).toInt()
-                      params.height = (h * density).toInt()
-                      params.y = (y * density).toInt()
+                      if (!isExpanded) {
+                          params.width = (w * density).toInt()
+                          params.height = (h * density).toInt()
+                          params.y = (y * density).toInt()
 
-                      try {
-                          wm.updateViewLayout(view, params)
-                      } catch (e: Exception) {}
+                          try {
+                              wm.updateViewLayout(view, params)
+                          } catch (e: Exception) {}
+                      }
                   }
 
-                  fun expandWithNotification(context: Context, title: String, message: String) {
-                      if (islandView == null) {
-                          startOverlay(context)
-                      }
+                  fun showCompactEvent(context: Context, iconRes: Int, title: String, value: String) {
+                      if (islandView == null) startOverlay(context)
+                      val view = islandView ?: return
+
+                      val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
+                      val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
+                      val layoutExpanded = view.findViewById<View>(R.id.layoutExpanded)
+
+                      layoutIdle?.visibility = View.GONE
+                      layoutExpanded?.visibility = View.GONE
+                      layoutCompact?.visibility = View.VISIBLE
+
+                      val ivIcon = view.findViewById<ImageView>(R.id.ivCompactIcon)
+                      val tvTitle = view.findViewById<TextView>(R.id.tvCompactTitle)
+                      val tvValue = view.findViewById<TextView>(R.id.tvCompactValue)
+
+                      ivIcon?.setImageResource(iconRes)
+                      tvTitle?.text = title
+                      tvValue?.text = value
+
+                      animateDimensions(context, targetWidthDp = 180, targetHeightDp = 34)
+
+                      mainHandler.removeCallbacksAndMessages(null)
+                      mainHandler.postDelayed({
+                          collapseToIdle(context)
+                      }, 4000)
+                  }
+
+                  fun showExpandedEvent(
+                      context: Context,
+                      iconRes: Int,
+                      header: String,
+                      subtext: String,
+                      extra: String
+                  ) {
+                      if (islandView == null) startOverlay(context)
+                      val view = islandView ?: return
+                      isExpanded = true
+
+                      val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
+                      val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
+                      val layoutExpanded = view.findViewById<View>(R.id.layoutExpanded)
+
+                      layoutIdle?.visibility = View.GONE
+                      layoutCompact?.visibility = View.GONE
+                      layoutExpanded?.visibility = View.VISIBLE
+
+                      val ivBadge = view.findViewById<ImageView>(R.id.ivExpandedBadge)
+                      val tvHeader = view.findViewById<TextView>(R.id.tvExpandedHeader)
+                      val tvSubtext = view.findViewById<TextView>(R.id.tvExpandedSubtext)
+                      val tvExtra = view.findViewById<TextView>(R.id.tvExpandedExtra)
+
+                      ivBadge?.setImageResource(iconRes)
+                      tvHeader?.text = header
+                      tvSubtext?.text = subtext
+                      tvExtra?.text = extra
+
+                      animateDimensions(context, targetWidthDp = 300, targetHeightDp = 90)
+
+                      mainHandler.removeCallbacksAndMessages(null)
+                      mainHandler.postDelayed({
+                          collapseToIdle(context)
+                      }, 6000)
+                  }
+
+                  fun collapseToIdle(context: Context) {
+                      val view = islandView ?: return
+                      isExpanded = false
+
+                      val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
+                      val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
+                      val layoutExpanded = view.findViewById<View>(R.id.layoutExpanded)
+
+                      layoutCompact?.visibility = View.GONE
+                      layoutExpanded?.visibility = View.GONE
+                      layoutIdle?.visibility = View.VISIBLE
+
+                      val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                      val w = prefs.getInt("width", 80)
+                      val h = prefs.getInt("height", 26)
+
+                      animateDimensions(context, targetWidthDp = w, targetHeightDp = h)
+                  }
+
+                  private fun animateDimensions(context: Context, targetWidthDp: Int, targetHeightDp: Int) {
                       val wm = windowManager ?: return
                       val view = islandView ?: return
                       val params = layoutParams ?: return
                       val density = context.resources.displayMetrics.density
 
-                      params.width = (240 * density).toInt()
-                      params.height = (50 * density).toInt()
+                      val startWidth = params.width
+                      val endWidth = (targetWidthDp * density).toInt()
+                      val startHeight = params.height
+                      val endHeight = (targetHeightDp * density).toInt()
 
-                      val tvTitle = view.findViewById<TextView>(R.id.tvNotificationTitle)
-                      val tvText = view.findViewById<TextView>(R.id.tvNotificationText)
-
-                      tvTitle?.text = title
-                      tvTitle?.visibility = View.VISIBLE
-                      tvText?.text = message
-                      tvText?.visibility = View.VISIBLE
-
-                      try {
-                          wm.updateViewLayout(view, params)
-                      } catch (e: Exception) {}
-
-                      mainHandler.removeCallbacksAndMessages(null)
-                      mainHandler.postDelayed({
-                          collapse(context)
-                      }, 4000)
+                      currentAnimator?.cancel()
+                      val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+                          duration = 320
+                          interpolator = OvershootInterpolator(1.15f)
+                          addUpdateListener { va ->
+                              val frac = va.animatedFraction
+                              params.width = (startWidth + (endWidth - startWidth) * frac).toInt()
+                              params.height = (startHeight + (endHeight - startHeight) * frac).toInt()
+                              try {
+                                  wm.updateViewLayout(view, params)
+                              } catch (e: Exception) {}
+                          }
+                      }
+                      currentAnimator = animator
+                      animator.start()
                   }
+              }
 
-                  fun collapse(context: Context) {
-                      val view = islandView ?: return
-                      view.findViewById<TextView>(R.id.tvNotificationTitle)?.visibility = View.GONE
-                      view.findViewById<TextView>(R.id.tvNotificationText)?.visibility = View.GONE
-                      updateLayout(context)
+              private val batteryReceiver = object : BroadcastReceiver() {
+                  override fun onReceive(context: Context?, intent: Intent?) {
+                      if (context == null || intent == null) return
+                      val action = intent.action
+                      if (action == Intent.ACTION_POWER_CONNECTED) {
+                          val batteryStatus: Intent? = IntentFilter(Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                              context.registerReceiver(null, ifilter)
+                          }
+                          val level: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                          val scale: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+                          val pct = if (level >= 0 && scale > 0) (level * 100 / scale) else 85
+                          showCompactEvent(context, R.drawable.ic_bolt, "الشاحن السريع متصل", "$pct%")
+                      }
                   }
               }
 
               override fun onCreate() {
                   super.onCreate()
                   startOverlay(this)
+                  val filter = IntentFilter().apply {
+                      addAction(Intent.ACTION_POWER_CONNECTED)
+                      addAction(Intent.ACTION_POWER_DISCONNECTED)
+                  }
+                  registerReceiver(batteryReceiver, filter)
+              }
+
+              override fun onDestroy() {
+                  super.onDestroy()
+                  try {
+                      unregisterReceiver(batteryReceiver)
+                  } catch (e: Exception) {}
               }
 
               override fun onBind(intent: Intent?): IBinder? = null
           }
           EOF
 
-          # 11. خدمة مراقبة الإشعارات NotificationReceiverService.kt
+          # 12. خدمة مراقبة الإشعارات الحية
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/NotificationReceiverService.kt
           package com.dynamicisland.pixel8
 
@@ -630,13 +1260,19 @@ jobs:
                   val text = extras.getCharSequence("android.text")?.toString() ?: ""
 
                   if (title.isNotBlank()) {
-                      IslandOverlayService.expandWithNotification(this, title, text)
+                      IslandOverlayService.showExpandedEvent(
+                          this,
+                          R.drawable.ic_launcher_foreground,
+                          title,
+                          text,
+                          "الآن"
+                      )
                   }
               }
           }
           EOF
 
-          # 12. ملف AndroidManifest.xml
+          # 13. ملف AndroidManifest.xml المكتمل
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -648,8 +1284,8 @@ jobs:
                   android:allowBackup="true"
                   android:icon="@mipmap/ic_launcher"
                   android:roundIcon="@mipmap/ic_launcher_round"
-                  android:label="Dynamic Island 2"
-                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+                  android:label="Dynamic Island"
+                  android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
 
                   <activity
                       android:name=".MainActivity"
@@ -677,20 +1313,6 @@ jobs:
           </manifest>
           EOF
 
-          # 13. ملفات القيم والألوان
-          cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources>
-              <string name="app_name">Dynamic Island 2</string>
-          </resources>
-          EOF
-
-          cat << 'EOF' > app/src/main/res/values/colors.xml
-          <resources>
-              <color name="black">#FF000000</color>
-              <color name="white">#FFFFFFFF</color>
-          </resources>
-          EOF
-
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       # 14. أمر البناء النظيف للـ APK
@@ -701,6 +1323,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland2-Pixel8-APK
+          name: DynamicIsland-Pixel8-Pro-APK
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
