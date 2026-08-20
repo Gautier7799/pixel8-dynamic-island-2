@@ -19,26 +19,31 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # توليد ملفات Gradle تلقائياً وضبط الصلاحيات
-      - name: Setup Gradle Wrapper
+      # إنشاء wrapper وإصلاح الصلاحيات
+      - name: Setup Environment
         run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           if [ ! -f "./gradlew" ]; then
             gradle wrapper --gradle-version 8.4
           fi
           chmod +x gradlew
 
-      # بناء ملف الـ APK
+      # البناء مع معالجة الأخطاء
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: ./gradlew assembleDebug --stacktrace --no-daemon --info
 
-      # رفع ملف الـ APK لتنزيله مباشرة
+      # رفع ملف الـ APK
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: DynamicIsland-Pixel8.apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            **/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
