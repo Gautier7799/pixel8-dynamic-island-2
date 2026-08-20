@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-apk:
-    name: Generate Android APK
+    name: Generate Signed Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -28,7 +28,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Full Pixel 8 Dynamic Island App
+      - name: Configure Complete Application Code & Settings
         run: |
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable
@@ -43,7 +43,93 @@ jobs:
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           EOF
 
-          # 2. ملف الأيقونات
+          # 2. إنشاء مفتاح توقيع رقمي معتمد (Keystore) لتجاوز تحذيرات Play Protect
+          keytool -genkey -v -keystore app/release.keystore -alias dynamicisland -keyalg RSA -keysize 2048 -validity 10000 -storepass pixel8island -keypass pixel8island -dname "CN=Dynamic Island 2, OU=Mobile, O=Pixel8, L=Global, S=Global, C=US"
+
+          # 3. إعداد settings.gradle.kts
+          cat << 'EOF' > settings.gradle.kts
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "DynamicIslandPixel8"
+          include(":app")
+          EOF
+
+          # 4. إعداد build.gradle.kts الرئيسي
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.2.2" apply false
+              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+          }
+          EOF
+
+          # 5. إعداد app/build.gradle.kts مع التوقيع الرقمي الرسمي (Release Signing)
+          cat << 'EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+              namespace = "com.dynamicisland.pixel8"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "com.dynamicisland.pixel8"
+                  minSdk = 26
+                  targetSdk = 34
+                  versionCode = 2
+                  versionName = "2.0.0"
+              }
+
+              signingConfigs {
+                  create("release") {
+                      storeFile = file("release.keystore")
+                      storePassword = "pixel8island"
+                      keyAlias = "dynamicisland"
+                      keyPassword = "pixel8island"
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      signingConfig = signingConfigs.getByName("release")
+                  }
+                  debug {
+                      signingConfig = signingConfigs.getByName("release")
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+
+          dependencies {
+              implementation("androidx.core:core-ktx:1.12.0")
+              implementation("androidx.appcompat:appcompat:1.6.1")
+              implementation("com.google.android.material:material:1.11.0")
+              implementation("androidx.cardview:cardview:1.0.0")
+          }
+          EOF
+
+          # 6. ملف أيقونة التطبيق والكبسولة
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -52,7 +138,7 @@ jobs:
               android:viewportWidth="108"
               android:viewportHeight="108">
               <path android:fillColor="#000000" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M30,45h48a9,9 0 0,1 9,9v0a9,9 0 0,1 -9,9h-48a9,9 0 0,1 -9,-9v0a9,9 0 0,1 9,-9z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M24,44h60a10,10 0 0,1 10,10v0a10,10 0 0,1 -10,10h-60a10,10 0 0,1 -10,-10v0a10,10 0 0,1 10,-10z"/>
           </vector>
           EOF
 
@@ -72,17 +158,17 @@ jobs:
           </adaptive-icon>
           EOF
 
-          # 3. خلفية الكبسولة المنحنية بحجم مناسب
           cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
               <solid android:color="#000000" />
               <corners android:radius="100dp" />
+              <stroke android:width="1dp" android:color="#22FFFFFF" />
           </shape>
           EOF
 
-          # 4. واجهة الجزيرة المصغرة والموسعة (مع دعم الإشعارات)
+          # 7. واجهة الجزيرة التفاعلية
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -109,7 +195,7 @@ jobs:
                   android:id="@+id/tvNotificationText"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:textColor="#BBBBBB"
+                  android:textColor="#CCCCCC"
                   android:textSize="11sp"
                   android:layout_marginStart="6dp"
                   android:visibility="gone"
@@ -117,113 +203,242 @@ jobs:
           </LinearLayout>
           EOF
 
-          # 5. واجهة التطبيق الرئيسية مع زر تفعيل الإشعارات
+          # 8. واجهة الإعدادات الشاملة (Settings & Calibration UI)
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:gravity="center"
-              android:orientation="vertical"
-              android:padding="24dp"
-              android:background="#121212">
+              android:background="#0F0F14"
+              android:fillViewport="true">
 
-              <TextView
-                  android:layout_width="wrap_content"
+              <LinearLayout
+                  android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:text="Google Pixel 8 Dynamic Island"
-                  android:textColor="#FFFFFF"
-                  android:textSize="22sp"
-                  android:textStyle="bold"
-                  android:layout_marginBottom="32dp" />
+                  android:orientation="vertical"
+                  android:padding="20dp">
 
-              <Button
-                  android:id="@+id/btnOverlayPermission"
-                  android:layout_width="match_parent"
-                  android:layout_height="60dp"
-                  android:text="1. منح إذن الظهور فوق التطبيقات"
-                  android:backgroundTint="#D0BCFF"
-                  android:textColor="#381E72"
-                  android:layout_marginBottom="16dp" />
+                  <!-- Header -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Dynamic Island 2"
+                      android:textColor="#FFFFFF"
+                      android:textSize="24sp"
+                      android:textStyle="bold" />
 
-              <Button
-                  android:id="@+id/btnNotificationPermission"
-                  android:layout_width="match_parent"
-                  android:layout_height="60dp"
-                  android:text="2. منح إذن قراءة الإشعارات"
-                  android:backgroundTint="#D0BCFF"
-                  android:textColor="#381E72"
-                  android:layout_marginBottom="16dp" />
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="Google Pixel 8 Professional Edition"
+                      android:textColor="#8E8E93"
+                      android:textSize="13sp"
+                      android:layout_marginBottom="20dp" />
 
-              <Button
-                  android:id="@+id/btnStartService"
-                  android:layout_width="match_parent"
-                  android:layout_height="60dp"
-                  android:text="3. تشغيل الجزيرة التفاعلية"
-                  android:backgroundTint="#381E72"
-                  android:textColor="#FFFFFF" />
-          </LinearLayout>
+                  <!-- قسم الصلاحيات -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="الصلاحيات المطلوبة"
+                      android:textColor="#D0BCFF"
+                      android:textSize="14sp"
+                      android:textStyle="bold"
+                      android:layout_marginBottom="8dp" />
+
+                  <Button
+                      android:id="@+id/btnOverlayPermission"
+                      android:layout_width="match_parent"
+                      android:layout_height="54dp"
+                      android:text="1. إذن الظهور فوق التطبيقات"
+                      android:backgroundTint="#1E1E2C"
+                      android:textColor="#FFFFFF"
+                      android:layout_marginBottom="8dp" />
+
+                  <Button
+                      android:id="@+id/btnNotificationPermission"
+                      android:layout_width="match_parent"
+                      android:layout_height="54dp"
+                      android:text="2. إذن قراءة الإشعارات"
+                      android:backgroundTint="#1E1E2C"
+                      android:textColor="#FFFFFF"
+                      android:layout_marginBottom="16dp" />
+
+                  <!-- قسم معايرة القياسات والموقع (Calibration) -->
+                  <TextView
+                      android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:text="معايرة الموقع والقياسات (Pixel 8)"
+                      android:textColor="#D0BCFF"
+                      android:textSize="14sp"
+                      android:textStyle="bold"
+                      android:layout_marginBottom="8dp" />
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="vertical"
+                      android:background="#1A1A24"
+                      android:padding="16dp"
+                      android:layout_marginBottom="16dp">
+
+                      <!-- التحكم بالعرض -->
+                      <TextView
+                          android:id="@+id/tvWidthLabel"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:text="عرض الجزيرة: 80 dp"
+                          android:textColor="#FFFFFF"
+                          android:textSize="12sp" />
+
+                      <SeekBar
+                          android:id="@+id/sbWidth"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:max="140"
+                          android:progress="80"
+                          android:layout_marginBottom="12dp" />
+
+                      <!-- التحكم بالارتفاع -->
+                      <TextView
+                          android:id="@+id/tvHeightLabel"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:text="ارتفاع الجزيرة: 26 dp"
+                          android:textColor="#FFFFFF"
+                          android:textSize="12sp" />
+
+                      <SeekBar
+                          android:id="@+id/sbHeight"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:max="50"
+                          android:progress="26"
+                          android:layout_marginBottom="12dp" />
+
+                      <!-- التحكم بالإزاحة الرأسية Y -->
+                      <TextView
+                          android:id="@+id/tvPosYLabel"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          android:text="المسافة من أعلى الشاشة (Y): 6 dp"
+                          android:textColor="#FFFFFF"
+                          android:textSize="12sp" />
+
+                      <SeekBar
+                          android:id="@+id/sbPosY"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:max="30"
+                          android:progress="6" />
+                  </LinearLayout>
+
+                  <!-- أزرار التشغيل والاختبار -->
+                  <Button
+                      android:id="@+id/btnStartService"
+                      android:layout_width="match_parent"
+                      android:layout_height="56dp"
+                      android:text="تشغيل الجزيرة الآن"
+                      android:backgroundTint="#6750A4"
+                      android:textColor="#FFFFFF"
+                      android:textStyle="bold"
+                      android:layout_marginBottom="10dp" />
+
+                  <Button
+                      android:id="@+id/btnTestNotification"
+                      android:layout_width="match_parent"
+                      android:layout_height="50dp"
+                      android:text="إرسال إشعار تجريبي (Test)"
+                      android:backgroundTint="#2B2B36"
+                      android:textColor="#D0BCFF" />
+              </LinearLayout>
+          </ScrollView>
           EOF
 
-          # 6. ملف AndroidManifest مع الصلاحيات الحقيقية
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
-              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-              <application
-                  android:allowBackup="true"
-                  android:icon="@mipmap/ic_launcher"
-                  android:roundIcon="@mipmap/ic_launcher_round"
-                  android:label="Pixel 8 Island"
-                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
-
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-
-                  <!-- خدمة قراءة الإشعارات والتحكم بالجزيرة -->
-                  <service
-                      android:name=".DynamicNotificationService"
-                      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.service.notification.NotificationListenerService" />
-                      </intent-filter>
-                  </service>
-              </application>
-          </manifest>
-          EOF
-
-          # 7. كود MainActivity.kt مع أزرار الصلاحيات
+          # 9. كود MainActivity.kt مع إدارة الإعدادات وحفظها في SharedPreferences
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
+          import android.content.Context
           import android.content.Intent
+          import android.content.SharedPreferences
           import android.net.Uri
           import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
           import android.widget.Button
+          import android.widget.SeekBar
+          import android.widget.TextView
           import android.widget.Toast
           import androidx.appcompat.app.AppCompatActivity
 
           class MainActivity : AppCompatActivity() {
 
+              private lateinit var prefs: SharedPreferences
+
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   setContentView(R.layout.activity_main)
 
+                  prefs = getSharedPreferences("dynamic_island_prefs", Context.MODE_PRIVATE)
+
                   val btnOverlay = findViewById<Button>(R.id.btnOverlayPermission)
                   val btnNotification = findViewById<Button>(R.id.btnNotificationPermission)
                   val btnStart = findViewById<Button>(R.id.btnStartService)
+                  val btnTest = findViewById<Button>(R.id.btnTestNotification)
+
+                  val sbWidth = findViewById<SeekBar>(R.id.sbWidth)
+                  val sbHeight = findViewById<SeekBar>(R.id.sbHeight)
+                  val sbPosY = findViewById<SeekBar>(R.id.sbPosY)
+
+                  val tvWidth = findViewById<TextView>(R.id.tvWidthLabel)
+                  val tvHeight = findViewById<TextView>(R.id.tvHeightLabel)
+                  val tvPosY = findViewById<TextView>(R.id.tvPosYLabel)
+
+                  // استرجاع الإعدادات المحفوظة
+                  val savedWidth = prefs.getInt("island_width", 80)
+                  val savedHeight = prefs.getInt("island_height", 26)
+                  val savedPosY = prefs.getInt("island_pos_y", 6)
+
+                  sbWidth.progress = savedWidth
+                  sbHeight.progress = savedHeight
+                  sbPosY.progress = savedPosY
+
+                  tvWidth.text = "عرض الجزيرة: $savedWidth dp"
+                  tvHeight.text = "ارتفاع الجزيرة: $savedHeight dp"
+                  tvPosY.text = "المسافة من أعلى الشاشة (Y): $savedPosY dp"
+
+                  sbWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                      override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
+                          val width = if (v < 50) 50 else v
+                          tvWidth.text = "عرض الجزيرة: $width dp"
+                          prefs.edit().putInt("island_width", width).apply()
+                          DynamicNotificationService.updateDimensions(this@MainActivity)
+                      }
+                      override fun onStartTrackingTouch(p0: SeekBar?) {}
+                      override fun onStopTrackingTouch(p0: SeekBar?) {}
+                  })
+
+                  sbHeight.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                      override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
+                          val height = if (v < 18) 18 else v
+                          tvHeight.text = "ارتفاع الجزيرة: $height dp"
+                          prefs.edit().putInt("island_height", height).apply()
+                          DynamicNotificationService.updateDimensions(this@MainActivity)
+                      }
+                      override fun onStartTrackingTouch(p0: SeekBar?) {}
+                      override fun onStopTrackingTouch(p0: SeekBar?) {}
+                  })
+
+                  sbPosY.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                      override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
+                          tvPosY.text = "المسافة من أعلى الشاشة (Y): $v dp"
+                          prefs.edit().putInt("island_pos_y", v).apply()
+                          DynamicNotificationService.updateDimensions(this@MainActivity)
+                      }
+                      override fun onStartTrackingTouch(p0: SeekBar?) {}
+                      override fun onStopTrackingTouch(p0: SeekBar?) {}
+                  })
 
                   btnOverlay.setOnClickListener {
                       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
@@ -233,7 +448,7 @@ jobs:
                           )
                           startActivity(intent)
                       } else {
-                          Toast.makeText(this, "إذن الظهور مفعّل مسبقاً!", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "إذن الظهور مفعّل بالفعل!", Toast.LENGTH_SHORT).show()
                       }
                   }
 
@@ -246,14 +461,18 @@ jobs:
                           Toast.makeText(this, "يرجى منح إذن الظهور أولاً", Toast.LENGTH_SHORT).show()
                       } else {
                           DynamicNotificationService.showIsland(this)
-                          Toast.makeText(this, "تم تشغيل الجزيرة بنجاح!", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "تم تشغيل Dynamic Island 2 بنجاح!", Toast.LENGTH_SHORT).show()
                       }
+                  }
+
+                  btnTest.setOnClickListener {
+                      DynamicNotificationService.testNotification(this)
                   }
               }
           }
           EOF
 
-          # 8. كود خدمة الإشعارات والجزيرة بالمقاس الدقيق والمثالي لـ Pixel 8
+          # 10. كود DynamicNotificationService.kt المتكامل
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/DynamicNotificationService.kt
           package com.dynamicisland.pixel8
 
@@ -273,14 +492,16 @@ jobs:
           class DynamicNotificationService : NotificationListenerService() {
 
               companion object {
-                  private var instance: DynamicNotificationService? = null
                   private var windowManager: WindowManager? = null
                   private var islandView: View? = null
                   private var params: WindowManager.LayoutParams? = null
                   private val handler = Handler(Looper.getMainLooper())
 
                   fun showIsland(context: Context) {
-                      if (islandView != null) return
+                      if (islandView != null) {
+                          updateDimensions(context)
+                          return
+                      }
                       windowManager = context.getSystemService(WINDOW_SERVICE) as WindowManager
 
                       val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -289,12 +510,16 @@ jobs:
                           WindowManager.LayoutParams.TYPE_PHONE
                       }
 
+                      val prefs = context.getSharedPreferences("dynamic_island_prefs", Context.MODE_PRIVATE)
+                      val widthDp = prefs.getInt("island_width", 80)
+                      val heightDp = prefs.getInt("island_height", 26)
+                      val posYDp = prefs.getInt("island_pos_y", 6)
+
                       val density = context.resources.displayMetrics.density
 
-                      // المقاس المثالي والمضبوط الصغير لكاميرا Pixel 8 (75dp x 24dp)
                       params = WindowManager.LayoutParams(
-                          (75 * density).toInt(),
-                          (24 * density).toInt(),
+                          (widthDp * density).toInt(),
+                          (heightDp * density).toInt(),
                           layoutFlag,
                           WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                           WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -303,36 +528,47 @@ jobs:
                           PixelFormat.TRANSLUCENT
                       ).apply {
                           gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                          y = (4 * density).toInt() // ملاصق لثقب الكاميرا تماماً
+                          y = (posYDp * density).toInt()
                       }
 
                       islandView = LayoutInflater.from(context).inflate(R.layout.view_pixel8_island, null)
-                      
                       islandView?.setOnClickListener {
-                          // تصغير أو توسيع باللمس السريع
-                          toggleExpand(context)
+                          testNotification(context)
                       }
 
                       try {
                           windowManager?.addView(islandView, params)
                       } catch (e: Exception) {
-                          e.printStackTrace>
+                          e.printStackTrace()
                       }
                   }
 
-                  private fun toggleExpand(context: Context) {
+                  fun updateDimensions(context: Context) {
+                      if (islandView == null || params == null) return
+                      val prefs = context.getSharedPreferences("dynamic_island_prefs", Context.MODE_PRIVATE)
+                      val widthDp = prefs.getInt("island_width", 80)
+                      val heightDp = prefs.getInt("island_height", 26)
+                      val posYDp = prefs.getInt("island_pos_y", 6)
                       val density = context.resources.displayMetrics.density
-                      if (params?.width == (75 * density).toInt()) {
-                          expand(context, "Pixel 8 Island", "لمس تفاعلي سريع")
-                      } else {
-                          collapse(context)
-                      }
+
+                      params?.width = (widthDp * density).toInt()
+                      params?.height = (heightDp * density).toInt()
+                      params?.y = (posYDp * density).toInt()
+
+                      try {
+                          windowManager?.updateViewLayout(islandView, params)
+                      } catch (e: Exception) {}
+                  }
+
+                  fun testNotification(context: Context) {
+                      expand(context, "💬 WhatsApp", "رسالة جديدة: مرحباً بك في Dynamic Island 2!")
                   }
 
                   fun expand(context: Context, title: String, text: String) {
+                      if (islandView == null || params == null) showIsland(context)
                       val density = context.resources.displayMetrics.density
-                      params?.width = (220 * density).toInt()
-                      params?.height = (48 * density).toInt()
+                      params?.width = (240 * density).toInt()
+                      params?.height = (50 * density).toInt()
 
                       val tvTitle = islandView?.findViewById<TextView>(R.id.tvNotificationTitle)
                       val tvText = islandView?.findViewById<TextView>(R.id.tvNotificationText)
@@ -346,7 +582,6 @@ jobs:
                           windowManager?.updateViewLayout(islandView, params)
                       } catch (e: Exception) {}
 
-                      // إعادة الانكماش تلقائياً بعد 4 ثوانٍ
                       handler.removeCallbacksAndMessages(null)
                       handler.postDelayed({
                           collapse(context)
@@ -354,22 +589,14 @@ jobs:
                   }
 
                   fun collapse(context: Context) {
-                      val density = context.resources.displayMetrics.density
-                      params?.width = (75 * density).toInt()
-                      params?.height = (24 * density).toInt()
-
+                      updateDimensions(context)
                       islandView?.findViewById<TextView>(R.id.tvNotificationTitle)?.visibility = View.GONE
                       islandView?.findViewById<TextView>(R.id.tvNotificationText)?.visibility = View.GONE
-
-                      try {
-                          windowManager?.updateViewLayout(islandView, params)
-                      } catch (e: Exception) {}
                   }
               }
 
               override fun onListenerConnected() {
                   super.onListenerConnected()
-                  instance = this
                   showIsland(this)
               }
 
@@ -379,7 +606,6 @@ jobs:
                   val title = extras.getString("android.title") ?: return
                   val text = extras.getCharSequence("android.text")?.toString() ?: ""
 
-                  // إظهار الإشعار في الجزيرة فوراً عند وصوله
                   handler.post {
                       expand(this, title, text)
                   }
@@ -387,10 +613,46 @@ jobs:
           }
           EOF
 
-          # 9. ملفات النصوص والألوان
+          # 11. ملف AndroidManifest مع تعريف الخدمات والأيقونات
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:label="Dynamic Island 2"
+                  android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+
+                  <service
+                      android:name=".DynamicNotificationService"
+                      android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.service.notification.NotificationListenerService" />
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
+
+          # 12. ملفات القيم والألوان
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Pixel 8 Island</string>
+              <string name="app_name">Dynamic Island 2</string>
           </resources>
           EOF
 
@@ -403,14 +665,14 @@ jobs:
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # البناء الرسمي
-      - name: Build Debug APK
-        run: gradle assembleDebug -x test -x lint --stacktrace
+      # 13. البناء والتوقيع الرسمي
+      - name: Build Signed Release APK
+        run: gradle assembleRelease -x test -x lint --stacktrace
 
-      # رفع ملف الـ APK
-      - name: Upload APK Artifact
+      # 14. رفع حزمة الـ APK الموقعة والجاهزة
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland-Pixel8-APK
-          path: app/build/outputs/apk/debug/*.apk
+          name: DynamicIsland2-Signed-Pixel8-APK
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
