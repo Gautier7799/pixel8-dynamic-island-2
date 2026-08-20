@@ -1,4 +1,4 @@
-name: Build Dynamic Island Pixel 8 Pro Edition APK
+name: Build Dynamic Island Pixel 8 Pro Luxury Edition APK
 
 on:
   push:
@@ -28,7 +28,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إعادة تصميم وبناء تطبيق بمستوى جوجل الرسمي Material You 3
+      # إعادة بناء وتطوير المحرك بالكامل: أزرار دائرية ومحيط ديناميكي ذكي
       - name: Build Pixel 8 Pro Dynamic Island Luxury App
         run: |
           rm -rf app/src/main/res
@@ -75,7 +75,7 @@ jobs:
           }
           EOF
 
-          # 4. إعداد app/build.gradle.kts مع أحدث مكتبات Material 3 و Core KTX
+          # 4. إعداد app/build.gradle.kts
           cat << 'EOF' > app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -90,8 +90,8 @@ jobs:
                   applicationId = "com.dynamicisland.pixel8"
                   minSdk = 28
                   targetSdk = 34
-                  versionCode = 6
-                  versionName = "3.0.0"
+                  versionCode = 7
+                  versionName = "3.5.0"
               }
 
               buildTypes {
@@ -116,64 +116,87 @@ jobs:
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("com.google.android.material:material:1.11.0")
-              implementation("androidx.cardview:cardview:1.0.0")
           }
           EOF
 
-          # 5. منظومة الألوان الفاخرة Material You M3
+          # 5. منظومة ألوان Pixel Material You
           cat << 'EOF' > app/src/main/res/values/colors.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <color name="m3_surface">#111318</color>
-              <color name="m3_surface_container">#1D2024</color>
-              <color name="m3_surface_container_high">#272A2F</color>
-              <color name="m3_surface_container_highest">#32353A</color>
+              <color name="m3_surface">#0E1015</color>
+              <color name="m3_surface_container">#1A1D24</color>
+              <color name="m3_surface_container_high">#242831</color>
               <color name="m3_primary">#A8C7FA</color>
               <color name="m3_on_primary">#062E6F</color>
               <color name="m3_primary_container">#0842A0</color>
-              <color name="m3_on_primary_container">#D3E3FD</color>
-              <color name="m3_secondary">#7FCFFF</color>
-              <color name="m3_secondary_container">#004D68</color>
-              <color name="m3_tertiary">#6DD58C</color>
-              <color name="m3_tertiary_container">#005324</color>
-              <color name="m3_text_primary">#E1E2E8</color>
+              <color name="m3_text_primary">#F0F1F5</color>
               <color name="m3_text_secondary">#C3C6CF</color>
               <color name="m3_text_tertiary">#8D9199</color>
-              <color name="m3_outline">#43474E</color>
-              <color name="m3_outline_variant">#2B2F36</color>
+              <color name="m3_outline_variant">#2E333D</color>
               <color name="true_black">#000000</color>
               <color name="white">#FFFFFF</color>
-              <color name="battery_green">#34D399</color>
-              <color name="music_pink">#F43F5E</color>
-              <color name="bluetooth_blue">#38BDF8</color>
+              <color name="island_default_border">#FFFFFFFF</color>
+              <color name="island_whatsapp">#25D366</color>
+              <color name="island_spotify">#1DB954</color>
+              <color name="island_charging">#34D399</color>
+              <color name="island_buds">#38BDF8</color>
           </resources>
           EOF
 
-          # 6. نصوص التطبيق الاحترافية
+          # 6. نصوص التطبيق
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">Dynamic Island Pro</string>
           </resources>
           EOF
 
-          # 7. بطاقات وتأثيرات Material You 3 الدائرية الفاخرة
-          cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
+          # 7. الأيقونات والرسومات الدائرية بالكامل (Arrondi)
+          cat << 'EOF' > app/src/main/res/drawable/bg_round_pill_button.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#000000" />
+              <solid android:color="#A8C7FA" />
               <corners android:radius="100dp" />
-              <stroke android:width="1.2dp" android:color="#33FFFFFF" />
           </shape>
           EOF
 
-          cat << 'EOF' > app/src/main/res/drawable/bg_island_expanded.xml
+          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_charging.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#0C0E12" />
-              <corners android:radius="26dp" />
-              <stroke android:width="1.2dp" android:color="#44FFFFFF" />
+              <solid android:color="#005324" />
+              <corners android:radius="100dp" />
+              <stroke android:width="1dp" android:color="#34D399" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_music.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#0A3818" />
+              <corners android:radius="100dp" />
+              <stroke android:width="1dp" android:color="#1DB954" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_buds.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#003549" />
+              <corners android:radius="100dp" />
+              <stroke android:width="1dp" android:color="#38BDF8" />
+          </shape>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_whatsapp.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"
+              android:shape="rectangle">
+              <solid android:color="#07421B" />
+              <corners android:radius="100dp" />
+              <stroke android:width="1dp" android:color="#25D366" />
           </shape>
           EOF
 
@@ -181,27 +204,9 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
               android:shape="rectangle">
-              <solid android:color="#1D2024" />
-              <corners android:radius="24dp" />
-              <stroke android:width="1dp" android:color="#2B2F36" />
-          </shape>
-          EOF
-
-          cat << 'EOF' > app/src/main/res/drawable/bg_chip_active.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"
-              android:shape="rectangle">
-              <solid android:color="#0842A0" />
-              <corners android:radius="14dp" />
-          </shape>
-          EOF
-
-          cat << 'EOF' > app/src/main/res/drawable/bg_pill_button.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"
-              android:shape="rectangle">
-              <solid android:color="#A8C7FA" />
-              <corners android:radius="100dp" />
+              <solid android:color="#1A1D24" />
+              <corners android:radius="28dp" />
+              <stroke android:width="1dp" android:color="#2E333D" />
           </shape>
           EOF
 
@@ -212,7 +217,7 @@ jobs:
               android:height="108dp"
               android:viewportWidth="108"
               android:viewportHeight="108">
-              <path android:fillColor="#111318" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#0E1015" android:pathData="M0,0h108v108h-108z"/>
               <path android:fillColor="#A8C7FA" android:pathData="M24,42h60a12,12 0 0,1 12,12v0a12,12 0 0,1 -12,12h-60a12,12 0 0,1 -12,-12v0a12,12 0 0,1 12,-12z"/>
               <path android:fillColor="#062E6F" android:pathData="M38,50a4,4 0 1,1 0,8 4,4 0 0,1 0,-8z"/>
           </vector>
@@ -234,7 +239,6 @@ jobs:
           </adaptive-icon>
           EOF
 
-          # أيقونات Vectorial عالية الدقة للميزات
           cat << 'EOF' > app/src/main/res/drawable/ic_bolt.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -246,14 +250,25 @@ jobs:
           </vector>
           EOF
 
-          cat << 'EOF' > app/src/main/res/drawable/ic_music.xml
+          cat << 'EOF' > app/src/main/res/drawable/ic_spotify.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="24dp"
               android:height="24dp"
               android:viewportWidth="24"
               android:viewportHeight="24">
-              <path android:fillColor="#F43F5E" android:pathData="M12,3v10.55c-0.59,-0.34 -1.27,-0.55 -2,-0.55 -2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4V7h4V3h-6z"/>
+              <path android:fillColor="#1DB954" android:pathData="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.477 10-10c0-5.523-4.477-10-10-10zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.434-5.308-1.758-8.793-.963-.335.077-.67-.133-.746-.468-.077-.334.132-.67.467-.746 3.808-.87 7.076-.51 9.721 1.113.294.18.388.563.208.857zm1.226-2.723c-.226.367-.707.482-1.074.256-2.69-1.653-6.79-2.133-9.97-1.168-.413.125-.85-.11-.975-.523-.125-.413.11-.85.523-.975 3.633-1.103 8.15-.569 11.24 1.336.367.226.482.707.256 1.074zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71c-.494.15-1.018-.129-1.168-.623-.15-.494.129-1.018.623-1.168 3.532-1.072 9.404-.87 13.13 1.344.444.263.59.837.327 1.28-.264.445-.838.59-1.282.328z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_whatsapp.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="24dp"
+              android:height="24dp"
+              android:viewportWidth="24"
+              android:viewportHeight="24">
+              <path android:fillColor="#25D366" android:pathData="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c4.54 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.27-2.42 5.83a8.18 8.18 0 0 1-5.82 2.41c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.13.82.83-3.05-.2-.31a8.196 8.196 0 0 1-1.26-4.36c0-4.54 3.7-8.24 8.28-8.24zm4.53 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/>
           </vector>
           EOF
 
@@ -279,14 +294,13 @@ jobs:
           </vector>
           EOF
 
-          # 8. واجهة الجزيرة الفاخرة
+          # 8. واجهة الجزيرة التفاعلية
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:id="@+id/islandRoot"
               android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:background="@drawable/bg_island_capsule">
+              android:layout_height="match_parent">
 
               <!-- حالة السكون الافتراضية (Idle State) -->
               <LinearLayout
@@ -335,7 +349,7 @@ jobs:
                       android:id="@+id/tvCompactValue"
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:textColor="#34D399"
+                      android:textColor="#FFFFFF"
                       android:textSize="12sp"
                       android:textStyle="bold" />
               </LinearLayout>
@@ -360,9 +374,9 @@ jobs:
                           android:id="@+id/ivExpandedBadge"
                           android:layout_width="38dp"
                           android:layout_height="38dp"
-                          android:padding="8dp"
-                          android:background="@drawable/bg_island_capsule"
-                          android:src="@drawable/ic_music" />
+                          android:padding="6dp"
+                          android:background="#000000"
+                          android:src="@drawable/ic_spotify" />
 
                       <LinearLayout
                           android:layout_width="0dp"
@@ -385,7 +399,7 @@ jobs:
                               android:id="@+id/tvExpandedSubtext"
                               android:layout_width="wrap_content"
                               android:layout_height="wrap_content"
-                              android:textColor="#C3C6CF"
+                              android:textColor="#E0E0E0"
                               android:textSize="12sp"
                               android:text="Starboy • The Weeknd"
                               android:maxLines="2" />
@@ -395,12 +409,12 @@ jobs:
                           android:id="@+id/tvExpandedExtra"
                           android:layout_width="wrap_content"
                           android:layout_height="wrap_content"
-                          android:textColor="#A8C7FA"
+                          android:textColor="#FFFFFF"
                           android:textSize="12sp"
                           android:text="02:45" />
                   </LinearLayout>
 
-                  <!-- أزرار الإجراءات التفاعلية -->
+                  <!-- أزرار الإجراءات التفاعلية الدائرية -->
                   <LinearLayout
                       android:id="@+id/layoutExpandedActions"
                       android:layout_width="match_parent"
@@ -415,7 +429,7 @@ jobs:
                           android:layout_height="36dp"
                           android:text="⏮️ السابق"
                           android:textSize="11sp"
-                          android:backgroundTint="#272A2F"
+                          android:backgroundTint="#242831"
                           android:textColor="#FFFFFF"
                           android:layout_marginEnd="8dp" />
 
@@ -425,8 +439,9 @@ jobs:
                           android:layout_height="36dp"
                           android:text="⏸️ إيقاف"
                           android:textSize="11sp"
-                          android:backgroundTint="#0842A0"
-                          android:textColor="#D3E3FD"
+                          android:backgroundTint="#A8C7FA"
+                          android:textColor="#062E6F"
+                          android:textStyle="bold"
                           android:layout_marginEnd="8dp" />
 
                       <Button
@@ -435,14 +450,14 @@ jobs:
                           android:layout_height="36dp"
                           android:text="⏭️ التالي"
                           android:textSize="11sp"
-                          android:backgroundTint="#272A2F"
+                          android:backgroundTint="#242831"
                           android:textColor="#FFFFFF" />
                   </LinearLayout>
               </LinearLayout>
           </FrameLayout>
           EOF
 
-          # 9. واجهة تطبيق Google Pixel الرسمية الفاخرة (Material You 3 activity_main.xml)
+          # 9. واجهة تطبيق Google Pixel الرسمية الفاخرة بأزرار Arrondi دائرية
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -469,7 +484,7 @@ jobs:
                       <FrameLayout
                           android:layout_width="54dp"
                           android:layout_height="54dp"
-                          android:background="@drawable/bg_island_capsule"
+                          android:background="@drawable/bg_round_pill_button"
                           android:padding="4dp">
                           <ImageView
                               android:layout_width="match_parent"
@@ -502,7 +517,7 @@ jobs:
                       </LinearLayout>
                   </LinearLayout>
 
-                  <!-- بطاقة حالة وتفعيل الصلاحيات بأسلوب Google Settings -->
+                  <!-- بطاقة حالة وتفعيل الصلاحيات -->
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
@@ -616,7 +631,7 @@ jobs:
                               <TextView
                                   android:layout_width="wrap_content"
                                   android:layout_height="wrap_content"
-                                  android:text="لقراءة الرسائل وعرض مشغل الموسيقى"
+                                  android:text="لقراءة الرسائل وتلوين الجزيرة حسب التطبيق"
                                   android:textColor="@color/m3_text_tertiary"
                                   android:textSize="12sp" />
                           </LinearLayout>
@@ -752,23 +767,23 @@ jobs:
                           android:thumbTint="@color/m3_primary" />
                   </LinearLayout>
 
-                  <!-- زر التشغيل الأساسي المبتكر بنمط Material 3 Pill Button -->
-                  <Button
+                  <!-- زر التشغيل الأساسي الدائري Arrondi -->
+                  <androidx.appcompat.widget.AppCompatButton
                       android:id="@+id/btnStartService"
                       android:layout_width="match_parent"
                       android:layout_height="56dp"
                       android:text="تشغيل الجزيرة الآن"
-                      android:backgroundTint="@color/m3_primary"
+                      android:background="@drawable/bg_round_pill_button"
                       android:textColor="@color/m3_on_primary"
                       android:textStyle="bold"
                       android:textSize="16sp"
                       android:layout_marginBottom="24dp" />
 
-                  <!-- استوديو التجارب التفاعلية Material You -->
+                  <!-- استوديو التجارب التفاعلية بأزرار Arrondi دائرية ملونة -->
                   <TextView
                       android:layout_width="wrap_content"
                       android:layout_height="wrap_content"
-                      android:text="استوديو التجارب الحية (Interactive Test Studio)"
+                      android:text="استوديو التجارب الحية (Interactive Studio)"
                       android:textColor="@color/m3_text_secondary"
                       android:textSize="13sp"
                       android:fontFamily="sans-serif-medium"
@@ -781,55 +796,59 @@ jobs:
                       android:columnCount="2"
                       android:rowCount="2">
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnTestCharging"
                           android:layout_width="0dp"
-                          android:layout_height="52dp"
+                          android:layout_height="50dp"
                           android:layout_columnWeight="1"
-                          android:layout_margin="4dp"
-                          android:text="⚡ أنيميشن الشحن"
+                          android:layout_margin="5dp"
+                          android:text="⚡ الشحن السريع"
                           android:textSize="12sp"
-                          android:backgroundTint="#005324"
-                          android:textColor="#34D399" />
+                          android:background="@drawable/bg_test_btn_charging"
+                          android:textColor="#34D399"
+                          android:textStyle="bold" />
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnTestMusic"
                           android:layout_width="0dp"
-                          android:layout_height="52dp"
+                          android:layout_height="50dp"
                           android:layout_columnWeight="1"
-                          android:layout_margin="4dp"
-                          android:text="🎵 مشغل الموسيقى"
+                          android:layout_margin="5dp"
+                          android:text="🎵 Spotify Music"
                           android:textSize="12sp"
-                          android:backgroundTint="#4E1428"
-                          android:textColor="#FB7185" />
+                          android:background="@drawable/bg_test_btn_music"
+                          android:textColor="#1DB954"
+                          android:textStyle="bold" />
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnTestHeadphones"
                           android:layout_width="0dp"
-                          android:layout_height="52dp"
+                          android:layout_height="50dp"
                           android:layout_columnWeight="1"
-                          android:layout_margin="4dp"
+                          android:layout_margin="5dp"
                           android:text="🎧 سماعات Buds"
                           android:textSize="12sp"
-                          android:backgroundTint="#004D68"
-                          android:textColor="#38BDF8" />
+                          android:background="@drawable/bg_test_btn_buds"
+                          android:textColor="#38BDF8"
+                          android:textStyle="bold" />
 
-                      <Button
+                      <androidx.appcompat.widget.AppCompatButton
                           android:id="@+id/btnTestNotification"
                           android:layout_width="0dp"
-                          android:layout_height="52dp"
+                          android:layout_height="50dp"
                           android:layout_columnWeight="1"
-                          android:layout_margin="4dp"
+                          android:layout_margin="5dp"
                           android:text="💬 رسالة WhatsApp"
                           android:textSize="12sp"
-                          android:backgroundTint="#272A2F"
-                          android:textColor="#D3E3FD" />
+                          android:background="@drawable/bg_test_btn_whatsapp"
+                          android:textColor="#25D366"
+                          android:textStyle="bold" />
                   </GridLayout>
               </LinearLayout>
           </ScrollView>
           EOF
 
-          # 10. كود MainActivity.kt مع إدارة الحركات والإعدادات
+          # 10. كود MainActivity.kt
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -947,37 +966,51 @@ jobs:
                   }
 
                   btnTestCharging.setOnClickListener {
-                      IslandOverlayService.showCompactEvent(this, R.drawable.ic_bolt, "الشاحن السريع", "85%")
+                      IslandOverlayService.showCompactEvent(
+                          this,
+                          R.drawable.ic_bolt,
+                          "الشاحن متصل",
+                          "85%",
+                          0xFF34D399.toInt() // أخضر للشحن
+                      )
                   }
 
                   btnTestMusic.setOnClickListener {
                       IslandOverlayService.showExpandedEvent(
                           this,
-                          R.drawable.ic_music,
+                          R.drawable.ic_spotify,
                           "Spotify Music",
                           "Starboy • The Weeknd",
-                          "02:45"
+                          "02:45",
+                          0xFF1DB954.toInt() // أخضر Spotify المميز
                       )
                   }
 
                   btnTestHeadphones.setOnClickListener {
-                      IslandOverlayService.showCompactEvent(this, R.drawable.ic_headphones, "Pixel Buds Pro", "100%")
+                      IslandOverlayService.showCompactEvent(
+                          this,
+                          R.drawable.ic_headphones,
+                          "Pixel Buds Pro",
+                          "100%",
+                          0xFF38BDF8.toInt() // أزرق سماوي للسماعات
+                      )
                   }
 
                   btnTestNotification.setOnClickListener {
                       IslandOverlayService.showExpandedEvent(
                           this,
-                          R.drawable.ic_launcher_foreground,
+                          R.drawable.ic_whatsapp,
                           "💬 WhatsApp (أحمد)",
-                          "السلام عليكم، الجزيرة تعمل بكامل طاقتها وأناقتها!",
-                          "الآن"
+                          "السلام عليكم، الجزيرة تعمل بكامل طاقتها مع المحيط الملون!",
+                          "الآن",
+                          0xFF25D366.toInt() // أخضر WhatsApp
                       )
                   }
               }
           }
           EOF
 
-          # 11. محرك الجزيرة المطور مع حركات iOS الفيزيائية واللمس التفاعلي
+          # 11. محرك الجزيرة المطور مع الرسم الديناميكي للمحيط (Stroke Color)
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
           package com.dynamicisland.pixel8
 
@@ -987,7 +1020,9 @@ jobs:
           import android.content.Context
           import android.content.Intent
           import android.content.IntentFilter
+          import android.graphics.Color
           import android.graphics.PixelFormat
+          import android.graphics.drawable.GradientDrawable
           import android.os.BatteryManager
           import android.os.Handler
           import android.os.IBinder
@@ -1011,6 +1046,19 @@ jobs:
 
                   var isExpanded = false
 
+                  // لون المحيط الافتراضي (أبيض ناصع)
+                  const val DEFAULT_BORDER_COLOR = 0xFFFFFFFF.toInt()
+
+                  fun createIslandDrawable(borderColor: Int, cornerRadiusDp: Float, context: Context): GradientDrawable {
+                      val density = context.resources.displayMetrics.density
+                      return GradientDrawable().apply {
+                          shape = GradientDrawable.RECTANGLE
+                          setColor(0xFF000000.toInt()) // الخلفية سوداء معتمة نقية
+                          cornerRadius = cornerRadiusDp * density
+                          setStroke((1.5f * density).toInt(), borderColor) // الإطار الأبيض أو الملون
+                      }
+                  }
+
                   fun startOverlay(context: Context) {
                       if (islandView != null) {
                           updateSize(context)
@@ -1018,7 +1066,6 @@ jobs:
                       }
 
                       windowManager = context.applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
                       val layoutFlag = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 
                       val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
@@ -1045,6 +1092,9 @@ jobs:
                       val inflater = LayoutInflater.from(context.applicationContext)
                       islandView = inflater.inflate(R.layout.view_pixel8_island, null)
 
+                      // تطبيق الإطار الأبيض الدائري الافتراضي
+                      islandView?.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
+
                       islandView?.setOnClickListener {
                           if (!isExpanded) {
                               showExpandedEvent(
@@ -1052,7 +1102,8 @@ jobs:
                                   R.drawable.ic_launcher_foreground,
                                   "Dynamic Island Pixel 8",
                                   "انقر مجدداً للطي أو اسحب للتحكم",
-                                  "مفعّل"
+                                  "مفعّل",
+                                  DEFAULT_BORDER_COLOR
                               )
                           } else {
                               collapseToIdle(context)
@@ -1088,9 +1139,12 @@ jobs:
                       }
                   }
 
-                  fun showCompactEvent(context: Context, iconRes: Int, title: String, value: String) {
+                  fun showCompactEvent(context: Context, iconRes: Int, title: String, value: String, borderColor: Int = DEFAULT_BORDER_COLOR) {
                       if (islandView == null) startOverlay(context)
                       val view = islandView ?: return
+
+                      // تغيير لون الإطار حسب الحدث
+                      view.background = createIslandDrawable(borderColor, 100f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
                       val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
@@ -1107,6 +1161,7 @@ jobs:
                       ivIcon?.setImageResource(iconRes)
                       tvTitle?.text = title
                       tvValue?.text = value
+                      tvValue?.setTextColor(borderColor)
 
                       animateDimensions(context, targetWidthDp = 180, targetHeightDp = 34)
 
@@ -1121,11 +1176,15 @@ jobs:
                       iconRes: Int,
                       header: String,
                       subtext: String,
-                      extra: String
+                      extra: String,
+                      borderColor: Int = DEFAULT_BORDER_COLOR
                   ) {
                       if (islandView == null) startOverlay(context)
                       val view = islandView ?: return
                       isExpanded = true
+
+                      // تغيير شكل ولون الإطار في وضع التوسع
+                      view.background = createIslandDrawable(borderColor, 28f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
                       val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
@@ -1144,8 +1203,9 @@ jobs:
                       tvHeader?.text = header
                       tvSubtext?.text = subtext
                       tvExtra?.text = extra
+                      tvExtra?.setTextColor(borderColor)
 
-                      animateDimensions(context, targetWidthDp = 300, targetHeightDp = 90)
+                      animateDimensions(context, targetWidthDp = 300, targetHeightDp = 92)
 
                       mainHandler.removeCallbacksAndMessages(null)
                       mainHandler.postDelayed({
@@ -1156,6 +1216,9 @@ jobs:
                   fun collapseToIdle(context: Context) {
                       val view = islandView ?: return
                       isExpanded = false
+
+                      // إعادة الإطار الأبيض الناصع الكروي في وضع السكون
+                      view.background = createIslandDrawable(DEFAULT_BORDER_COLOR, 100f, context)
 
                       val layoutIdle = view.findViewById<View>(R.id.layoutIdle)
                       val layoutCompact = view.findViewById<View>(R.id.layoutCompact)
@@ -1185,8 +1248,8 @@ jobs:
 
                       currentAnimator?.cancel()
                       val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                          duration = 320
-                          interpolator = OvershootInterpolator(1.15f)
+                          duration = 300
+                          interpolator = OvershootInterpolator(1.1f)
                           addUpdateListener { va ->
                               val frac = va.animatedFraction
                               params.width = (startWidth + (endWidth - startWidth) * frac).toInt()
@@ -1212,7 +1275,13 @@ jobs:
                           val level: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
                           val scale: Int = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
                           val pct = if (level >= 0 && scale > 0) (level * 100 / scale) else 85
-                          showCompactEvent(context, R.drawable.ic_bolt, "الشاحن السريع متصل", "$pct%")
+                          showCompactEvent(
+                              context,
+                              R.drawable.ic_bolt,
+                              "الشاحن السريع متصل",
+                              "$pct%",
+                              0xFF34D399.toInt()
+                          )
                       }
                   }
               }
@@ -1238,7 +1307,7 @@ jobs:
           }
           EOF
 
-          # 12. خدمة مراقبة الإشعارات الحية
+          # 12. خدمة مراقبة وتلوين الإشعارات الحية حسب التطبيق (Dynamic App Color)
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/NotificationReceiverService.kt
           package com.dynamicisland.pixel8
 
@@ -1258,21 +1327,35 @@ jobs:
                   val extras = notif.extras ?: return
                   val title = extras.getString("android.title") ?: return
                   val text = extras.getCharSequence("android.text")?.toString() ?: ""
+                  val pkg = sbn.packageName ?: ""
+
+                  // كشف وتلوين إطار الجزيرة حسب التطبيق الوارد
+                  val (color, iconRes) = when {
+                      pkg.contains("whatsapp", ignoreCase = true) -> Pair(0xFF25D366.toInt(), R.drawable.ic_whatsapp)
+                      pkg.contains("spotify", ignoreCase = true) -> Pair(0xFF1DB954.toInt(), R.drawable.ic_spotify)
+                      pkg.contains("telegram", ignoreCase = true) -> Pair(0xFF229ED9.toInt(), R.drawable.ic_launcher_foreground)
+                      pkg.contains("youtube", ignoreCase = true) -> Pair(0xFFFF0000.toInt(), R.drawable.ic_spotify)
+                      pkg.contains("instagram", ignoreCase = true) -> Pair(0xFFE1306C.toInt(), R.drawable.ic_launcher_foreground)
+                      pkg.contains("facebook", ignoreCase = true) -> Pair(0xFF1877F2.toInt(), R.drawable.ic_launcher_foreground)
+                      pkg.contains("x.android", ignoreCase = true) || pkg.contains("twitter", ignoreCase = true) -> Pair(0xFFFFFFFF.toInt(), R.drawable.ic_launcher_foreground)
+                      else -> Pair(IslandOverlayService.DEFAULT_BORDER_COLOR, R.drawable.ic_launcher_foreground)
+                  }
 
                   if (title.isNotBlank()) {
                       IslandOverlayService.showExpandedEvent(
                           this,
-                          R.drawable.ic_launcher_foreground,
+                          iconRes,
                           title,
                           text,
-                          "الآن"
+                          "الآن",
+                          color
                       )
                   }
               }
           }
           EOF
 
-          # 13. ملف AndroidManifest.xml المكتمل
+          # 13. ملف AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
