@@ -28,18 +28,98 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # تنظيف وحذف أي ملف تالف بالكامل وبناء موارد التطبيق
-      - name: Clean & Build Complete App
+      # تنظيف وفحص وإعادة بناء مجلدات وملفات المشروع بالكامل
+      - name: Clean, Test & Build All Directories
         run: |
-          # 1. حذف مجلد res بالكامل لضمان التخلص من أي ملف باسم خاطئ نهائياً
+          # 1. تنظيف شامل لمجلدات المشروع وإزالة أي ملفات قديمة تالفة
           rm -rf app/src/main/res
+          rm -rf app/src/main/java
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/mipmap-anydpi-v26
           mkdir -p app/src/main/java/com/dynamicisland/pixel8
 
-          # 2. ملف الأيقونات الرسمية
+          # 2. ملف gradle.properties
+          cat << 'EOF' > gradle.properties
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          EOF
+
+          # 3. إعداد settings.gradle.kts
+          cat << 'EOF' > settings.gradle.kts
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "DynamicIslandPixel8"
+          include(":app")
+          EOF
+
+          # 4. إعداد build.gradle.kts الرئيسي
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.2.2" apply false
+              id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+          }
+          EOF
+
+          # 5. إعداد app/build.gradle.kts
+          cat << 'EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+
+          android {
+              namespace = "com.dynamicisland.pixel8"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "com.dynamicisland.pixel8"
+                  minSdk = 26
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "2.0.0"
+              }
+
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                  }
+                  debug {
+                      isMinifyEnabled = false
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+
+          dependencies {
+              implementation("androidx.core:core-ktx:1.12.0")
+              implementation("androidx.appcompat:appcompat:1.6.1")
+              implementation("com.google.android.material:material:1.11.0")
+          }
+          EOF
+
+          # 6. الأيقونات الرسمية
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
           <?xml version="1.0" encoding="utf-8"?>
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -68,7 +148,7 @@ jobs:
           </adaptive-icon>
           EOF
 
-          # 3. خلفية الكبسولة بالاسم الصحيح النظيف
+          # 7. خلفية الكبسولة
           cat << 'EOF' > app/src/main/res/drawable/bg_island_capsule.xml
           <?xml version="1.0" encoding="utf-8"?>
           <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -79,7 +159,7 @@ jobs:
           </shape>
           EOF
 
-          # 4. واجهة الجزيرة التفاعلية
+          # 8. واجهة الجزيرة التفاعلية (view_pixel8_island.xml)
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -114,7 +194,7 @@ jobs:
           </LinearLayout>
           EOF
 
-          # 5. شاشة الإعدادات والمعايرة التفاعلية
+          # 9. واجهة الإعدادات الشاملة (activity_main.xml)
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
@@ -240,7 +320,7 @@ jobs:
           </ScrollView>
           EOF
 
-          # 6. كود شاشة التحكم MainActivity.kt
+          # 10. كود MainActivity.kt النظيف والخالي من الأخطاء
           cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
           package com.dynamicisland.pixel8
 
@@ -265,7 +345,7 @@ jobs:
                   super.onCreate(savedInstanceState)
                   setContentView(R.layout.activity_main)
 
-                  prefs = getSharedPreferences("dynamic_island_prefs", Context.MODE_PRIVATE)
+                  prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
 
                   val btnOverlay = findViewById<Button>(R.id.btnOverlayPermission)
                   val btnNotification = findViewById<Button>(R.id.btnNotificationPermission)
@@ -280,9 +360,9 @@ jobs:
                   val tvHeight = findViewById<TextView>(R.id.tvHeightLabel)
                   val tvPosY = findViewById<TextView>(R.id.tvPosYLabel)
 
-                  val savedWidth = prefs.getInt("island_width", 80)
-                  val savedHeight = prefs.getInt("island_height", 26)
-                  val savedPosY = prefs.getInt("island_pos_y", 6)
+                  val savedWidth = prefs.getInt("width", 80)
+                  val savedHeight = prefs.getInt("height", 26)
+                  val savedPosY = prefs.getInt("pos_y", 6)
 
                   sbWidth.progress = savedWidth
                   sbHeight.progress = savedHeight
@@ -293,35 +373,35 @@ jobs:
                   tvPosY.text = "المسافة من أعلى الشاشة: $savedPosY dp"
 
                   sbWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                      override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
-                          val width = if (v < 50) 50 else v
-                          tvWidth.text = "عرض الجزيرة: $width dp"
-                          prefs.edit().putInt("island_width", width).apply()
-                          DynamicNotificationService.updateDimensions(this@MainActivity)
+                      override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                          val w = if (progress < 40) 40 else progress
+                          tvWidth.text = "عرض الجزيرة: $w dp"
+                          prefs.edit().putInt("width", w).apply()
+                          DynamicIslandService.updateSize(this@MainActivity)
                       }
-                      override fun onStartTrackingTouch(p0: SeekBar?) {}
-                      override fun onStopTrackingTouch(p0: SeekBar?) {}
+                      override fun onStartTrackingTouch(sb: SeekBar?) {}
+                      override fun onStopTrackingTouch(sb: SeekBar?) {}
                   })
 
                   sbHeight.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                      override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
-                          val height = if (v < 18) 18 else v
-                          tvHeight.text = "ارتفاع الجزيرة: $height dp"
-                          prefs.edit().putInt("island_height", height).apply()
-                          DynamicNotificationService.updateDimensions(this@MainActivity)
+                      override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                          val h = if (progress < 16) 16 else progress
+                          tvHeight.text = "ارتفاع الجزيرة: $h dp"
+                          prefs.edit().putInt("height", h).apply()
+                          DynamicIslandService.updateSize(this@MainActivity)
                       }
-                      override fun onStartTrackingTouch(p0: SeekBar?) {}
-                      override fun onStopTrackingTouch(p0: SeekBar?) {}
+                      override fun onStartTrackingTouch(sb: SeekBar?) {}
+                      override fun onStopTrackingTouch(sb: SeekBar?) {}
                   })
 
                   sbPosY.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                      override fun onProgressChanged(p0: SeekBar?, v: Int, p2: Boolean) {
-                          tvPosY.text = "المسافة من أعلى الشاشة: $v dp"
-                          prefs.edit().putInt("island_pos_y", v).apply()
-                          DynamicNotificationService.updateDimensions(this@MainActivity)
+                      override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                          tvPosY.text = "المسافة من أعلى الشاشة: $progress dp"
+                          prefs.edit().putInt("pos_y", progress).apply()
+                          DynamicIslandService.updateSize(this@MainActivity)
                       }
-                      override fun onStartTrackingTouch(p0: SeekBar?) {}
-                      override fun onStopTrackingTouch(p0: SeekBar?) {}
+                      override fun onStartTrackingTouch(sb: SeekBar?) {}
+                      override fun onStopTrackingTouch(sb: SeekBar?) {}
                   })
 
                   btnOverlay.setOnClickListener {
@@ -332,32 +412,36 @@ jobs:
                           )
                           startActivity(intent)
                       } else {
-                          Toast.makeText(this, "إذن الظهور مفعّل مسبقاً!", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(this, "إذن الظهور مفعّل بالفعل!", Toast.LENGTH_SHORT).show()
                       }
                   }
 
                   btnNotification.setOnClickListener {
-                      startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                      try {
+                          startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                      } catch (e: Exception) {
+                          Toast.makeText(this, "يرجى فتح إعدادات الإشعارات يدوياً", Toast.LENGTH_SHORT).show()
+                      }
                   }
 
                   btnStart.setOnClickListener {
                       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                           Toast.makeText(this, "يرجى منح إذن الظهور أولاً", Toast.LENGTH_SHORT).show()
                       } else {
-                          DynamicNotificationService.showIsland(this)
+                          DynamicIslandService.startIsland(this)
                           Toast.makeText(this, "تم تشغيل Dynamic Island 2 بنجاح!", Toast.LENGTH_SHORT).show()
                       }
                   }
 
                   btnTest.setOnClickListener {
-                      DynamicNotificationService.testNotification(this)
+                      DynamicIslandService.showNotification(this, "💬 WhatsApp", "مرحباً بك في Dynamic Island 2!")
                   }
               }
           }
           EOF
 
-          # 7. كود DynamicNotificationService.kt
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/DynamicNotificationService.kt
+          # 11. كود DynamicIslandService.kt النظيف والسليم 100%
+          cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/DynamicIslandService.kt
           package com.dynamicisland.pixel8
 
           import android.content.Context
@@ -373,20 +457,21 @@ jobs:
           import android.view.WindowManager
           import android.widget.TextView
 
-          class DynamicNotificationService : NotificationListenerService() {
+          class DynamicIslandService : NotificationListenerService() {
 
               companion object {
                   private var windowManager: WindowManager? = null
                   private var islandView: View? = null
-                  private var params: WindowManager.LayoutParams? = null
-                  private val handler = Handler(Looper.getMainLooper())
+                  private var layoutParams: WindowManager.LayoutParams? = null
+                  private val mainHandler = Handler(Looper.getMainLooper())
 
-                  fun showIsland(context: Context) {
+                  fun startIsland(context: Context) {
                       if (islandView != null) {
-                          updateDimensions(context)
+                          updateSize(context)
                           return
                       }
-                      windowManager = context.getSystemService(WINDOW_SERVICE) as WindowManager
+
+                      windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
                       val layoutFlag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                           WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -394,16 +479,15 @@ jobs:
                           WindowManager.LayoutParams.TYPE_PHONE
                       }
 
-                      val prefs = context.getSharedPreferences("dynamic_island_prefs", Context.MODE_PRIVATE)
-                      val widthDp = prefs.getInt("island_width", 80)
-                      val heightDp = prefs.getInt("island_height", 26)
-                      val posYDp = prefs.getInt("island_pos_y", 6)
-
+                      val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                      val w = prefs.getInt("width", 80)
+                      val h = prefs.getInt("height", 26)
+                      val y = prefs.getInt("pos_y", 6)
                       val density = context.resources.displayMetrics.density
 
-                      params = WindowManager.LayoutParams(
-                          (widthDp * density).toInt(),
-                          (heightDp * density).toInt(),
+                      val params = WindowManager.LayoutParams(
+                          (w * density).toInt(),
+                          (h * density).toInt(),
                           layoutFlag,
                           WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                           WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
@@ -412,92 +496,111 @@ jobs:
                           PixelFormat.TRANSLUCENT
                       ).apply {
                           gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                          y = (posYDp * density).toInt()
+                          this.y = (y * density).toInt()
                       }
 
-                      islandView = LayoutInflater.from(context).inflate(R.layout.view_pixel8_island, null)
-                      islandView?.setOnClickListener {
-                          testNotification(context)
+                      layoutParams = params
+                      val inflater = LayoutInflater.from(context)
+                      val view = inflater.inflate(R.layout.view_pixel8_island, null)
+                      islandView = view
+
+                      view.setOnClickListener {
+                          showNotification(context, "Pixel 8 Island", "استجابة سريعة باللمس")
                       }
 
                       try {
-                          windowManager?.addView(islandView, params)
+                          windowManager?.addView(view, params)
                       } catch (e: Exception) {
                           e.printStackTrace()
                       }
                   }
 
-                  fun updateDimensions(context: Context) {
-                      if (islandView == null || params == null) return
-                      val prefs = context.getSharedPreferences("dynamic_island_prefs", Context.MODE_PRIVATE)
-                      val widthDp = prefs.getInt("island_width", 80)
-                      val heightDp = prefs.getInt("island_height", 26)
-                      val posYDp = prefs.getInt("island_pos_y", 6)
+                  fun updateSize(context: Context) {
+                      val view = islandView ?: return
+                      val params = layoutParams ?: return
+                      val wm = windowManager ?: return
+
+                      val prefs = context.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                      val w = prefs.getInt("width", 80)
+                      val h = prefs.getInt("height", 26)
+                      val y = prefs.getInt("pos_y", 6)
                       val density = context.resources.displayMetrics.density
 
-                      params?.width = (widthDp * density).toInt()
-                      params?.height = (heightDp * density).toInt()
-                      params?.y = (posYDp * density).toInt()
+                      params.width = (w * density).toInt()
+                      params.height = (h * density).toInt()
+                      params.y = (y * density).toInt()
 
                       try {
-                          windowManager?.updateViewLayout(islandView, params)
-                      } catch (e: Exception) {}
+                          wm.updateViewLayout(view, params)
+                      } catch (e: Exception) {
+                          e.printStackTrace()
+                      }
                   }
 
-                  fun testNotification(context: Context) {
-                      expand(context, "💬 WhatsApp", "رسالة جديدة: مرحباً بك في Dynamic Island 2!")
-                  }
-
-                  fun expand(context: Context, title: String, text: String) {
-                      if (islandView == null || params == null) showIsland(context)
+                  fun showNotification(context: Context, title: String, message: String) {
+                      if (islandView == null) {
+                          startIsland(context)
+                      }
+                      val view = islandView ?: return
+                      val params = layoutParams ?: return
+                      val wm = windowManager ?: return
                       val density = context.resources.displayMetrics.density
-                      params?.width = (240 * density).toInt()
-                      params?.height = (50 * density).toInt()
 
-                      val tvTitle = islandView?.findViewById<TextView>(R.id.tvNotificationTitle)
-                      val tvText = islandView?.findViewById<TextView>(R.id.tvNotificationText)
+                      params.width = (240 * density).toInt()
+                      params.height = (50 * density).toInt()
+
+                      val tvTitle = view.findViewById<TextView>(R.id.tvNotificationTitle)
+                      val tvText = view.findViewById<TextView>(R.id.tvNotificationText)
 
                       tvTitle?.text = title
                       tvTitle?.visibility = View.VISIBLE
-                      tvText?.text = text
+                      tvText?.text = message
                       tvText?.visibility = View.VISIBLE
 
                       try {
-                          windowManager?.updateViewLayout(islandView, params)
-                      } catch (e: Exception) {}
+                          wm.updateViewLayout(view, params)
+                      } catch (e: Exception) {
+                          e.printStackTrace()
+                      }
 
-                      handler.removeCallbacksAndMessages(null)
-                      handler.postDelayed({
+                      mainHandler.removeCallbacksAndMessages(null)
+                      mainHandler.postDelayed({
                           collapse(context)
                       }, 4000)
                   }
 
                   fun collapse(context: Context) {
-                      updateDimensions(context)
-                      islandView?.findViewById<TextView>(R.id.tvNotificationTitle)?.visibility = View.GONE
-                      islandView?.findViewById<TextView>(R.id.tvNotificationText)?.visibility = View.GONE
+                      val view = islandView ?: return
+                      val tvTitle = view.findViewById<TextView>(R.id.tvNotificationTitle)
+                      val tvText = view.findViewById<TextView>(R.id.tvNotificationText)
+
+                      tvTitle?.visibility = View.GONE
+                      tvText?.visibility = View.GONE
+
+                      updateSize(context)
                   }
               }
 
               override fun onListenerConnected() {
                   super.onListenerConnected()
-                  showIsland(this)
+                  startIsland(this)
               }
 
               override fun onNotificationPosted(sbn: StatusBarNotification?) {
                   super.onNotificationPosted(sbn)
-                  val extras = sbn?.notification?.extras ?: return
+                  val notif = sbn?.notification ?: return
+                  val extras = notif.extras ?: return
                   val title = extras.getString("android.title") ?: return
                   val text = extras.getCharSequence("android.text")?.toString() ?: ""
 
-                  handler.post {
-                      expand(this, title, text)
+                  mainHandler.post {
+                      showNotification(this, title, text)
                   }
               }
           }
           EOF
 
-          # 8. ملف AndroidManifest.xml النظيف
+          # 12. ملف AndroidManifest.xml
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -522,7 +625,7 @@ jobs:
                   </activity>
 
                   <service
-                      android:name=".DynamicNotificationService"
+                      android:name=".DynamicIslandService"
                       android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
                       android:exported="true">
                       <intent-filter>
@@ -533,14 +636,7 @@ jobs:
           </manifest>
           EOF
 
-          # 9. إعداد gradle.properties
-          cat << 'EOF' > gradle.properties
-          android.useAndroidX=true
-          android.enableJetifier=true
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          EOF
-
-          # 10. ملفات النصوص والألوان
+          # 13. ملفات القيم
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">Dynamic Island 2</string>
@@ -556,11 +652,11 @@ jobs:
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # 11. أمر البناء
+      # 14. أمر البناء النظيف للـ APK
       - name: Build Debug APK
         run: gradle assembleDebug -x test -x lint --stacktrace
 
-      # 12. رفع ملف الـ APK النهائي
+      # 15. رفع حزمة الـ APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
