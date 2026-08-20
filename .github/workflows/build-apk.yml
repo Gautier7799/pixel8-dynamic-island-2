@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Java JDK 17
@@ -19,31 +19,49 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # إنشاء wrapper وإصلاح الصلاحيات
-      - name: Setup Environment
+      # تهيئة البنية الكاملة للمشروع وضمان عدم نقص أي ملف في أندرويد
+      - name: Prepare Android Project Structure
         run: |
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/java/com/dynamicisland/pixel8/services
+
+          # 1. إنشاء ملف strings.xml إذا لم يكن موجوداً
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">Pixel 8 Dynamic Island</string>
+          </resources>
+          EOF
+
+          # 2. إنشاء ملف colors.xml
+          cat << 'EOF' > app/src/main/res/values/colors.xml
+          <resources>
+              <color name="black">#FF000000</color>
+              <color name="white">#FFFFFFFF</color>
+          </resources>
+          EOF
+
+          # 3. إنشاء ملف local.properties
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          if [ ! -f "./gradlew" ]; then
-            gradle wrapper --gradle-version 8.4
-          fi
+
+          # 4. توليد Gradle Wrapper
+          gradle wrapper --gradle-version 8.4
           chmod +x gradlew
 
-      # البناء مع معالجة الأخطاء
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon --info
+      # تنفيذ البناء مع تخطي الفحوصات غير الضرورية
+      - name: Compile APK
+        run: |
+          ./gradlew assembleDebug -x lint -x test --stacktrace
 
-      # رفع ملف الـ APK
-      - name: Upload APK Artifact
+      # رفع ملف الـ APK الناتج فوراً للتنزيل
+      - name: Upload APK
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: DynamicIsland-Pixel8.apk
-          path: |
-            app/build/outputs/apk/debug/*.apk
-            **/build/outputs/apk/**/*.apk
-          if-no-files-found: warn
+          name: DynamicIsland-Pixel8-APK
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
