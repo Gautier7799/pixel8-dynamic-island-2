@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.pixel8"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 21; versionName = "11.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 22; versionName = "12.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
           }
@@ -84,16 +84,8 @@ jobs:
           <resources><string name="app_name">Dynamic Island Pro</string></resources>
           EOF
 
-          # تصميم Material You للأشرطة والأزرار
           cat << 'EOF' > app/src/main/res/drawable/bg_slider_track.xml
-          <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-              <item android:id="@android:id/background">
-                  <shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#222731"/></shape>
-              </item>
-              <item android:id="@android:id/progress">
-                  <clip><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#9ECAFF"/></shape></clip>
-              </item>
-          </layer-list>
+          <layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:id="@android:id/background"><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#222731"/></shape></item><item android:id="@android:id/progress"><clip><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#9ECAFF"/></shape></clip></item></layer-list>
           EOF
           
           cat << 'EOF' > app/src/main/res/drawable/bg_round_pill_button.xml
@@ -121,7 +113,6 @@ jobs:
           <ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#30FFFFFF"><item><shape android:shape="oval"><solid android:color="#14171E" /></shape></item></ripple>
           EOF
           
-          # الأيقونات
           cat << 'EOF' > app/src/main/res/drawable/ic_headphones.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#9ECAFF" android:pathData="M12,2c-4.97,0 -9,4.03 -9,9v7c0,1.66 1.34,3 3,3h3v-8H5v-2c0,-3.87 3.13,-7 7,-7s7,3.13 7,7v2h-4v8h3c1.66,0 3,-1.34 3,-3v-7c0,-4.97 -4.03,-9 -9,-9z"/></vector>
           EOF
@@ -144,7 +135,6 @@ jobs:
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/m3_surface"/><foreground android:drawable="@drawable/ic_launcher_foreground"/></adaptive-icon>
           EOF
 
-          # تصميم UI مع خطوط Pixel
           cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
           <?xml version="1.0" encoding="utf-8"?>
           <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -202,7 +192,6 @@ jobs:
                       <Button android:id="@+id/btnTestCharging" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="⚡ شحن" android:background="@drawable/bg_test_btn_charging" android:textColor="#34D399" android:fontFamily="sans-serif-medium"/>
                       <Button android:id="@+id/btnTestMusic" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="🎵 موسيقى" android:background="@drawable/bg_test_btn_music" android:textColor="#1DB954" android:fontFamily="sans-serif-medium"/>
                       <Button android:id="@+id/btnTestWhatsapp" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="💬 واتساب" android:background="@drawable/bg_test_btn_whatsapp" android:textColor="#25D366" android:fontFamily="sans-serif-medium"/>
-                      <!-- زر السماعات الجديد في المكان الفارغ -->
                       <Button android:id="@+id/btnTestHeadphones" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="🎧 سماعات" android:background="@drawable/bg_test_btn_bt" android:textColor="#9ECAFF" android:fontFamily="sans-serif-medium"/>
                   </GridLayout>
               </LinearLayout>
@@ -307,7 +296,6 @@ jobs:
                   private var animator: ValueAnimator? = null
                   private var isExpanded = false
                   
-                  // حفظ بيانات آخر إشعار للتفاعل معه عند اللمس
                   private var lastTitle = "لا توجد إشعارات"
                   private var lastText = "الجزيرة بانتظار إشعار جديد"
                   private var lastIconRes = R.drawable.ic_launcher_foreground
@@ -355,6 +343,11 @@ jobs:
                       view = LayoutInflater.from(ctx).inflate(R.layout.view_pixel8_island, null)
                       view?.background = createDrawable(getAuraColor(), 100f, ctx)
 
+                      // تحقق من الاتجاه الحالي عند البدء لعدم إظهارها إذا كان الفيديو يعمل
+                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                          view?.visibility = View.GONE
+                      }
+
                       view?.findViewById<View>(R.id.btnExpandedSettings)?.setOnClickListener {
                           val intent = Intent(ctx, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
                           ctx.startActivity(intent)
@@ -362,31 +355,21 @@ jobs:
                       }
 
                       view?.setOnClickListener {
-                          if (isExpanded) {
-                              collapse(ctx)
-                          } else {
-                              // عند اللمس، افتح آخر إشعار وصل!
-                              showExpandedEvent(ctx, lastIconRes, lastIconDrawable, lastTitle, lastText, "", lastColor)
-                          }
+                          if (isExpanded) collapse(ctx) else showExpandedEvent(ctx, lastIconRes, lastIconDrawable, lastTitle, lastText, "", lastColor)
                       }
 
                       try { wm?.addView(view, params) } catch (e: Exception) {}
                   }
 
-                  // دالة جديدة: تظهر إشعار صغير أولاً، وينتظر لمسة المستخدم ليقرأه!
                   fun postNewNotification(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, text: String, color: Int) {
-                      lastTitle = title
-                      lastText = text
-                      lastIconRes = iconRes
-                      lastIconDrawable = iconDrawable
-                      lastColor = color
-                      
-                      // إظهار تنبيه صغير أن هناك إشعاراً (بدون فتحه بالكامل)
+                      lastTitle = title; lastText = text; lastIconRes = iconRes; lastIconDrawable = iconDrawable; lastColor = color
                       showCompactEvent(ctx, iconRes, iconDrawable, title, "إشعار", color)
                   }
 
                   fun showCompactEvent(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, value: String, color: Int) {
                       if (view == null) startOverlay(ctx)
+                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return // لا تظهر الإشعار في الوضع الأفقي
+
                       view?.background = createDrawable(color, 100f, ctx)
                       view?.findViewById<View>(R.id.layoutIdle)?.visibility = View.GONE
                       view?.findViewById<View>(R.id.layoutExpanded)?.visibility = View.GONE
@@ -455,20 +438,21 @@ jobs:
               }
 
               // ===============================================
-              // دالة مراقبة اتجاه الشاشة (إخفاء الجزيرة في الوضع الأفقي)
+              // الحل الجذري: استخدام BroadcastReceiver لمراقبة دوران الشاشة بقوة
               // ===============================================
-              override fun onConfigurationChanged(newConfig: Configuration) {
-                  super.onConfigurationChanged(newConfig)
-                  if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                      // إخفاء الجزيرة إذا أصبح الهاتف أفقياً (ألعاب/فيديو)
-                      view?.visibility = View.GONE
-                  } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-                      // إعادتها للظهور في الوضع الطولي
-                      view?.visibility = View.VISIBLE
+              private val configReceiver = object : BroadcastReceiver() {
+                  override fun onReceive(context: Context?, intent: Intent?) {
+                      if (intent?.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+                          val orientation = context?.resources?.configuration?.orientation
+                          if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                              view?.visibility = View.GONE
+                          } else {
+                              view?.visibility = View.VISIBLE
+                          }
+                      }
                   }
               }
 
-              // الاستماع لأحداث الشاحن والبلوتوث
               private val systemReceiver = object : BroadcastReceiver() {
                   override fun onReceive(c: Context?, i: Intent?) {
                       if (c == null || i == null) return
@@ -494,8 +478,17 @@ jobs:
                       addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
                   }
                   registerReceiver(systemReceiver, filter)
+                  
+                  // تسجيل مراقب دوران الشاشة
+                  registerReceiver(configReceiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
               }
-              override fun onDestroy() { super.onDestroy(); unregisterReceiver(systemReceiver) }
+              
+              override fun onDestroy() { 
+                  super.onDestroy()
+                  unregisterReceiver(systemReceiver) 
+                  unregisterReceiver(configReceiver)
+              }
+              
               override fun onBind(intent: Intent?): IBinder? = null
           }
           EOF
@@ -531,7 +524,6 @@ jobs:
                       else -> IslandOverlayService.getAuraColor()
                   }
 
-                  // الآن سيرسل إشعاراً مصغراً أولاً، وتلمس الجزيرة لتقرأه
                   h.post { IslandOverlayService.postNewNotification(applicationContext, R.drawable.ic_launcher_foreground, iconDrawable, title, text, color) }
               }
           }
@@ -576,9 +568,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: masterpiece-release
-          name: "Dynamic Island Pixel 8 Pro - Masterpiece Update"
-          body: "1. أشرطة تحكم سميكة بتصميم Google Material You الحقيقي.\n2. لمس الجزيرة لفتح الإشعارات بدلاً من ظهورها الفجائي.\n3. خطوط نظام Google (Pixel) الأصلية.\n4. زر جديد وقارئ لربط السماعات/البلوتوث.\n5. 🔄 **إخفاء الجزيرة تلقائياً في الوضع الأفقي (Landscape) أثناء الألعاب والفيديوهات.**"
+          tag_name: masterpiece-release-v22
+          name: "Dynamic Island Pixel 8 Pro - Masterpiece Update (V22)"
+          body: "1. 🔄 **حل مشكلة دوران الشاشة:** استخدام BroadcastReceiver مخصص للتأكد من اختفاء الجزيرة 100% أثناء تشغيل الفيديوهات والألعاب بشكل أفقي."
           files: release-output/DynamicIsland-Pixel8-Pro-Masterpiece.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
