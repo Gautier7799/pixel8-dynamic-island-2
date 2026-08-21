@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.pixel8"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 23; versionName = "13.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 24; versionName = "14.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
           }
@@ -175,7 +175,6 @@ jobs:
                   
                   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_card_m3" android:padding="20dp" android:layout_marginBottom="24dp">
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="معايرة الكاميرا (Y-Offset)" android:textColor="@color/m3_text_primary" android:fontFamily="sans-serif-medium" android:layout_marginBottom="12dp"/>
-                      <!-- شريط سميك مثل Google -->
                       <SeekBar android:id="@+id/sbPosY" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="200" android:progress="58" android:progressDrawable="@drawable/bg_slider_track" android:thumb="@android:color/transparent" android:splitTrack="false" android:minHeight="28dp" android:maxHeight="28dp" android:layout_marginBottom="24dp"/>
                       
                       <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="عرض الجزيرة" android:textColor="@color/m3_text_primary" android:fontFamily="sans-serif-medium" android:layout_marginBottom="12dp"/>
@@ -321,20 +320,14 @@ jobs:
                       animate(ctx, w, h, y)
                   }
 
-                  // ============================================
-                  // الحل الجذري لإخفاء الجزيرة (تصفير الحجم)
-                  // ============================================
                   fun applyOrientation(ctx: Context, orientation: Int) {
                       if (view == null || params == null) return
                       if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
                           view?.visibility = View.GONE
-                          // هذه الخطوة تضمن اختفاء الجزيرة 100% لأن حجمها سيصبح صفر ولن تعترض اللمس!
-                          params?.width = 0
-                          params?.height = 0
+                          params?.width = 0; params?.height = 0
                           try { wm?.updateViewLayout(view, params) } catch (e: Exception) {}
                       } else {
                           view?.visibility = View.VISIBLE
-                          // استدعاء دالة collapse لتعيد ضبط الحجم الطبيعي الصحيح بناءً على الإعدادات وتنعشه بانيميشن
                           collapse(ctx)
                       }
                   }
@@ -346,10 +339,17 @@ jobs:
                       val prefs = ctx.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                       val w = prefs.getInt("width", 75); val h = prefs.getInt("height", 27); val y = prefs.getInt("pos_y", 58) - 50
                       
+                      // ===============================================
+                      // التعديل السحري: إضافة FLAG_SHOW_WHEN_LOCKED 
+                      // لضمان ظهور الجزيرة فوق شاشة القفل (الصورة 1)
+                      // ===============================================
                       params = WindowManager.LayoutParams(
                           (w * d).toInt(), (h * d).toInt(),
                           WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                          WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                          WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
+                          WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or 
+                          WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or 
+                          WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED, // <-- هذا هو الحل!
                           PixelFormat.TRANSLUCENT
                       ).apply { 
                           gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
@@ -361,15 +361,12 @@ jobs:
                       view?.background = createDrawable(getAuraColor(), 100f, ctx)
 
                       if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          view?.visibility = View.GONE
-                          params?.width = 0
-                          params?.height = 0
+                          view?.visibility = View.GONE; params?.width = 0; params?.height = 0
                       }
 
                       view?.findViewById<View>(R.id.btnExpandedSettings)?.setOnClickListener {
                           val intent = Intent(ctx, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
-                          ctx.startActivity(intent)
-                          collapse(ctx)
+                          ctx.startActivity(intent); collapse(ctx)
                       }
 
                       view?.setOnClickListener {
@@ -386,7 +383,7 @@ jobs:
 
                   fun showCompactEvent(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, value: String, color: Int) {
                       if (view == null) startOverlay(ctx)
-                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return // تجاهل إذا كنا في فيديو
+                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
 
                       view?.background = createDrawable(color, 100f, ctx)
                       view?.findViewById<View>(R.id.layoutIdle)?.visibility = View.GONE
@@ -455,10 +452,8 @@ jobs:
                   }
               }
 
-              // مراقبة الدوران من داخل الـ Service مباشرة
               override fun onConfigurationChanged(newConfig: Configuration) {
-                  super.onConfigurationChanged(newConfig)
-                  applyOrientation(this, newConfig.orientation)
+                  super.onConfigurationChanged(newConfig); applyOrientation(this, newConfig.orientation)
               }
 
               private val configReceiver = object : BroadcastReceiver() {
@@ -473,11 +468,8 @@ jobs:
               private val systemReceiver = object : BroadcastReceiver() {
                   override fun onReceive(c: Context?, i: Intent?) {
                       if (c == null || i == null) return
-                      if (i.action == Intent.ACTION_POWER_CONNECTED) {
-                          showCompactEvent(c, R.drawable.ic_bolt, null, "جاري الشحن", "⚡", 0xFF34D399.toInt())
-                      } else if (i.action == BluetoothDevice.ACTION_ACL_CONNECTED) {
-                          showCompactEvent(c, R.drawable.ic_headphones, null, "متصل", "سماعات", 0xFF9ECAFF.toInt())
-                      }
+                      if (i.action == Intent.ACTION_POWER_CONNECTED) showCompactEvent(c, R.drawable.ic_bolt, null, "جاري الشحن", "⚡", 0xFF34D399.toInt())
+                      else if (i.action == BluetoothDevice.ACTION_ACL_CONNECTED) showCompactEvent(c, R.drawable.ic_headphones, null, "متصل", "سماعات", 0xFF9ECAFF.toInt())
                   }
               }
 
@@ -490,20 +482,12 @@ jobs:
                   startForeground(1, NotificationCompat.Builder(this, "di").setSmallIcon(R.drawable.ic_bolt).setContentTitle("الجزيرة مفعلة").build())
                   startOverlay(this)
                   
-                  val filter = IntentFilter().apply { 
-                      addAction(Intent.ACTION_POWER_CONNECTED)
-                      addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
-                  }
+                  val filter = IntentFilter().apply { addAction(Intent.ACTION_POWER_CONNECTED); addAction(BluetoothDevice.ACTION_ACL_CONNECTED) }
                   registerReceiver(systemReceiver, filter)
                   registerReceiver(configReceiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
               }
               
-              override fun onDestroy() { 
-                  super.onDestroy()
-                  unregisterReceiver(systemReceiver) 
-                  unregisterReceiver(configReceiver)
-              }
-              
+              override fun onDestroy() { super.onDestroy(); unregisterReceiver(systemReceiver); unregisterReceiver(configReceiver) }
               override fun onBind(intent: Intent?): IBinder? = null
           }
           EOF
@@ -518,10 +502,16 @@ jobs:
           class NotificationReceiverService : NotificationListenerService() {
               private val h = Handler(Looper.getMainLooper())
               override fun onNotificationPosted(sbn: StatusBarNotification?) {
-                  val title = sbn?.notification?.extras?.getString("android.title") ?: return
+                  if (sbn == null) return
+                  val title = sbn.notification?.extras?.getString("android.title") ?: return
                   val text = sbn.notification.extras.getCharSequence("android.text")?.toString() ?: ""
                   val pkg = sbn.packageName ?: ""
-                  if (pkg == packageName) return
+                  
+                  // ===============================================
+                  // التعديل السحري: تجاهل إشعارات نظام الأندرويد المزعجة
+                  // لمنع الجزيرة من إظهار رسالة "التطبيق يظهر فوق التطبيقات الأخرى" (الصورة 2)
+                  // ===============================================
+                  if (pkg == packageName || pkg == "android" || pkg == "com.android.systemui") return
 
                   val pm = applicationContext.packageManager
                   val iconDrawable = try { pm.getApplicationIcon(pkg) } catch (e: Exception) { null }
@@ -571,21 +561,21 @@ jobs:
         run: |
           gradle assembleDebug -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/DynamicIsland-Pixel8-Pro-Masterpiece.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/DynamicIsland-Pixel8-Pro-LockscreenFix.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland-Pixel8-Pro-Masterpiece
-          path: release-output/DynamicIsland-Pixel8-Pro-Masterpiece.apk
+          name: DynamicIsland-Pixel8-Pro-LockscreenFix
+          path: release-output/DynamicIsland-Pixel8-Pro-LockscreenFix.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: masterpiece-release-v23
-          name: "Dynamic Island Pixel 8 Pro - Masterpiece Update (V23)"
-          body: "1. 💥 **الحل الجذري لمشكلة دوران الشاشة:** في هذه النسخة، يتم تصفير طول وعرض الجزيرة (0x0) فور دوران الهاتف، مما يجبر نظام أندرويد على إخفائها كلياً وعدم اعتراض اللمس أثناء تشغيل الفيديوهات والألعاب."
-          files: release-output/DynamicIsland-Pixel8-Pro-Masterpiece.apk
+          tag_name: lockscreen-fix-v24
+          name: "Dynamic Island Pixel 8 Pro - Lockscreen Fix (V24)"
+          body: "1. 🔒 **دعم شاشة القفل:** تم إعطاء الجزيرة تصريح `FLAG_SHOW_WHEN_LOCKED` لتتمكن من الظهور فوق شاشة القفل بكل سلاسة.\n2. ⚙️ **منع إشعارات النظام المزعجة:** تم إيقاف التقاط إشعار 'التطبيق يظهر فوق التطبيقات الأخرى' الخاص بنظام الأندرويد، لتظل الجزيرة نظيفة وتلتقط الإشعارات المهمة فقط."
+          files: release-output/DynamicIsland-Pixel8-Pro-LockscreenFix.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
