@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.pixel8"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 22; versionName = "12.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 23; versionName = "13.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
           }
@@ -87,7 +87,6 @@ jobs:
           cat << 'EOF' > app/src/main/res/drawable/bg_slider_track.xml
           <layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:id="@android:id/background"><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#222731"/></shape></item><item android:id="@android:id/progress"><clip><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#9ECAFF"/></shape></clip></item></layer-list>
           EOF
-          
           cat << 'EOF' > app/src/main/res/drawable/bg_round_pill_button.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#9ECAFF" /><corners android:radius="100dp" /></shape>
           EOF
@@ -322,6 +321,24 @@ jobs:
                       animate(ctx, w, h, y)
                   }
 
+                  // ============================================
+                  // الحل الجذري لإخفاء الجزيرة (تصفير الحجم)
+                  // ============================================
+                  fun applyOrientation(ctx: Context, orientation: Int) {
+                      if (view == null || params == null) return
+                      if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                          view?.visibility = View.GONE
+                          // هذه الخطوة تضمن اختفاء الجزيرة 100% لأن حجمها سيصبح صفر ولن تعترض اللمس!
+                          params?.width = 0
+                          params?.height = 0
+                          try { wm?.updateViewLayout(view, params) } catch (e: Exception) {}
+                      } else {
+                          view?.visibility = View.VISIBLE
+                          // استدعاء دالة collapse لتعيد ضبط الحجم الطبيعي الصحيح بناءً على الإعدادات وتنعشه بانيميشن
+                          collapse(ctx)
+                      }
+                  }
+
                   fun startOverlay(ctx: Context) {
                       if (view != null) return
                       wm = ctx.getSystemService(WINDOW_SERVICE) as WindowManager
@@ -343,9 +360,10 @@ jobs:
                       view = LayoutInflater.from(ctx).inflate(R.layout.view_pixel8_island, null)
                       view?.background = createDrawable(getAuraColor(), 100f, ctx)
 
-                      // تحقق من الاتجاه الحالي عند البدء لعدم إظهارها إذا كان الفيديو يعمل
                       if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                           view?.visibility = View.GONE
+                          params?.width = 0
+                          params?.height = 0
                       }
 
                       view?.findViewById<View>(R.id.btnExpandedSettings)?.setOnClickListener {
@@ -368,7 +386,7 @@ jobs:
 
                   fun showCompactEvent(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, value: String, color: Int) {
                       if (view == null) startOverlay(ctx)
-                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return // لا تظهر الإشعار في الوضع الأفقي
+                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return // تجاهل إذا كنا في فيديو
 
                       view?.background = createDrawable(color, 100f, ctx)
                       view?.findViewById<View>(R.id.layoutIdle)?.visibility = View.GONE
@@ -437,18 +455,17 @@ jobs:
                   }
               }
 
-              // ===============================================
-              // الحل الجذري: استخدام BroadcastReceiver لمراقبة دوران الشاشة بقوة
-              // ===============================================
+              // مراقبة الدوران من داخل الـ Service مباشرة
+              override fun onConfigurationChanged(newConfig: Configuration) {
+                  super.onConfigurationChanged(newConfig)
+                  applyOrientation(this, newConfig.orientation)
+              }
+
               private val configReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
                       if (intent?.action == Intent.ACTION_CONFIGURATION_CHANGED) {
-                          val orientation = context?.resources?.configuration?.orientation
-                          if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                              view?.visibility = View.GONE
-                          } else {
-                              view?.visibility = View.VISIBLE
-                          }
+                          val orientation = context?.resources?.configuration?.orientation ?: return
+                          applyOrientation(context, orientation)
                       }
                   }
               }
@@ -478,8 +495,6 @@ jobs:
                       addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
                   }
                   registerReceiver(systemReceiver, filter)
-                  
-                  // تسجيل مراقب دوران الشاشة
                   registerReceiver(configReceiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
               }
               
@@ -568,9 +583,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: masterpiece-release-v22
-          name: "Dynamic Island Pixel 8 Pro - Masterpiece Update (V22)"
-          body: "1. 🔄 **حل مشكلة دوران الشاشة:** استخدام BroadcastReceiver مخصص للتأكد من اختفاء الجزيرة 100% أثناء تشغيل الفيديوهات والألعاب بشكل أفقي."
+          tag_name: masterpiece-release-v23
+          name: "Dynamic Island Pixel 8 Pro - Masterpiece Update (V23)"
+          body: "1. 💥 **الحل الجذري لمشكلة دوران الشاشة:** في هذه النسخة، يتم تصفير طول وعرض الجزيرة (0x0) فور دوران الهاتف، مما يجبر نظام أندرويد على إخفائها كلياً وعدم اعتراض اللمس أثناء تشغيل الفيديوهات والألعاب."
           files: release-output/DynamicIsland-Pixel8-Pro-Masterpiece.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
