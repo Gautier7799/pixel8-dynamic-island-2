@@ -1,4 +1,4 @@
-name: Build Dynamic Island Pixel 8 Pro Ultra APK
+name: Build AI Keyboard Pro
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Generate Android APK for Pixel 8
+    name: Generate Android APK for AI Keyboard
     runs-on: ubuntu-latest
 
     steps:
@@ -32,10 +32,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Pixel 8 Pro Dynamic Island
+      - name: Build Dynamic Island Pro
         run: |
           rm -rf app/src/main/res app/src/main/java
-          mkdir -p app/src/main/res/values app/src/main/res/drawable app/src/main/res/layout app/src/main/res/mipmap-anydpi-v26 app/src/main/java/com/dynamicisland/pixel8
+          mkdir -p app/src/main/res/values app/src/main/res/values-night app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26 app/src/main/res/xml app/src/main/res/layout app/src/main/java/com/aikeyboard/pro
 
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
@@ -46,7 +46,7 @@ jobs:
           cat << 'EOF' > settings.gradle.kts
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name = "DynamicIslandPixel8"
+          rootProject.name = "DynamicIslandPro"
           include(":app")
           EOF
 
@@ -57,9 +57,9 @@ jobs:
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android {
-              namespace = "com.dynamicisland.pixel8"
+              namespace = "com.aikeyboard.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.pixel8"; minSdk = 28; targetSdk = 34; versionCode = 24; versionName = "14.0.0" }
+              defaultConfig { applicationId = "com.aikeyboard.pro"; minSdk = 28; targetSdk = 34; versionCode = 63; versionName = "27.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
           }
@@ -67,515 +67,522 @@ jobs:
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("com.google.android.material:material:1.11.0")
+              implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
           }
           EOF
 
+          # ---- الألوان ----
           cat << 'EOF' > app/src/main/res/values/colors.xml
-          <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <color name="m3_surface">#0A0C10</color>
-              <color name="m3_primary">#9ECAFF</color>
-              <color name="m3_on_primary">#003258</color>
-              <color name="m3_text_primary">#F0F3FA</color>
+              <color name="IosDarkCanvas">#121212</color>       
+              <color name="IosDarkKeyNormal">#2C2C2E</color>    
+              <color name="IosDarkKeyNormalPressed">#4C4C4E</color> 
+              <color name="IosDarkKeyControl">#1C1C1E</color>   
+              <color name="IosDarkKeyControlPressed">#3C3C3E</color>
+              <color name="IosBlueAction">#007AFF</color>       
+              <color name="IosBlueActionPressed">#005BB5</color>
+              <color name="IosTextColor">#FFFFFF</color>        
+              <color name="toolbar_bg">#2C2C2E</color>
+              <color name="btn_bg">#2C2C2E</color>
+              <color name="island_bg">#000000</color>
           </resources>
           EOF
 
-          cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources><string name="app_name">Dynamic Island Pro</string></resources>
+          # ---- أشكال الكيبورد والجزيرة التفاعلية ----
+          cat << 'EOF' > app/src/main/res/drawable/bg_key.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormal"/><corners android:radius="5dp"/></shape>
           EOF
-
-          cat << 'EOF' > app/src/main/res/drawable/bg_slider_track.xml
-          <layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:id="@android:id/background"><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#222731"/></shape></item><item android:id="@android:id/progress"><clip><shape android:shape="rectangle"><corners android:radius="16dp"/><solid android:color="#9ECAFF"/></shape></clip></item></layer-list>
+          cat << 'EOF' > app/src/main/res/drawable/bg_key_pressed.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormalPressed"/><corners android:radius="5dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_round_pill_button.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#9ECAFF" /><corners android:radius="100dp" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/key_selector.xml
+          <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_pressed" /><item android:drawable="@drawable/bg_key" /></selector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_card_m3.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#14171E" /><corners android:radius="24dp" /><stroke android:width="1dp" android:color="#222731" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/bg_key_special.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyControl"/><corners android:radius="5dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_charging.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#003315" /><corners android:radius="100dp" /><stroke android:width="1.5dp" android:color="#34D399" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/bg_key_special_pressed.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyControlPressed"/><corners android:radius="5dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_music.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#062410" /><corners android:radius="100dp" /><stroke android:width="1.5dp" android:color="#1DB954" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/key_special_selector.xml
+          <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_special_pressed" /><item android:drawable="@drawable/bg_key_special" /></selector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_whatsapp.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#042C11" /><corners android:radius="100dp" /><stroke android:width="1.5dp" android:color="#25D366" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/bg_key_return.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosBlueAction"/><corners android:radius="5dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_test_btn_bt.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#003258" /><corners android:radius="100dp" /><stroke android:width="1.5dp" android:color="#9ECAFF" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/bg_key_return_pressed.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosBlueActionPressed"/><corners android:radius="5dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_action_chip.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#1C202B" /><corners android:radius="100dp" /><stroke android:width="0.8dp" android:color="#323846" /></shape>
+          cat << 'EOF' > app/src/main/res/drawable/key_return_selector.xml
+          <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_return_pressed" /><item android:drawable="@drawable/bg_key_return" /></selector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_m3_icon_btn.xml
-          <ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#30FFFFFF"><item><shape android:shape="oval"><solid android:color="#14171E" /></shape></item></ripple>
+          cat << 'EOF' > app/src/main/res/drawable/bg_toolbar_pill.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/toolbar_bg"/><corners android:radius="24dp"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/bg_keyboard_root.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkCanvas"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/bg_popup_bubble.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormal"/><corners android:radius="12dp"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/bg_button.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/btn_bg"/><corners android:radius="24dp"/></shape>
           EOF
           
-          cat << 'EOF' > app/src/main/res/drawable/ic_headphones.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#9ECAFF" android:pathData="M12,2c-4.97,0 -9,4.03 -9,9v7c0,1.66 1.34,3 3,3h3v-8H5v-2c0,-3.87 3.13,-7 7,-7s7,3.13 7,7v2h-4v8h3c1.66,0 3,-1.34 3,-3v-7c0,-4.97 -4.03,-9 -9,-9z"/></vector>
+          # شكل الجزيرة التفاعلية (سوداء بحواف دائرية كبيرة)
+          cat << 'EOF' > app/src/main/res/drawable/bg_dynamic_island.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/island_bg"/><corners android:radius="50dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_settings.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#9DA3B0" android:pathData="M19.14,12.94c0.04,-0.3 0.06,-0.61 0.06,-0.94c0,-0.32 -0.02,-0.64 -0.07,-0.94l2.03,-1.58c0.18,-0.14 0.23,-0.41 0.12,-0.61l-1.92,-3.32c-0.12,-0.22 -0.37,-0.29 -0.59,-0.22l-2.39,0.96c-0.5,-0.38 -1.03,-0.7 -1.62,-0.94L14.4,2.81c-0.04,-0.24 -0.24,-0.41 -0.48,-0.41h-3.84c-0.24,0 -0.43,0.17 -0.47,0.41L9.25,5.35C8.66,5.59 8.12,5.92 7.63,6.29L5.24,5.33c-0.22,-0.08 -0.47,0 -0.59,0.22L2.74,8.87c-0.12,0.21 -0.08,0.47 0.12,0.61l2.03,1.58C4.84,11.36 4.8,11.69 4.8,12s0.02,0.64 0.07,0.94l-2.03,1.58c-0.18,0.14 -0.23,0.41 -0.12,0.61l1.92,3.32c0.12,0.22 0.37,0.29 0.59,0.22l2.39,-0.96c0.5,0.38 1.03,0.7 1.62,0.94l0.36,2.54c0.05,0.24 0.24,0.41 0.48,0.41h3.84c0.24,0 0.44,-0.17 0.47,-0.41l0.36,-2.54c0.59,-0.24 1.13,-0.56 1.62,-0.94l2.39,0.96c0.22,0.08 0.47,0 0.59,-0.22l1.92,-3.32c0.12,-0.22 0.07,-0.47 -0.12,-0.61L19.14,12.94zM12,15.6c-1.98,0 -3.6,-1.62 -3.6,-3.6s1.62,-3.6 3.6,-3.6s3.6,1.62 3.6,3.6S13.98,15.6 12,15.6z"/></vector>
+
+          # ---- الأيقونات ----
+          cat << 'EOF' > app/src/main/res/drawable/ic_smiley.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10s10,-4.48 10,-10S17.52,2 12,2zM12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8s8,3.59 8,8S16.41,20 12,20zM8.5,8C7.67,8 7,8.67 7,9.5S7.67,11 8.5,11S10,10.33 10,9.5S9.33,8 8.5,8zM15.5,8C14.67,8 14,8.67 14,9.5S14.67,11 15.5,11S17,10.33 17,9.5S16.33,8 15.5,8zM12,17.5c2.33,0 4.31,-1.46 5.11,-3.5H6.89C7.69,16.04 9.67,17.5 12,17.5z"/></vector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_bolt.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#34D399" android:pathData="M7,2v11h3v9l7,-12h-4l4,-8z"/></vector>
+          cat << 'EOF' > app/src/main/res/drawable/ic_mic.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M12,14C13.66,14 15,12.66 15,11V5C15,3.34 13.66,2 12,2C10.34,2 9,3.34 9,5V11C9,12.66 10.34,14 12,14ZM17.3,11C17.3,14 14.76,16.1 12,16.1C9.24,16.1 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/></vector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_spotify.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#1DB954" android:pathData="M12 2C6.477 2 2 6.477 2 12c0 5.523 4.477 10 10 10s10-4.477 10-10c0-5.523-4.477-10-10-10zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.434-5.308-1.758-8.793-.963-.335.077-.67-.133-.746-.468-.077-.334.132-.67.467-.746 3.808-.87 7.076-.51 9.721 1.113.294.18.388.563.208.857zm1.226-2.723c-.226.367-.707.482-1.074.256-2.69-1.653-6.79-2.133-9.97-1.168-.413.125-.85-.11-.975-.523-.125-.413.11-.85.523-.975 3.633-1.103 8.15-.569 11.24 1.336.367.226.482.707.256 1.074zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71c-.494.15-1.018-.129-1.168-.623-.15-.494.129-1.018.623-1.168 3.532-1.072 9.404-.87 13.13 1.344.444.263.59.837.327 1.28-.264.445-.838.59-1.282.328z"/></vector>
+          cat << 'EOF' > app/src/main/res/drawable/ic_text_aa.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M10,18.5v-13h2.5v13H10zM17.5,18.5c-1.38,0 -2.5,-1.12 -2.5,-2.5v-3c0,-1.38 1.12,-2.5 2.5,-2.5h0.5v-1c0,-0.83 -0.67,-1.5 -1.5,-1.5c-0.83,0 -1.5,0.67 -1.5,1.5h-1.5c0,-1.65 1.35,-3 3,-3c1.65,0 3,1.35 3,3v6.5h-1.5v-1.12C18.23,18.17 17.91,18.5 17.5,18.5zM17.5,17c0.83,0 1.5,-0.67 1.5,-1.5v-1.5h-1.5c-0.83,0 -1.5,0.67 -1.5,1.5C16,16.33 16.67,17 17.5,17z"/></vector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_whatsapp.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#25D366" android:pathData="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c4.54 0 8.24 3.7 8.24 8.24 0 2.2-.86 4.27-2.42 5.83a8.18 8.18 0 0 1-5.82 2.41c-1.49 0-2.95-.4-4.22-1.16l-.3-.18-3.13.82.83-3.05-.2-.31a8.196 8.196 0 0 1-1.26-4.36c0-4.54 3.7-8.24 8.28-8.24zm4.53 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.14-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.14.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.34-.76-1.84-.2-.49-.4-.42-.56-.43h-.47c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.48-.29z"/></vector>
+          cat << 'EOF' > app/src/main/res/drawable/ic_delete.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M22,3H7C6.31,3 5.77,3.38 5.46,3.93L0,12L5.46,20.07C5.77,20.62 6.31,21 7,21H22C23.1,21 24,20.1 24,19V5C24,3.9 23.1,3 22,3ZM19,15.59L17.59,17L14,13.41L10.41,17L9,15.59L12.59,12L9,8.41L10.41,7L14,10.59L17.59,7L19,8.41L15.41,12L19,15.59Z"/></vector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#0A0C10" android:pathData="M0,0h108v108h-108z"/><path android:fillColor="#9ECAFF" android:pathData="M24,42h60a12,12 0 0,1 12,12v0a12,12 0 0,1 -12,12h-60a12,12 0 0,1 -12,-12v0a12,12 0 0,1 12,-12z"/><path android:fillColor="#003258" android:pathData="M38,50a4,4 0 1,1 0,8 4,4 0 0,1 0,-8z"/></vector>
+          cat << 'EOF' > app/src/main/res/drawable/ic_shift.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M15,15H9V20H15V15ZM12,4L5.5,13H8.5V22H15.5V13H18.5L12,4Z"/></vector>
+          EOF
+
+          # أيقونة Dynamic Island Pro
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><gradient android:startColor="#1A1A1D" android:endColor="#3A3A40" android:angle="45"/><corners android:radius="32dp"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#FF2A55" android:pathData="M35,60 C35,45 45,35 54,35 C63,35 73,45 73,60 C73,75 63,85 54,85 C45,85 35,75 35,60 Z" /><path android:fillColor="#0A84FF" android:pathData="M54,45 C45,45 35,55 35,70 C35,85 45,95 54,95 C63,95 73,85 73,70 C73,55 63,45 54,45 Z" /></vector>
           EOF
           cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@color/m3_surface"/><foreground android:drawable="@drawable/ic_launcher_foreground"/></adaptive-icon>
+          <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
           EOF
 
-          cat << 'EOF' > app/src/main/res/layout/view_pixel8_island.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:id="@+id/islandRoot" android:layout_width="match_parent" android:layout_height="match_parent"
-              android:background="#000000" android:clickable="true" android:focusable="true">
-
-              <View android:id="@+id/layoutIdle" android:layout_width="match_parent" android:layout_height="match_parent" android:visibility="visible" />
-
-              <LinearLayout android:id="@+id/layoutCompact" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="12dp" android:paddingEnd="8dp" android:visibility="gone">
-                  <ImageView android:id="@+id/ivCompactIcon" android:layout_width="20dp" android:layout_height="20dp" />
-                  <TextView android:id="@+id/tvCompactTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="8dp" android:textColor="#F0F3FA" android:textSize="14sp" android:fontFamily="sans-serif-medium" android:maxLines="1" android:ellipsize="end" />
-                  <TextView android:id="@+id/tvCompactValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#34D399" android:textSize="13sp" android:fontFamily="sans-serif-medium" android:layout_marginEnd="8dp" />
-              </LinearLayout>
-
-              <LinearLayout android:id="@+id/layoutExpanded" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:gravity="center_vertical" android:visibility="gone">
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
-                      <FrameLayout android:layout_width="44dp" android:layout_height="44dp" android:background="@drawable/bg_action_chip" android:padding="6dp">
-                          <ImageView android:id="@+id/ivExpandedBadge" android:layout_width="match_parent" android:layout_height="match_parent" />
-                      </FrameLayout>
-                      <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:orientation="vertical">
-                          <TextView android:id="@+id/tvExpandedHeader" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:textSize="16sp" android:fontFamily="sans-serif-medium" android:maxLines="1" />
-                          <TextView android:id="@+id/tvExpandedSubtext" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#C8CCD6" android:textSize="14sp" android:fontFamily="sans-serif" android:maxLines="3" android:layout_marginTop="2dp" />
-                      </LinearLayout>
-                      <ImageButton android:id="@+id/btnExpandedSettings" android:layout_width="32dp" android:layout_height="32dp" android:background="@drawable/bg_m3_icon_btn" android:src="@drawable/ic_settings" android:scaleType="centerInside" />
-                  </LinearLayout>
-              </LinearLayout>
-          </FrameLayout>
+          cat << 'EOF' > app/src/main/res/values/strings.xml
+          <resources><string name="app_name">Dynamic Island Pro</string><string name="ime_name">Dynamic Island Pro (iOS 26)</string></resources>
+          EOF
+          cat << 'EOF' > app/src/main/res/values/themes.xml
+          <resources><style name="Theme.AIKeyboard" parent="Theme.AppCompat.DayNight.NoActionBar"><item name="android:windowLightStatusBar">false</item></style></resources>
+          EOF
+          cat << 'EOF' > app/src/main/res/xml/method.xml
+          <?xml version="1.0" encoding="utf-8"?><input-method xmlns:android="http://schemas.android.com/apk/res/android" android:supportsInlineSuggestions="true"><subtype android:imeSubtypeLocale="en_US" android:imeSubtypeMode="keyboard" /></input-method>
           EOF
 
+          # ---- MainActivity Layout ----
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/m3_surface" android:fillViewport="true">
-              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="#121212">
+              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+                  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="30dp" android:layout_marginBottom="30dp" android:text="Dynamic Island Pro" android:textColor="#FFFFFF" android:textSize="32sp" android:textStyle="bold" android:gravity="center" />
                   
-                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dynamic Island Pro" android:textColor="@color/m3_text_primary" android:textSize="28sp" android:fontFamily="sans-serif-medium" android:layout_marginBottom="24dp" />
-                  
-                  <Button android:id="@+id/btnOverlayPermission" android:layout_width="match_parent" android:layout_height="56dp" android:text="1. تفعيل الظهور فوق التطبيقات" android:background="@drawable/bg_round_pill_button" android:textColor="@color/m3_on_primary" android:fontFamily="sans-serif-medium" android:textSize="16sp" android:layout_marginBottom="12dp" />
-                  <Button android:id="@+id/btnNotificationPermission" android:layout_width="match_parent" android:layout_height="56dp" android:text="2. تفعيل قراءة الإشعارات" android:background="@drawable/bg_round_pill_button" android:textColor="@color/m3_on_primary" android:fontFamily="sans-serif-medium" android:textSize="16sp" android:layout_marginBottom="24dp" />
-                  
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_card_m3" android:padding="20dp" android:layout_marginBottom="24dp">
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="معايرة الكاميرا (Y-Offset)" android:textColor="@color/m3_text_primary" android:fontFamily="sans-serif-medium" android:layout_marginBottom="12dp"/>
-                      <SeekBar android:id="@+id/sbPosY" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="200" android:progress="58" android:progressDrawable="@drawable/bg_slider_track" android:thumb="@android:color/transparent" android:splitTrack="false" android:minHeight="28dp" android:maxHeight="28dp" android:layout_marginBottom="24dp"/>
-                      
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="عرض الجزيرة" android:textColor="@color/m3_text_primary" android:fontFamily="sans-serif-medium" android:layout_marginBottom="12dp"/>
-                      <SeekBar android:id="@+id/sbWidth" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="250" android:progress="75" android:progressDrawable="@drawable/bg_slider_track" android:thumb="@android:color/transparent" android:splitTrack="false" android:minHeight="28dp" android:maxHeight="28dp" android:layout_marginBottom="24dp"/>
-                      
-                      <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="ارتفاع الجزيرة" android:textColor="@color/m3_text_primary" android:fontFamily="sans-serif-medium" android:layout_marginBottom="12dp"/>
-                      <SeekBar android:id="@+id/sbHeight" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="100" android:progress="27" android:progressDrawable="@drawable/bg_slider_track" android:thumb="@android:color/transparent" android:splitTrack="false" android:minHeight="28dp" android:maxHeight="28dp"/>
-                  </LinearLayout>
+                  <!-- زر تفعيل الجزيرة التفاعلية -->
+                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_island" android:layout_width="match_parent" android:layout_height="60dp" android:text="تفعيل الجزيرة التفاعلية (Dynamic Island)" android:textColor="#007AFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="24dp"/>
 
-                  <Button android:id="@+id/btnStartService" android:layout_width="match_parent" android:layout_height="64dp" android:text="تشغيل الجزيرة الآن" android:background="@drawable/bg_round_pill_button" android:textColor="@color/m3_on_primary" android:textSize="18sp" android:fontFamily="sans-serif-medium" android:layout_marginBottom="24dp" />
-
-                  <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2">
-                      <Button android:id="@+id/btnTestCharging" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="⚡ شحن" android:background="@drawable/bg_test_btn_charging" android:textColor="#34D399" android:fontFamily="sans-serif-medium"/>
-                      <Button android:id="@+id/btnTestMusic" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="🎵 موسيقى" android:background="@drawable/bg_test_btn_music" android:textColor="#1DB954" android:fontFamily="sans-serif-medium"/>
-                      <Button android:id="@+id/btnTestWhatsapp" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="💬 واتساب" android:background="@drawable/bg_test_btn_whatsapp" android:textColor="#25D366" android:fontFamily="sans-serif-medium"/>
-                      <Button android:id="@+id/btnTestHeadphones" android:layout_width="0dp" android:layout_height="56dp" android:layout_columnWeight="1" android:layout_margin="6dp" android:text="🎧 سماعات" android:background="@drawable/bg_test_btn_bt" android:textColor="#9ECAFF" android:fontFamily="sans-serif-medium"/>
-                  </GridLayout>
+                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="تخصيص ارتفاع الكيبورد:" android:textColor="#FFFFFF" android:textSize="16sp" android:layout_marginBottom="8dp"/>
+                  <SeekBar android:id="@+id/seek_height" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="40" android:progress="10" android:layout_marginBottom="24dp"/>
+                  
+                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_enable" android:layout_width="match_parent" android:layout_height="60dp" android:text="1. تفعيل الكيبورد" android:textColor="#FFFFFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="16dp"/>
+                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_select" android:layout_width="match_parent" android:layout_height="60dp" android:text="2. اختيار الكيبورد" android:textColor="#FFFFFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="40dp"/>
+                  
+                  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="مفتاح الذكاء الاصطناعي:" android:textColor="#FFFFFF" android:textSize="16sp" android:layout_marginBottom="12dp" />
+                  <EditText android:id="@+id/input_api_key" android:layout_width="match_parent" android:layout_height="60dp" android:hint="Gemini API..." android:textColor="#FFFFFF" android:textColorHint="#888888" android:inputType="textPassword" android:background="@drawable/bg_popup_bubble" android:padding="16dp" android:layout_marginBottom="16dp" />
+                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_save_api" android:layout_width="match_parent" android:layout_height="60dp" android:text="حفظ الإعدادات" android:textColor="#FFFFFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="40dp"/>
               </LinearLayout>
           </ScrollView>
           EOF
 
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/MainActivity.kt
-          package com.dynamicisland.pixel8
-          import android.content.*
-          import android.net.Uri
-          import android.os.*
-          import android.provider.Settings
-          import android.widget.*
-          import androidx.appcompat.app.AppCompatActivity
+          # ---- Dynamic Island Service (الجزيرة التفاعلية) ----
+          cat << 'EOF' > app/src/main/java/com/aikeyboard/pro/DynamicIslandService.kt
+          package com.aikeyboard.pro
 
-          class MainActivity : AppCompatActivity() {
-              private lateinit var prefs: SharedPreferences
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-                  setContentView(R.layout.activity_main)
-                  prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-
-                  findViewById<Button>(R.id.btnOverlayPermission).setOnClickListener {
-                      if (!Settings.canDrawOverlays(this)) startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
-                      else Toast.makeText(this, "مفعل مسبقاً", Toast.LENGTH_SHORT).show()
-                  }
-                  findViewById<Button>(R.id.btnNotificationPermission).setOnClickListener {
-                      startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                  }
-                  findViewById<Button>(R.id.btnStartService).setOnClickListener {
-                      if (Settings.canDrawOverlays(this)) {
-                          val intent = Intent(this, IslandOverlayService::class.java)
-                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent) else startService(intent)
-                          Toast.makeText(this, "تم تشغيل الجزيرة!", Toast.LENGTH_SHORT).show()
-                      } else { Toast.makeText(this, "يرجى تفعيل الظهور أولاً", Toast.LENGTH_SHORT).show() }
-                  }
-
-                  val sbW = findViewById<SeekBar>(R.id.sbWidth)
-                  val sbH = findViewById<SeekBar>(R.id.sbHeight)
-                  val sbY = findViewById<SeekBar>(R.id.sbPosY)
-                  
-                  sbY.max = 200 
-                  sbW.progress = prefs.getInt("width", 75)
-                  sbH.progress = prefs.getInt("height", 27)
-                  sbY.progress = prefs.getInt("pos_y", 58)
-
-                  val listener = object : SeekBar.OnSeekBarChangeListener {
-                      override fun onProgressChanged(sb: SeekBar?, p: Int, fromUser: Boolean) {
-                          when(sb?.id) {
-                              R.id.sbWidth -> prefs.edit().putInt("width", p.coerceAtLeast(30)).apply()
-                              R.id.sbHeight -> prefs.edit().putInt("height", p.coerceAtLeast(15)).apply()
-                              R.id.sbPosY -> prefs.edit().putInt("pos_y", p).apply()
-                          }
-                          IslandOverlayService.updateSize(this@MainActivity)
-                      }
-                      override fun onStartTrackingTouch(sb: SeekBar?) {}
-                      override fun onStopTrackingTouch(sb: SeekBar?) {}
-                  }
-                  sbW.setOnSeekBarChangeListener(listener)
-                  sbH.setOnSeekBarChangeListener(listener)
-                  sbY.setOnSeekBarChangeListener(listener)
-
-                  findViewById<Button>(R.id.btnTestCharging).setOnClickListener {
-                      IslandOverlayService.showCompactEvent(this, R.drawable.ic_bolt, null, "الشاحن متصل", "100%", 0xFF34D399.toInt())
-                  }
-                  findViewById<Button>(R.id.btnTestMusic).setOnClickListener {
-                      IslandOverlayService.postNewNotification(this, R.drawable.ic_spotify, null, "Spotify", "Starboy • The Weeknd", 0xFF1DB954.toInt())
-                  }
-                  findViewById<Button>(R.id.btnTestWhatsapp).setOnClickListener {
-                      IslandOverlayService.postNewNotification(this, R.drawable.ic_whatsapp, null, "WhatsApp", "رسالة جديدة تجريبية", 0xFF25D366.toInt())
-                  }
-                  findViewById<Button>(R.id.btnTestHeadphones).setOnClickListener {
-                      IslandOverlayService.showCompactEvent(this, R.drawable.ic_headphones, null, "متصل", "سماعات Pixel", 0xFF9ECAFF.toInt())
-                  }
-              }
-          }
-          EOF
-
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/IslandOverlayService.kt
-          package com.dynamicisland.pixel8
           import android.animation.ValueAnimator
-          import android.app.*
-          import android.bluetooth.BluetoothDevice
-          import android.content.*
-          import android.content.res.Configuration
+          import android.app.Service
+          import android.content.Intent
           import android.graphics.PixelFormat
-          import android.graphics.drawable.Drawable
-          import android.graphics.drawable.GradientDrawable
-          import android.os.*
-          import android.view.*
+          import android.os.IBinder
+          import android.view.Gravity
+          import android.view.View
+          import android.view.WindowManager
           import android.view.animation.OvershootInterpolator
-          import android.widget.*
-          import androidx.core.app.NotificationCompat
-          import java.util.Calendar
+          import android.widget.FrameLayout
+          import android.widget.LinearLayout
+          import android.widget.TextView
+          import android.graphics.Color
+          import android.graphics.Typeface
 
-          class IslandOverlayService : Service() {
-              companion object {
-                  private var wm: WindowManager? = null
-                  private var view: View? = null
-                  private var params: WindowManager.LayoutParams? = null
-                  private val handler = Handler(Looper.getMainLooper())
-                  private var animator: ValueAnimator? = null
-                  private var isExpanded = false
-                  
-                  private var lastTitle = "لا توجد إشعارات"
-                  private var lastText = "الجزيرة بانتظار إشعار جديد"
-                  private var lastIconRes = R.drawable.ic_launcher_foreground
-                  private var lastIconDrawable: Drawable? = null
-                  private var lastColor = 0xFFFFFFFF.toInt()
+          class DynamicIslandService : Service() {
+              private lateinit var windowManager: WindowManager
+              private lateinit var islandView: FrameLayout
+              private var isExpanded = false
+              private var params: WindowManager.LayoutParams? = null
+              private var density: Float = 1f
 
-                  fun getAuraColor(): Int {
-                      val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-                      return if (hour in 6..17) 0xFFFFFFFF.toInt() else 0xFF34D399.toInt()
-                  }
-
-                  fun createDrawable(color: Int, radiusDp: Float, ctx: Context): GradientDrawable {
-                      val d = ctx.resources.displayMetrics.density
-                      return GradientDrawable().apply {
-                          shape = GradientDrawable.RECTANGLE; setColor(0xFF000000.toInt())
-                          cornerRadius = radiusDp * d; setStroke((1.5f * d).toInt(), color)
-                      }
-                  }
-
-                  fun updateSize(ctx: Context) {
-                      if(isExpanded || view == null) return
-                      val prefs = ctx.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val w = prefs.getInt("width", 75); val h = prefs.getInt("height", 27); val y = prefs.getInt("pos_y", 58) - 50
-                      animate(ctx, w, h, y)
-                  }
-
-                  fun applyOrientation(ctx: Context, orientation: Int) {
-                      if (view == null || params == null) return
-                      if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          view?.visibility = View.GONE
-                          params?.width = 0; params?.height = 0
-                          try { wm?.updateViewLayout(view, params) } catch (e: Exception) {}
-                      } else {
-                          view?.visibility = View.VISIBLE
-                          collapse(ctx)
-                      }
-                  }
-
-                  fun startOverlay(ctx: Context) {
-                      if (view != null) return
-                      wm = ctx.getSystemService(WINDOW_SERVICE) as WindowManager
-                      val d = ctx.resources.displayMetrics.density
-                      val prefs = ctx.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val w = prefs.getInt("width", 75); val h = prefs.getInt("height", 27); val y = prefs.getInt("pos_y", 58) - 50
-                      
-                      // ===============================================
-                      // التعديل السحري: إضافة FLAG_SHOW_WHEN_LOCKED 
-                      // لضمان ظهور الجزيرة فوق شاشة القفل (الصورة 1)
-                      // ===============================================
-                      params = WindowManager.LayoutParams(
-                          (w * d).toInt(), (h * d).toInt(),
-                          WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                          WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
-                          WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or 
-                          WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or 
-                          WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED, // <-- هذا هو الحل!
-                          PixelFormat.TRANSLUCENT
-                      ).apply { 
-                          gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                          this.y = (y * d).toInt()
-                          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-                      }
-
-                      view = LayoutInflater.from(ctx).inflate(R.layout.view_pixel8_island, null)
-                      view?.background = createDrawable(getAuraColor(), 100f, ctx)
-
-                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          view?.visibility = View.GONE; params?.width = 0; params?.height = 0
-                      }
-
-                      view?.findViewById<View>(R.id.btnExpandedSettings)?.setOnClickListener {
-                          val intent = Intent(ctx, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK }
-                          ctx.startActivity(intent); collapse(ctx)
-                      }
-
-                      view?.setOnClickListener {
-                          if (isExpanded) collapse(ctx) else showExpandedEvent(ctx, lastIconRes, lastIconDrawable, lastTitle, lastText, "", lastColor)
-                      }
-
-                      try { wm?.addView(view, params) } catch (e: Exception) {}
-                  }
-
-                  fun postNewNotification(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, text: String, color: Int) {
-                      lastTitle = title; lastText = text; lastIconRes = iconRes; lastIconDrawable = iconDrawable; lastColor = color
-                      showCompactEvent(ctx, iconRes, iconDrawable, title, "إشعار", color)
-                  }
-
-                  fun showCompactEvent(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, value: String, color: Int) {
-                      if (view == null) startOverlay(ctx)
-                      if (ctx.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
-
-                      view?.background = createDrawable(color, 100f, ctx)
-                      view?.findViewById<View>(R.id.layoutIdle)?.visibility = View.GONE
-                      view?.findViewById<View>(R.id.layoutExpanded)?.visibility = View.GONE
-                      view?.findViewById<View>(R.id.layoutCompact)?.visibility = View.VISIBLE
-                      
-                      val iv = view?.findViewById<ImageView>(R.id.ivCompactIcon)
-                      if(iconDrawable != null) iv?.setImageDrawable(iconDrawable) else iv?.setImageResource(iconRes)
-                      view?.findViewById<TextView>(R.id.tvCompactTitle)?.text = title
-                      view?.findViewById<TextView>(R.id.tvCompactValue)?.apply { text = value; setTextColor(color) }
-
-                      val prefs = ctx.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val y = prefs.getInt("pos_y", 58) - 50
-                      animate(ctx, 170, 40, y + 40) 
-                      handler.removeCallbacksAndMessages(null)
-                      handler.postDelayed({ collapse(ctx) }, 4000)
-                  }
-
-                  fun showExpandedEvent(ctx: Context, iconRes: Int, iconDrawable: Drawable?, title: String, sub: String, extra: String, color: Int) {
-                      if (view == null) startOverlay(ctx)
-                      isExpanded = true
-                      view?.background = createDrawable(color, 24f, ctx)
-                      view?.findViewById<View>(R.id.layoutIdle)?.visibility = View.GONE
-                      view?.findViewById<View>(R.id.layoutCompact)?.visibility = View.GONE
-                      view?.findViewById<View>(R.id.layoutExpanded)?.visibility = View.VISIBLE
-                      
-                      val iv = view?.findViewById<ImageView>(R.id.ivExpandedBadge)
-                      if(iconDrawable != null) iv?.setImageDrawable(iconDrawable) else iv?.setImageResource(iconRes)
-                      view?.findViewById<TextView>(R.id.tvExpandedHeader)?.text = title
-                      view?.findViewById<TextView>(R.id.tvExpandedSubtext)?.text = sub
-
-                      val prefs = ctx.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val y = prefs.getInt("pos_y", 58) - 50
-                      animate(ctx, 340, 90, y + 44)
-                      handler.removeCallbacksAndMessages(null)
-                  }
-
-                  fun collapse(ctx: Context) {
-                      isExpanded = false
-                      view?.background = createDrawable(getAuraColor(), 100f, ctx)
-                      view?.findViewById<View>(R.id.layoutCompact)?.visibility = View.GONE
-                      view?.findViewById<View>(R.id.layoutExpanded)?.visibility = View.GONE
-                      view?.findViewById<View>(R.id.layoutIdle)?.visibility = View.VISIBLE
-                      val prefs = ctx.getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                      val w = prefs.getInt("width", 75); val h = prefs.getInt("height", 27); val y = prefs.getInt("pos_y", 58) - 50
-                      animate(ctx, w, h, y)
-                  }
-
-                  private fun animate(ctx: Context, wDp: Int, hDp: Int, yDp: Int) {
-                      val d = ctx.resources.displayMetrics.density
-                      val sw = params?.width ?: 0; val ew = (wDp * d).toInt()
-                      val sh = params?.height ?: 0; val eh = (hDp * d).toInt()
-                      val sy = params?.y ?: 0; val ey = (yDp * d).toInt()
-
-                      animator?.cancel()
-                      animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                          duration = 350; interpolator = OvershootInterpolator(1.05f)
-                          addUpdateListener { va ->
-                              val f = va.animatedFraction
-                              params?.width = (sw + (ew - sw) * f).toInt()
-                              params?.height = (sh + (eh - sh) * f).toInt()
-                              params?.y = (sy + (ey - sy) * f).toInt()
-                              try { wm?.updateViewLayout(view, params) } catch (e: Exception) {}
-                          }
-                      }; animator?.start()
-                  }
-              }
-
-              override fun onConfigurationChanged(newConfig: Configuration) {
-                  super.onConfigurationChanged(newConfig); applyOrientation(this, newConfig.orientation)
-              }
-
-              private val configReceiver = object : BroadcastReceiver() {
-                  override fun onReceive(context: Context?, intent: Intent?) {
-                      if (intent?.action == Intent.ACTION_CONFIGURATION_CHANGED) {
-                          val orientation = context?.resources?.configuration?.orientation ?: return
-                          applyOrientation(context, orientation)
-                      }
-                  }
-              }
-
-              private val systemReceiver = object : BroadcastReceiver() {
-                  override fun onReceive(c: Context?, i: Intent?) {
-                      if (c == null || i == null) return
-                      if (i.action == Intent.ACTION_POWER_CONNECTED) showCompactEvent(c, R.drawable.ic_bolt, null, "جاري الشحن", "⚡", 0xFF34D399.toInt())
-                      else if (i.action == BluetoothDevice.ACTION_ACL_CONNECTED) showCompactEvent(c, R.drawable.ic_headphones, null, "متصل", "سماعات", 0xFF9ECAFF.toInt())
-                  }
-              }
+              override fun onBind(intent: Intent?): IBinder? = null
 
               override fun onCreate() {
                   super.onCreate()
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                      val chan = NotificationChannel("di", "DI", NotificationManager.IMPORTANCE_LOW)
-                      getSystemService(NotificationManager::class.java).createNotificationChannel(chan)
+                  windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+                  density = resources.displayMetrics.density
+
+                  islandView = FrameLayout(this).apply {
+                      setBackgroundResource(R.drawable.bg_dynamic_island)
                   }
-                  startForeground(1, NotificationCompat.Builder(this, "di").setSmallIcon(R.drawable.ic_bolt).setContentTitle("الجزيرة مفعلة").build())
-                  startOverlay(this)
+
+                  // المحتوى الداخلي للجزيرة
+                  val contentLayout = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      gravity = Gravity.CENTER
+                      layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+                  }
+
+                  val aiSparkle = TextView(this).apply {
+                      text = "✨"
+                      textSize = 16f
+                      gravity = Gravity.CENTER
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                      setPadding((8*density).toInt(), 0, (8*density).toInt(), 0)
+                  }
                   
-                  val filter = IntentFilter().apply { addAction(Intent.ACTION_POWER_CONNECTED); addAction(BluetoothDevice.ACTION_ACL_CONNECTED) }
-                  registerReceiver(systemReceiver, filter)
-                  registerReceiver(configReceiver, IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED))
+                  val titleText = TextView(this).apply {
+                      text = "Dynamic Island Pro"
+                      textSize = 14f
+                      setTextColor(Color.WHITE)
+                      setTypeface(null, Typeface.BOLD)
+                      visibility = View.GONE // مخفي في الحالة المصغرة
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                  }
+
+                  contentLayout.addView(aiSparkle)
+                  contentLayout.addView(titleText)
+                  islandView.addView(contentLayout)
+
+                  params = WindowManager.LayoutParams(
+                      (120 * density).toInt(), // عرض الجزيرة المصغر
+                      (35 * density).toInt(),  // ارتفاع الجزيرة المصغر
+                      WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                      PixelFormat.TRANSLUCENT
+                  ).apply {
+                      gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                      y = (10 * density).toInt() // المسافة من الأعلى
+                  }
+
+                  islandView.setOnClickListener {
+                      toggleIsland(titleText)
+                  }
+
+                  try {
+                      windowManager.addView(islandView, params)
+                  } catch (e: Exception) {
+                      e.printStackTrace()
+                  }
               }
-              
-              override fun onDestroy() { super.onDestroy(); unregisterReceiver(systemReceiver); unregisterReceiver(configReceiver) }
-              override fun onBind(intent: Intent?): IBinder? = null
+
+              private fun toggleIsland(titleView: View) {
+                  val startWidth = if (isExpanded) 320 * density else 120 * density
+                  val endWidth = if (isExpanded) 120 * density else 320 * density
+                  val startHeight = if (isExpanded) 120 * density else 35 * density
+                  val endHeight = if (isExpanded) 35 * density else 120 * density
+
+                  val anim = ValueAnimator.ofFloat(0f, 1f).apply {
+                      duration = 400
+                      interpolator = OvershootInterpolator(1.2f)
+                      addUpdateListener { animator ->
+                          val fraction = animator.animatedFraction
+                          params?.width = (startWidth + (endWidth - startWidth) * fraction).toInt()
+                          params?.height = (startHeight + (endHeight - startHeight) * fraction).toInt()
+                          windowManager.updateViewLayout(islandView, params)
+                      }
+                  }
+                  
+                  if (!isExpanded) {
+                      titleView.visibility = View.VISIBLE
+                  } else {
+                      titleView.visibility = View.GONE
+                  }
+
+                  anim.start()
+                  isExpanded = !isExpanded
+              }
+
+              override fun onDestroy() {
+                  super.onDestroy()
+                  if (::islandView.isInitialized) windowManager.removeView(islandView)
+              }
           }
           EOF
 
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pixel8/NotificationReceiverService.kt
-          package com.dynamicisland.pixel8
+          # ---- MainActivity ----
+          cat << 'EOF' > app/src/main/java/com/aikeyboard/pro/MainActivity.kt
+          package com.aikeyboard.pro
+
+          import android.content.Context
+          import android.content.Intent
+          import android.net.Uri
+          import android.os.Bundle
+          import android.provider.Settings
+          import android.view.inputmethod.InputMethodManager
+          import android.widget.Button
+          import android.widget.EditText
+          import android.widget.SeekBar
+          import android.widget.Toast
+          import androidx.appcompat.app.AppCompatActivity
+
+          class MainActivity : AppCompatActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  setContentView(R.layout.activity_main)
+                  val prefs = getSharedPreferences("ai_kb_prefs", Context.MODE_PRIVATE)
+
+                  // زر تفعيل الجزيرة
+                  findViewById<Button>(R.id.btn_island).setOnClickListener {
+                      if (!Settings.canDrawOverlays(this)) {
+                          val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                          startActivity(intent)
+                          Toast.makeText(this, "يرجى منح صلاحية 'الظهور فوق التطبيقات' لتفعيل الجزيرة", Toast.LENGTH_LONG).show()
+                      } else {
+                          val intent = Intent(this, DynamicIslandService::class.java)
+                          startService(intent)
+                          Toast.makeText(this, "تم تفعيل الجزيرة التفاعلية ✨", Toast.LENGTH_SHORT).show()
+                      }
+                  }
+
+                  findViewById<Button>(R.id.btn_enable).setOnClickListener { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
+                  findViewById<Button>(R.id.btn_select).setOnClickListener { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker() }
+                  
+                  val seekBar = findViewById<SeekBar>(R.id.seek_height)
+                  seekBar.progress = prefs.getInt("kb_height_prog", 10)
+
+                  val inputApiKey = findViewById<EditText>(R.id.input_api_key)
+                  inputApiKey.setText(prefs.getString("api_key", ""))
+
+                  findViewById<Button>(R.id.btn_save_api).setOnClickListener {
+                      prefs.edit().putString("api_key", inputApiKey.text.toString().trim()).putInt("kb_height_prog", seekBar.progress).apply()
+                      Toast.makeText(this, "تم الحفظ!", Toast.LENGTH_SHORT).show()
+                  }
+              }
+          }
+          EOF
+
+          # ---- كيبورد الكود السابق (لم يتغير) ----
+          cat << 'EOF' > app/src/main/java/com/aikeyboard/pro/KeyboardService.kt
+          package com.aikeyboard.pro
+          
+          import android.content.Context
+          import android.content.Intent
+          import android.content.SharedPreferences
+          import android.inputmethodservice.InputMethodService
+          import android.view.inputmethod.InputMethodManager
+          import android.view.View
+          import android.view.ViewGroup
+          import android.widget.LinearLayout
+          import android.widget.HorizontalScrollView
+          import android.widget.FrameLayout
+          import android.widget.TextView
+          import android.widget.ImageView
+          import android.widget.PopupWindow
+          import android.graphics.Color
+          import android.graphics.Typeface
+          import android.view.Gravity
+          import android.view.MotionEvent
+          import android.view.KeyEvent
+          import android.widget.Toast
           import android.os.Handler
           import android.os.Looper
-          import android.service.notification.NotificationListenerService
-          import android.service.notification.StatusBarNotification
+          import android.speech.RecognizerIntent
+          import android.view.HapticFeedbackConstants
+          import android.text.TextUtils
+          import androidx.core.content.ContextCompat
+          import kotlinx.coroutines.*
+          import org.json.JSONObject
+          import java.net.HttpURLConnection
+          import java.net.URL
+          import java.lang.StringBuilder
+          import java.io.OutputStreamWriter
 
-          class NotificationReceiverService : NotificationListenerService() {
-              private val h = Handler(Looper.getMainLooper())
-              override fun onNotificationPosted(sbn: StatusBarNotification?) {
-                  if (sbn == null) return
-                  val title = sbn.notification?.extras?.getString("android.title") ?: return
-                  val text = sbn.notification.extras.getCharSequence("android.text")?.toString() ?: ""
-                  val pkg = sbn.packageName ?: ""
-                  
-                  // ===============================================
-                  // التعديل السحري: تجاهل إشعارات نظام الأندرويد المزعجة
-                  // لمنع الجزيرة من إظهار رسالة "التطبيق يظهر فوق التطبيقات الأخرى" (الصورة 2)
-                  // ===============================================
-                  if (pkg == packageName || pkg == "android" || pkg == "com.android.systemui") return
+          class KeyboardService : InputMethodService() {
+              private var isCaps = false
+              private var isSymbols = false
+              private var currentLang = "AR" 
+              private lateinit var rootFrame: FrameLayout
+              private lateinit var mainLayout: LinearLayout
+              private lateinit var keysContainer: LinearLayout
+              private lateinit var bottomSafeArea: FrameLayout
+              private lateinit var keyPreviewBubble: TextView
+              private lateinit var sug1: TextView
+              private lateinit var sug2: TextView
+              private lateinit var sug3: TextView
+              private lateinit var prefs: SharedPreferences
+              private val scope = CoroutineScope(Dispatchers.Main + Job())
+              private var density: Float = 1f
+              private var heightProg: Int = 20
+              private val currentTypedWord = StringBuilder()
+              private val arDict = "السلام,عليكم,مرحبا,كيف,حالك,شكرا,صباح,الخير,مساء,اليوم,غدا,الآن,مشروع,تطبيق,جميل,جدا,ممتاز,نعم,لا,ماذا,هذا,أنا,أنت,نحن,الله,في,من,على,إلى,عن,مع,كل,هل,أو".split(",")
+              private val frDict = "bonjour,comment,merci,oui,non,salut,bien,avec,pour,projet,application,dynamic,island,keyboard,clavier,très,beau,bon,jour,nuit,demain".split(",")
+              private val altChars = mapOf("ا" to listOf("أ", "إ", "آ", "ء"), "ي" to listOf("ئ", "ى"), "ى" to listOf("ي", "ئ"), "و" to listOf("ؤ"), "ه" to listOf("ة"), "ة" to listOf("ه"), "ل" to listOf("لا", "لأ", "لإ", "لآ"))
+              data class KeyDef(val label: String, val weight: Float)
 
-                  val pm = applicationContext.packageManager
-                  val iconDrawable = try { pm.getApplicationIcon(pkg) } catch (e: Exception) { null }
-
-                  val color = when {
-                      pkg.contains("whatsapp") -> 0xFF25D366.toInt()
-                      pkg.contains("facebook") || pkg.contains("messenger") -> 0xFF1877F2.toInt()
-                      pkg.contains("instagram") -> 0xFFE1306C.toInt()
-                      pkg.contains("twitter") || pkg.contains("x.com") -> 0xFF1DA1F2.toInt()
-                      pkg.contains("snapchat") -> 0xFFFFFC00.toInt()
-                      pkg.contains("youtube") -> 0xFFFF0000.toInt()
-                      pkg.contains("gmail") -> 0xFFEA4335.toInt()
-                      pkg.contains("spotify") -> 0xFF1DB954.toInt()
-                      pkg.contains("telegram") -> 0xFF0088CC.toInt()
-                      else -> IslandOverlayService.getAuraColor()
+              override fun onCreateInputView(): View {
+                  prefs = getSharedPreferences("ai_kb_prefs", Context.MODE_PRIVATE)
+                  density = resources.displayMetrics.density
+                  heightProg = prefs.getInt("kb_height_prog", 10)
+                  val bgColor = ContextCompat.getColor(this, R.color.IosDarkCanvas)
+                  val textColorInt = ContextCompat.getColor(this, R.color.IosTextColor)
+                  val iconColorInt = ContextCompat.getColor(this, R.color.IosTextColor)
+                  window?.window?.navigationBarColor = bgColor
+                  rootFrame = FrameLayout(this).apply { layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); setBackgroundColor(bgColor) }
+                  mainLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundResource(R.drawable.bg_keyboard_root); layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
+                  val toolbarContainer = FrameLayout(this).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (50 * density).toInt()); setPadding((16*density).toInt(), (8*density).toInt(), (16*density).toInt(), (4*density).toInt()) }
+                  val pillToolbar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT); setBackgroundResource(R.drawable.bg_toolbar_pill); setPadding((12*density).toInt(), 0, (12*density).toInt(), 0) }
+                  val aiSparkleBtn = TextView(this).apply { text = "✨"; textSize = 16f; background = ContextCompat.getDrawable(this@KeyboardService, R.drawable.bg_key_special); layoutParams = LinearLayout.LayoutParams((32*density).toInt(), (26*density).toInt()).apply { setMargins(0,0,(16*density).toInt(),0) }; gravity = Gravity.CENTER; setOnClickListener { performAiAction("FIX") } }
+                  val settingsBtn = ImageView(this).apply { setImageResource(android.R.drawable.ic_menu_preferences); setColorFilter(iconColorInt); layoutParams = LinearLayout.LayoutParams(0, (24*density).toInt(), 1f); setOnClickListener { startActivity(Intent(this@KeyboardService, MainActivity::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) } }
+                  val fontBtn = ImageView(this).apply { setImageResource(R.drawable.ic_text_aa); setColorFilter(iconColorInt); layoutParams = LinearLayout.LayoutParams(0, (24*density).toInt(), 1f) }
+                  val transBtn = TextView(this).apply { text = "🌍"; textSize = 18f; gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(0, (24*density).toInt(), 1f); setOnClickListener { performAiAction("TRANSLATE") } }
+                  pillToolbar.addView(aiSparkleBtn); pillToolbar.addView(settingsBtn); pillToolbar.addView(fontBtn); pillToolbar.addView(transBtn)
+                  toolbarContainer.addView(pillToolbar)
+                  mainLayout.addView(toolbarContainer)
+                  val suggestionContainer = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (30 * density).toInt()); gravity = Gravity.CENTER; setPadding((16*density).toInt(), 0, (16*density).toInt(), 0) }
+                  fun createSugView(isCenter: Boolean = false): TextView { return TextView(this).apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f); gravity = Gravity.CENTER; textSize = 15f; setTextColor(textColorInt); alpha = 0.9f; isClickable = true; typeface = Typeface.create("sans-serif", if(isCenter) Typeface.BOLD else Typeface.NORMAL); setOnClickListener { applySuggestion(this.text.toString()) } } }
+                  sug1 = createSugView(); sug2 = createSugView(isCenter = true); sug3 = createSugView()
+                  suggestionContainer.addView(sug1); suggestionContainer.addView(sug2); suggestionContainer.addView(sug3)
+                  mainLayout.addView(suggestionContainer)
+                  keysContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); setPadding((6*density).toInt(), 0, (6*density).toInt(), 0) }
+                  mainLayout.addView(keysContainer)
+                  bottomSafeArea = FrameLayout(this).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (50 * density).toInt()); setPadding((24*density).toInt(), (4*density).toInt(), (24*density).toInt(), (8*density).toInt())
+                      val globeBtn = TextView(this@KeyboardService).apply { text = "🌐"; textSize = 24f; gravity = Gravity.CENTER; layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START or Gravity.CENTER_VERTICAL); setOnClickListener { currentLang = if(currentLang == "FR") "AR" else "FR"; currentTypedWord.clear(); updateSuggestions(); rebuildKeysLayout() }; setOnLongClickListener { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker(); true } }
+                      val micBtn = TextView(this@KeyboardService).apply { text = "🎙️"; textSize = 24f; gravity = Gravity.CENTER; layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END or Gravity.CENTER_VERTICAL); setOnClickListener { try { startActivity(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM) }) } catch (e: Exception) { Toast.makeText(this@KeyboardService, "غير مدعوم", Toast.LENGTH_SHORT).show() } } }
+                      addView(globeBtn); addView(micBtn)
                   }
-
-                  h.post { IslandOverlayService.postNewNotification(applicationContext, R.drawable.ic_launcher_foreground, iconDrawable, title, text, color) }
+                  mainLayout.addView(bottomSafeArea)
+                  keyPreviewBubble = TextView(this).apply { textSize = 36f; setTextColor(textColorInt); gravity = Gravity.CENTER; typeface = Typeface.create("sans-serif", Typeface.NORMAL); setBackgroundResource(R.drawable.bg_popup_bubble); elevation = 8f * density; visibility = View.GONE; layoutParams = FrameLayout.LayoutParams((56 * density).toInt(), (64 * density).toInt()) }
+                  rootFrame.addView(mainLayout); rootFrame.addView(keyPreviewBubble)
+                  rebuildKeysLayout()
+                  return rootFrame
               }
+              private fun getLayoutRows(): List<List<KeyDef>> {
+                  if (isSymbols) { return listOf(listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { KeyDef(it, 1f) }, listOf("-", "/", ":", ";", "(", ")", "€", "&", "@", "\"").map { KeyDef(it, 1f) }, listOf(KeyDef("ABC", 1.3f)) + listOf(".", ",", "?", "!", "'").map { KeyDef(it, 1f) } + listOf(KeyDef("DEL", 1.3f)), listOf(KeyDef("123", 1.5f), KeyDef("SPACE", 6.0f), KeyDef("return", 1.5f))) }
+                  return when (currentLang) {
+                      "AR" -> listOf("ض ص ث ق ف غ ع ه خ ح ج د".split(" ").map { KeyDef(it, 1f) }, listOf(KeyDef("SPACER", 0.5f)) + "ش س ي ب ل ا ت ن م ك ط".split(" ").map { KeyDef(it, 1f) } + listOf(KeyDef("SPACER", 0.5f)), listOf(KeyDef("SHIFT", 1.3f)) + "ذ ر ى ة و ز ظ".split(" ").map { KeyDef(it, 1f) } + listOf(KeyDef("DEL", 1.3f)), listOf(KeyDef("?123", 1.5f), KeyDef("SPACE", 6.0f), KeyDef("return", 1.5f)))
+                      else -> listOf("q w e r t y u i o p".split(" ").map { KeyDef(if (isCaps) it.uppercase() else it.replace("q","a").replace("w","z"), 1f) }, "a s d f g h j k l m".split(" ").map { KeyDef(if (isCaps) it.uppercase() else it.replace("a","q"), 1f) }, listOf(KeyDef("SHIFT", 1.3f)) + "z x c v b n".split(" ").map { KeyDef(if (isCaps) it.uppercase() else it.replace("z","w"), 1f) } + listOf(KeyDef("DEL", 1.3f)), listOf(KeyDef("?123", 1.5f), KeyDef("SPACE", 6.0f), KeyDef("return", 1.5f)))
+                  }
+              }
+              override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) { super.onStartInputView(info, restarting); heightProg = prefs.getInt("kb_height_prog", 10); currentTypedWord.clear(); updateSuggestions(); rebuildKeysLayout() }
+              private fun showAltMenu(anchor: View, chars: List<String>) { val container = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundResource(R.drawable.bg_popup_bubble); elevation = 8f * density; setPadding((8*density).toInt(), (4*density).toInt(), (8*density).toInt(), (4*density).toInt()) }; val popup = PopupWindow(container, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true); for (c in chars) { val btn = TextView(this).apply { text = c; textSize = 24f; setTextColor(Color.WHITE); gravity = Gravity.CENTER; setPadding((14*density).toInt(), (10*density).toInt(), (14*density).toInt(), (10*density).toInt()); typeface = Typeface.create("sans-serif", Typeface.NORMAL); setOnClickListener { currentInputConnection?.commitText(c, 1); currentTypedWord.append(c); updateSuggestions(); popup.dismiss() } }; container.addView(btn) }; val loc = IntArray(2); anchor.getLocationOnScreen(loc); popup.showAtLocation(anchor, Gravity.NO_GRAVITY, loc[0] - (40*density).toInt(), loc[1] - (60 * density).toInt()) }
+              private fun rebuildKeysLayout() {
+                  keysContainer.removeAllViews()
+                  val rows = getLayoutRows(); val baseKeyHeight = (44 * density).toInt(); val extraPadding = (heightProg * 0.5f * density).toInt(); val keyMarginH = (3f * density).toInt(); val keyMarginV = (6f * density).toInt(); val textColorInt = ContextCompat.getColor(this, R.color.IosTextColor); val handler = Handler(Looper.getMainLooper())
+                  for (row in rows) {
+                      val rowLayout = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, baseKeyHeight + extraPadding).apply { setMargins(0, keyMarginV, 0, keyMarginV) } }
+                      for (keyDef in row) {
+                          val label = keyDef.label
+                          if (label == "SPACER") { rowLayout.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, keyDef.weight) }) } else {
+                              val keyView = FrameLayout(this).apply {
+                                  layoutParams = LinearLayout.LayoutParams(0, baseKeyHeight, keyDef.weight).apply { setMargins(keyMarginH, 0, keyMarginH, 0); gravity = Gravity.CENTER_VERTICAL }
+                                  val isSpecial = label == "DEL" || label == "SHIFT" || label == "123" || label == "ABC" || label == "?123"
+                                  val isEnter = label == "return"
+                                  setBackgroundResource(if (isEnter) R.drawable.key_return_selector else if (isSpecial) R.drawable.key_special_selector else R.drawable.key_selector); isClickable = true
+                                  if (label == "SHIFT" || label == "DEL") {
+                                      val iconView = ImageView(this@KeyboardService).apply { layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER); setImageResource(if(label=="SHIFT") R.drawable.ic_shift else R.drawable.ic_delete); setColorFilter(textColorInt); if(label == "SHIFT" && isCaps) alpha = 1.0f else if(label == "SHIFT") alpha = 0.6f }; addView(iconView)
+                                  } else {
+                                      val textView = TextView(this@KeyboardService).apply { text = when (label) { "SPACE" -> "المسافة"; else -> label }; textSize = if (isSpecial || isEnter) 16f else 19f; if (label == "SPACE") alpha = 0.5f; if (isEnter) setTypeface(null, Typeface.BOLD); gravity = Gravity.CENTER; setTextColor(textColorInt); layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) }; addView(textView)
+                                  }
+                                  var longPressRunnable: Runnable? = null; var isLongPressTriggered = false
+                                  setOnTouchListener { v, event ->
+                                      when (event.action) {
+                                          MotionEvent.ACTION_DOWN -> { v.isPressed = true; isLongPressTriggered = false; v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); if (label.length == 1 && label != " ") { val keyX = v.x + rowLayout.x; val keyY = v.y + rowLayout.y + keysContainer.y + (44*density); keyPreviewBubble.text = label; keyPreviewBubble.x = keyX - (keyPreviewBubble.layoutParams.width - v.width) / 2f; keyPreviewBubble.y = keyY - keyPreviewBubble.layoutParams.height; keyPreviewBubble.visibility = View.VISIBLE; val alternates = altChars[label]; if (alternates != null) { longPressRunnable = Runnable { isLongPressTriggered = true; keyPreviewBubble.visibility = View.GONE; v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS); showAltMenu(v, alternates) }; handler.postDelayed(longPressRunnable!!, 300) } }; true }
+                                          MotionEvent.ACTION_UP -> { v.isPressed = false; keyPreviewBubble.visibility = View.GONE; if (longPressRunnable != null) handler.removeCallbacks(longPressRunnable!!); if (!isLongPressTriggered) handleKeyClick(label); true }
+                                          MotionEvent.ACTION_CANCEL -> { v.isPressed = false; keyPreviewBubble.visibility = View.GONE; if (longPressRunnable != null) handler.removeCallbacks(longPressRunnable!!); true }
+                                          else -> false
+                                      }
+                                  }
+                              }
+                              rowLayout.addView(keyView)
+                          }
+                      }
+                      keysContainer.addView(rowLayout)
+                  }
+              }
+              private fun updateSuggestions() { if(!this::sug1.isInitialized) return; val word = currentTypedWord.toString().trim(); val dict = when(currentLang) { "AR" -> arDict; else -> frDict }; if (word.isEmpty() || isSymbols) { sug1.text = dict[0]; sug2.text = dict[1]; sug3.text = dict[2]; return }; val matches = mutableListOf<String>(); for (item in dict) { if (item.length >= word.length && item.startsWith(word, ignoreCase = true)) matches.add(item) }; sug1.text = if (matches.size > 0) matches[0] else ""; sug2.text = word; sug3.text = if (matches.size > 1) matches[1] else "" }
+              private fun applySuggestion(sug: String) { if (sug.isEmpty()) return; val ic = currentInputConnection ?: return; ic.deleteSurroundingText(currentTypedWord.length, 0); ic.commitText(sug + " ", 1); currentTypedWord.clear(); updateSuggestions() }
+              private fun handleKeyClick(key: String) {
+                  val ic = currentInputConnection ?: return
+                  when (key) {
+                      "DEL" -> { ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL)); ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL)); if (currentTypedWord.isNotEmpty()) currentTypedWord.deleteCharAt(currentTypedWord.length - 1) }
+                      "SPACE", "return" -> { if (key == "SPACE") { val autoCorrect = sug1.text.toString(); if (autoCorrect.isNotEmpty() && autoCorrect != arDict[0] && autoCorrect != frDict[0] && currentTypedWord.isNotEmpty()) { ic.deleteSurroundingText(currentTypedWord.length, 0); ic.commitText(autoCorrect + " ", 1) } else { ic.commitText(" ", 1) } } else { ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER)); ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER)) }; currentTypedWord.clear() }
+                      "SHIFT" -> { isCaps = !isCaps; rebuildKeysLayout() }
+                      "123", "?123" -> { isSymbols = true; rebuildKeysLayout(); updateSuggestions() }
+                      "ABC" -> { isSymbols = false; rebuildKeysLayout(); updateSuggestions() }
+                      else -> { val letter = if (isCaps && !isSymbols && currentLang != "AR") key.uppercase() else key; ic.commitText(letter, 1); if (isCaps) { isCaps = false; rebuildKeysLayout() }; if (key.length == 1 && !isSymbols) { currentTypedWord.append(letter) } }
+                  }
+                  updateSuggestions()
+              }
+              private fun performAiAction(actionType: String) {
+                  val apiKey = prefs.getString("api_key", ""); if (apiKey.isNullOrEmpty()) { Toast.makeText(this, "ضع المفتاح من الإعدادات", Toast.LENGTH_SHORT).show(); return }
+                  val ic = currentInputConnection ?: return; val extractedText = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)?.text?.toString() ?: ""
+                  if (extractedText.isBlank()) { Toast.makeText(this, "حدد نصاً أولاً", Toast.LENGTH_SHORT).show(); return }; Toast.makeText(this, "الذكاء الاصطناعي يعمل...", Toast.LENGTH_SHORT).show()
+                  scope.launch {
+                      try {
+                          val responseStr = withContext(Dispatchers.IO) { val conn = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey").openConnection() as HttpURLConnection; conn.requestMethod = "POST"; conn.setRequestProperty("Content-Type", "application/json"); conn.doOutput = true; val prompt = if(actionType == "FIX") "صحح النص: $extractedText" else "ترجم النص: $extractedText"; val payload = JSONObject().apply { put("contents", org.json.JSONArray().apply { put(JSONObject().apply { put("parts", org.json.JSONArray().apply { put(JSONObject().apply { put("text", prompt) }) }) }) }) }; OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }; conn.inputStream.bufferedReader().use { it.readText() } }
+                          val reply = JSONObject(responseStr).getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text").trim(); withContext(Dispatchers.Main) { ic.deleteSurroundingText(extractedText.length, 0); ic.commitText(reply, 1) }
+                      } catch (e: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@KeyboardService, "خطأ بالاتصال", Toast.LENGTH_SHORT).show() } }
+                  }
+              }
+              override fun onDestroy() { super.onDestroy(); scope.cancel() }
           }
           EOF
 
+          # ---- إضافة صلاحية الرسم فوق التطبيقات (System Alert Window) ----
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.VIBRATE" />
+              <!-- الصلاحية المطلوبة للجزيرة التفاعلية -->
               <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-              <uses-permission android:name="android.permission.BLUETOOTH" />
-              <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-              <application android:icon="@mipmap/ic_launcher" android:label="Dynamic Island Pro" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+              
+              <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/Theme.AIKeyboard">
                   <activity android:name=".MainActivity" android:exported="true">
-                      <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
                   </activity>
-                  <service android:name=".IslandOverlayService" android:exported="false" android:foregroundServiceType="specialUse" />
-                  <service android:name=".NotificationReceiverService" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
-                      <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
+                  
+                  <!-- كيبورد iOS -->
+                  <service android:name=".KeyboardService" android:label="@string/ime_name" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
+                      <intent-filter><action android:name="android.view.InputMethod" /></intent-filter>
+                      <meta-data android:name="android.view.im" android:resource="@xml/method" />
                   </service>
+
+                  <!-- خدمة الجزيرة التفاعلية -->
+                  <service android:name=".DynamicIslandService" android:exported="false" />
               </application>
           </manifest>
           EOF
-
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Build APK
         run: |
           gradle assembleDebug -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/DynamicIsland-Pixel8-Pro-LockscreenFix.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-Pro.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DynamicIsland-Pixel8-Pro-LockscreenFix
-          path: release-output/DynamicIsland-Pixel8-Pro-LockscreenFix.apk
+          name: Dynamic-Island-Pro
+          path: release-output/Dynamic-Island-Pro.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: lockscreen-fix-v24
-          name: "Dynamic Island Pixel 8 Pro - Lockscreen Fix (V24)"
-          body: "1. 🔒 **دعم شاشة القفل:** تم إعطاء الجزيرة تصريح `FLAG_SHOW_WHEN_LOCKED` لتتمكن من الظهور فوق شاشة القفل بكل سلاسة.\n2. ⚙️ **منع إشعارات النظام المزعجة:** تم إيقاف التقاط إشعار 'التطبيق يظهر فوق التطبيقات الأخرى' الخاص بنظام الأندرويد، لتظل الجزيرة نظيفة وتلتقط الإشعارات المهمة فقط."
-          files: release-output/DynamicIsland-Pixel8-Pro-LockscreenFix.apk
+          tag_name: ios-island-v1.0
+          name: "Dynamic Island Pro - (The First Island 🏝️)"
+          body: "1. 🏝️ **الجزيرة التفاعلية (Dynamic Island):** تمت إضافة خدمة تطفو فوق الشاشة بشريط أسود أنيق.\n2. 🪄 **أنيميشن سلس (Overshoot):** اضغط على الجزيرة لتتوسع وتظهر التفاصيل، واضغط مرة أخرى لتصغر بحركة مرنة وجميلة جداً.\n3. 🔐 **إدارة الصلاحيات:** زر في الإعدادات لطلب سماحية الظهور فوق التطبيقات.\n4. ⌨️ **كيبورد الـ iOS ثابت:** الكيبورد الذي صممناه بكود Compose يعمل بشكل مثالي كالمعتاد."
+          files: release-output/Dynamic-Island-Pro.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
