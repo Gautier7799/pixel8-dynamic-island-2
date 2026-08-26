@@ -1,4 +1,4 @@
-name: Build Dynamic Island AI Pro
+name: Build Dynamic Island Compose Pro
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Dynamic Island Project
+      - name: Generate Dynamic Island Compose Project
         run: |
           rm -rf app/src/main/res app/src/main/java
           mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/dynamicisland/aipro app/src/main/res/mipmap-anydpi-v26
@@ -62,17 +62,25 @@ jobs:
               defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 1; versionName = "1.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
+              buildFeatures { compose = true }
+              composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
           }
           dependencies {
               implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.appcompat:appcompat:1.6.1")
-              implementation("com.google.android.material:material:1.11.0")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+              implementation("androidx.lifecycle:lifecycle-service:2.7.0")
+              implementation("androidx.activity:activity-compose:1.8.2")
+              implementation(platform("androidx.compose:compose-bom:2024.02.00"))
+              implementation("androidx.compose.ui:ui")
+              implementation("androidx.compose.ui:ui-graphics")
+              implementation("androidx.compose.material3:material3")
+              implementation("androidx.compose.foundation:foundation")
           }
           INNER_EOF
 
           cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Dynamic Island AI</string>
+              <string name="app_name">Dynamic Island Pro</string>
           </resources>
           INNER_EOF
 
@@ -90,139 +98,188 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
           INNER_EOF
 
-          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/IslandService.kt
+          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/DynamicIslandService.kt
           package com.dynamicisland.aipro
 
-          import android.animation.ValueAnimator
-          import android.app.Service
           import android.content.Context
           import android.content.Intent
-          import android.graphics.Color
+          import android.content.SharedPreferences
           import android.graphics.PixelFormat
-          import android.graphics.drawable.GradientDrawable
-          import android.os.IBinder
           import android.view.Gravity
-          import android.view.MotionEvent
-          import android.view.View
-          import android.view.ViewGroup
           import android.view.WindowManager
-          import android.view.animation.OvershootInterpolator
-          import android.widget.FrameLayout
-          import android.widget.LinearLayout
-          import android.widget.TextView
+          import androidx.compose.animation.animateContentSize
+          import androidx.compose.animation.core.Spring
+          import androidx.compose.animation.core.spring
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.gestures.detectDragGestures
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material3.Text
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.input.pointer.pointerInput
+          import androidx.compose.ui.platform.ComposeView
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
+          import androidx.lifecycle.LifecycleService
+          import androidx.lifecycle.ViewModelStore
+          import androidx.lifecycle.ViewModelStoreOwner
+          import androidx.lifecycle.setViewTreeLifecycleOwner
+          import androidx.lifecycle.setViewTreeViewModelStoreOwner
+          import androidx.savedstate.SavedStateRegistry
+          import androidx.savedstate.SavedStateRegistryController
+          import androidx.savedstate.SavedStateRegistryOwner
+          import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
-          class IslandService : Service() {
+          class DynamicIslandService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
+
               private lateinit var windowManager: WindowManager
-              private lateinit var islandView: FrameLayout
+              private lateinit var composeView: ComposeView
               private lateinit var params: WindowManager.LayoutParams
-              
-              private var isExpanded = false
-              private val collapsedWidthDp = 160f
-              private val collapsedHeightDp = 40f
-              private val expandedWidthDp = 340f
-              private val expandedHeightDp = 160f
+              private lateinit var prefs: SharedPreferences
 
-              override fun onBind(intent: Intent?): IBinder? = null
+              // متطلبات تشغيل Compose داخل Service
+              private val store = ViewModelStore()
+              private val savedStateRegistryController = SavedStateRegistryController.create(this)
+              override val viewModelStore: ViewModelStore get() = store
+              override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
               override fun onCreate() {
                   super.onCreate()
+                  savedStateRegistryController.performRestore(null)
+                  
+                  prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                   windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                  val dp = resources.displayMetrics.density
+                  composeView = ComposeView(this)
+
+                  composeView.setViewTreeLifecycleOwner(this)
+                  composeView.setViewTreeViewModelStoreOwner(this)
+                  composeView.setViewTreeSavedStateRegistryOwner(this)
+
+                  val initialX = prefs.getInt("pos_x", 0)
+                  val initialY = prefs.getInt("pos_y", 32)
 
                   params = WindowManager.LayoutParams(
-                      (collapsedWidthDp * dp).toInt(),
-                      (collapsedHeightDp * dp).toInt(),
+                      WindowManager.LayoutParams.WRAP_CONTENT,
+                      WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
+                              WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or 
+                              WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
                       PixelFormat.TRANSLUCENT
                   ).apply {
                       gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                      y = (15 * dp).toInt() // المسافة من أعلى الشاشة
+                      x = initialX
+                      y = initialY
                   }
 
-                  islandView = FrameLayout(this).apply {
-                      background = GradientDrawable().apply {
-                          setColor(Color.BLACK)
-                          cornerRadius = 100f * dp // حواف دائرية مثالية
-                      }
+                  composeView.setContent {
+                      DynamicIslandComponent(prefs, windowManager, params, composeView)
                   }
 
-                  // المحتوى المصغر (أيقونة الذكاء الاصطناعي)
-                  val collapsedContent = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                      gravity = Gravity.CENTER
-                  }
-                  collapsedContent.addView(TextView(this).apply {
-                      text = "✨"
-                      textSize = 18f
-                  })
-
-                  // المحتوى الموسع
-                  val expandedContent = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                      gravity = Gravity.CENTER
-                      alpha = 0f // مخفي في البداية
-                  }
-                  expandedContent.addView(TextView(this).apply {
-                      text = "مرحباً بك في Dynamic Island AI Pro"
-                      textSize = 16f
-                      setTextColor(Color.WHITE)
-                      gravity = Gravity.CENTER
-                  })
-                  expandedContent.addView(TextView(this).apply {
-                      text = "أنا مستعد لأوامرك الذكية..."
-                      textSize = 12f
-                      setTextColor(Color.GRAY)
-                      gravity = Gravity.CENTER
-                      setPadding(0, (8*dp).toInt(), 0, 0)
-                  })
-
-                  islandView.addView(expandedContent)
-                  islandView.addView(collapsedContent)
-
-                  islandView.setOnClickListener {
-                      isExpanded = !isExpanded
-                      animateIsland(isExpanded, collapsedContent, expandedContent)
-                  }
-
-                  windowManager.addView(islandView, params)
-              }
-
-              private fun animateIsland(expand: Boolean, collapsed: View, expanded: View) {
-                  val dp = resources.displayMetrics.density
-                  val startW = if (expand) collapsedWidthDp else expandedWidthDp
-                  val endW = if (expand) expandedWidthDp else collapsedWidthDp
-                  val startH = if (expand) collapsedHeightDp else expandedHeightDp
-                  val endH = if (expand) expandedHeightDp else collapsedHeightDp
-
-                  val animator = ValueAnimator.ofFloat(0f, 1f).apply {
-                      duration = 400
-                      interpolator = OvershootInterpolator(1.2f) // حركة مرنة (Bouncy) مثل iOS
-                      addUpdateListener { anim ->
-                          val fraction = anim.animatedValue as Float
-                          params.width = ((startW + (endW - startW) * fraction) * dp).toInt()
-                          params.height = ((startH + (endH - startH) * fraction) * dp).toInt()
-                          windowManager.updateViewLayout(islandView, params)
-                          
-                          // تلاشي المحتويات
-                          if (expand) {
-                              collapsed.alpha = 1f - (fraction * 2f).coerceIn(0f, 1f)
-                              expanded.alpha = ((fraction - 0.5f) * 2f).coerceIn(0f, 1f)
-                          } else {
-                              expanded.alpha = 1f - (fraction * 2f).coerceIn(0f, 1f)
-                              collapsed.alpha = ((fraction - 0.5f) * 2f).coerceIn(0f, 1f)
-                          }
-                      }
-                  }
-                  animator.start()
+                  windowManager.addView(composeView, params)
               }
 
               override fun onDestroy() {
                   super.onDestroy()
-                  if (::windowManager.isInitialized && ::islandView.isInitialized) {
-                      windowManager.removeView(islandView)
+                  if (::composeView.isInitialized) {
+                      windowManager.removeView(composeView)
+                  }
+              }
+          }
+
+          @Composable
+          fun DynamicIslandComponent(
+              prefs: SharedPreferences,
+              windowManager: WindowManager,
+              params: WindowManager.LayoutParams,
+              view: View
+          ) {
+              var isExpanded by remember { mutableStateOf(false) }
+              
+              // قراءة الأحجام من الإعدادات مع تحديث فوري
+              var islandWidth by remember { mutableStateOf(prefs.getInt("width", 130).dp) }
+              var islandHeight by remember { mutableStateOf(prefs.getInt("height", 38).dp) }
+
+              // مستمع لتحديثات الأحجام من التطبيق الرئيسي
+              DisposableEffect(Unit) {
+                  val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+                      if (key == "width") islandWidth = sharedPreferences.getInt("width", 130).dp
+                      if (key == "height") islandHeight = sharedPreferences.getInt("height", 38).dp
+                  }
+                  prefs.registerOnSharedPreferenceChangeListener(listener)
+                  onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+              }
+
+              Box(
+                  modifier = Modifier
+                      // تحريك الجزيرة بالإصبع وحفظ المكان
+                      .pointerInput(Unit) {
+                          detectDragGestures(
+                              onDragEnd = {
+                                  prefs.edit()
+                                      .putInt("pos_x", params.x)
+                                      .putInt("pos_y", params.y)
+                                      .apply()
+                              }
+                          ) { change, dragAmount ->
+                              change.consume()
+                              params.x += dragAmount.x.toInt()
+                              params.y += dragAmount.y.toInt()
+                              windowManager.updateViewLayout(view, params)
+                          }
+                      }
+                      .padding(top = 8.dp)
+                      .animateContentSize(
+                          animationSpec = spring(
+                              dampingRatio = Spring.DampingRatioLowBouncy,
+                              stiffness = Spring.StiffnessLow
+                          )
+                      )
+                      .background(Color.Black, shape = RoundedCornerShape(100.dp))
+                      .clickable { isExpanded = !isExpanded },
+                  contentAlignment = Alignment.Center
+              ) {
+                  if (!isExpanded) {
+                      // الوضع المصغّر القابل للتعديل
+                      Row(
+                          modifier = Modifier
+                              .width(islandWidth)
+                              .height(islandHeight)
+                              .padding(horizontal = 12.dp),
+                          horizontalArrangement = Arrangement.SpaceBetween,
+                          verticalAlignment = Alignment.CenterVertically
+                      ) {
+                          Text("🟢", fontSize = 12.sp)
+                          Text("AI Pro", color = Color.White, fontSize = 12.sp)
+                      }
+                  } else {
+                      // الوضع الموسّع
+                      Column(
+                          modifier = Modifier
+                              .width(320.dp)
+                              .height(100.dp)
+                              .padding(16.dp),
+                          verticalArrangement = Arrangement.Center
+                      ) {
+                          Text(text = "رسالة ذكية", color = Color.LightGray, fontSize = 12.sp)
+                          Spacer(modifier = Modifier.height(8.dp))
+                          Row(
+                              modifier = Modifier.fillMaxWidth(),
+                              horizontalArrangement = Arrangement.SpaceBetween,
+                              verticalAlignment = Alignment.CenterVertically
+                          ) {
+                              Text(text = "مرحباً! يمكنني المساعدة.", color = Color.White, fontSize = 16.sp)
+                              Text(
+                                  text = "✨", 
+                                  fontSize = 18.sp,
+                                  modifier = Modifier.clickable { isExpanded = false }
+                              )
+                          }
+                      }
                   }
               }
           }
@@ -231,71 +288,127 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/MainActivity.kt
           package com.dynamicisland.aipro
 
+          import android.content.Context
           import android.content.Intent
           import android.net.Uri
           import android.os.Bundle
           import android.provider.Settings
-          import android.view.Gravity
-          import android.view.ViewGroup
-          import android.widget.LinearLayout
-          import android.widget.TextView
-          import android.graphics.Color
-          import android.graphics.drawable.GradientDrawable
-          import androidx.appcompat.app.AppCompatActivity
+          import androidx.activity.ComponentActivity
+          import androidx.activity.compose.setContent
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.text.font.FontWeight
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
 
-          class MainActivity : AppCompatActivity() {
+          class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  val dp = resources.displayMetrics.density
+                  val prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
 
-                  val bgDark = Color.parseColor("#101411")
-                  val pillActive = Color.parseColor("#A8E5BA")
-                  val textOnActive = Color.parseColor("#0F2015")
-                  val textOnDark = Color.parseColor("#E1E3DF")
+                  setContent {
+                      MaterialTheme {
+                          Surface(
+                              modifier = Modifier.fillMaxSize(),
+                              color = Color(0xFF101411) // لون خلفية داكن أنيق
+                          ) {
+                              Column(
+                                  modifier = Modifier
+                                      .fillMaxSize()
+                                      .padding(24.dp),
+                                  horizontalAlignment = Alignment.CenterHorizontally
+                              ) {
+                                  Text(
+                                      text = "إعدادات الجزيرة 🏝️",
+                                      color = Color.White,
+                                      fontSize = 28.sp,
+                                      fontWeight = FontWeight.Bold,
+                                      modifier = Modifier.padding(bottom = 32.dp, top = 24.dp)
+                                  )
 
-                  val root = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      setBackgroundColor(bgDark)
-                      setPadding((24*dp).toInt(), (60*dp).toInt(), (24*dp).toInt(), (24*dp).toInt())
-                      gravity = Gravity.CENTER_HORIZONTAL
-                  }
+                                  // شريط التحكم بالعرض (Width)
+                                  var widthValue by remember { mutableStateOf(prefs.getInt("width", 130).toFloat()) }
+                                  ControlSlider(
+                                      label = "العرض (Width): \${widthValue.toInt()}",
+                                      value = widthValue,
+                                      range = 80f..250f,
+                                      onValueChange = { 
+                                          widthValue = it
+                                          prefs.edit().putInt("width", it.toInt()).apply()
+                                      }
+                                  )
 
-                  root.addView(TextView(this).apply {
-                      text = "Dynamic Island AI"
-                      textSize = 36f
-                      setTextColor(textOnDark)
-                      typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      setPadding(0, 0, 0, (20*dp).toInt())
-                  })
+                                  // شريط التحكم بالارتفاع (Height)
+                                  var heightValue by remember { mutableStateOf(prefs.getInt("height", 38).toFloat()) }
+                                  ControlSlider(
+                                      label = "الارتفاع (Height): \${heightValue.toInt()}",
+                                      value = heightValue,
+                                      range = 24f..80f,
+                                      onValueChange = { 
+                                          heightValue = it
+                                          prefs.edit().putInt("height", it.toInt()).apply()
+                                      }
+                                  )
+                                  
+                                  Spacer(modifier = Modifier.height(24.dp))
+                                  
+                                  Card(
+                                      colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2320)),
+                                      shape = RoundedCornerShape(16.dp),
+                                      modifier = Modifier.fillMaxWidth()
+                                  ) {
+                                      Text(
+                                          text = "💡 نصيحة: يمكنك تحريك الجزيرة وتغيير مكانها بمجرد الضغط عليها وسحبها بإصبعك على الشاشة مباشرة!",
+                                          color = Color(0xFFA8E5BA),
+                                          modifier = Modifier.padding(16.dp),
+                                          fontSize = 14.sp
+                                      )
+                                  }
 
-                  root.addView(TextView(this).apply {
-                      text = "لتشغيل الجزيرة، نحتاج إلى إذن الظهور فوق التطبيقات الأخرى."
-                      textSize = 16f
-                      setTextColor(Color.GRAY)
-                      gravity = Gravity.CENTER
-                      setPadding(0, 0, 0, (40*dp).toInt())
-                  })
+                                  Spacer(modifier = Modifier.weight(1f))
 
-                  val btn = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 24f * dp }
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (72*dp).toInt())
-                      gravity = Gravity.CENTER
-                      
-                      addView(TextView(context).apply {
-                          text = "تشغيل الجزيرة التفاعلية 🚀"
-                          textSize = 18f
-                          setTextColor(textOnActive)
-                          typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      })
-                      
-                      setOnClickListener {
-                          checkOverlayAndStart()
+                                  Button(
+                                      onClick = { checkOverlayAndStart() },
+                                      modifier = Modifier
+                                          .fillMaxWidth()
+                                          .height(64.dp),
+                                      colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA8E5BA)),
+                                      shape = RoundedCornerShape(32.dp)
+                                  ) {
+                                      Text(
+                                          text = "تشغيل الجزيرة التفاعلية 🚀",
+                                          color = Color(0xFF0F2015),
+                                          fontSize = 18.sp,
+                                          fontWeight = FontWeight.Bold
+                                      )
+                                  }
+                              }
+                          }
                       }
                   }
-                  
-                  root.addView(btn)
-                  setContentView(root)
+              }
+
+              @Composable
+              fun ControlSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, onValueChange: (Float) -> Unit) {
+                  Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                      Text(text = label, color = Color.LightGray, fontSize = 16.sp)
+                      Slider(
+                          value = value,
+                          onValueChange = onValueChange,
+                          valueRange = range,
+                          colors = SliderDefaults.colors(
+                              thumbColor = Color(0xFFA8E5BA),
+                              activeTrackColor = Color(0xFFA8E5BA),
+                              inactiveTrackColor = Color(0xFF2D322E)
+                          )
+                      )
+                  }
               }
 
               private fun checkOverlayAndStart() {
@@ -303,8 +416,7 @@ jobs:
                       val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:\$packageName"))
                       startActivity(intent)
                   } else {
-                      startService(Intent(this, IslandService::class.java))
-                      finish() // إغلاق التطبيق والبقاء مع الجزيرة
+                      startService(Intent(this, DynamicIslandService::class.java))
                   }
               }
           }
@@ -313,7 +425,7 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <!-- إذن الظهور فوق التطبيقات للجزيرة التفاعلية -->
+              <!-- صلاحية عرض النوافذ فوق التطبيقات -->
               <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
               
               <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
@@ -324,7 +436,7 @@ jobs:
                       </intent-filter>
                   </activity>
                   
-                  <service android:name=".IslandService" android:exported="false" />
+                  <service android:name=".DynamicIslandService" android:exported="false" />
               </application>
           </manifest>
           INNER_EOF
@@ -341,11 +453,11 @@ jobs:
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-AI.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-Pro.apk
 
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Dynamic-Island-AI-Pro
-          path: release-output/Dynamic-Island-AI.apk
+          name: Dynamic-Island-Pro
+          path: release-output/Dynamic-Island-Pro.apk
           retention-days: 5
