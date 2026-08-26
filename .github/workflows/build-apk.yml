@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 7; versionName = "1.6.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 8; versionName = "1.7.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -78,6 +78,7 @@ jobs:
               implementation("androidx.compose.ui:ui-graphics")
               implementation("androidx.compose.material3:material3")
               implementation("androidx.compose.foundation:foundation")
+              implementation("androidx.compose.animation:animation")
           }
           INNER_EOF
 
@@ -167,7 +168,7 @@ jobs:
           import android.view.Gravity
           import android.view.MotionEvent
           import android.view.WindowManager
-          import androidx.compose.animation.animateContentSize
+          import androidx.compose.animation.*
           import androidx.compose.animation.core.spring
           import androidx.compose.foundation.background
           import androidx.compose.foundation.border
@@ -225,7 +226,7 @@ jobs:
               private val islandModeState = mutableStateOf(IslandMode.IDLE)
               private val currentEventState = mutableStateOf(IslandEvent())
 
-              private val islandWidthState = mutableStateOf(60.dp) // افتراضي أصغر كبسولة
+              private val islandWidthState = mutableStateOf(60.dp)
               private val islandHeightState = mutableStateOf(26.dp)
               private val islandRadiusState = mutableStateOf(100.dp)
               private val glowWidthState = mutableStateOf(2.dp)
@@ -349,7 +350,8 @@ jobs:
                           onOpenSettings = {
                               islandModeState.value = IslandMode.IDLE
                               startActivity(Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-                          }
+                          },
+                          onModeChange = { islandModeState.value = it }
                       )
                   }
                   windowManager.addView(composeView, params)
@@ -364,91 +366,106 @@ jobs:
 
           @Composable
           fun DynamicIslandContent(
-              mode: IslandMode, event: IslandEvent, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp, radius: androidx.compose.ui.unit.Dp, glow: androidx.compose.ui.unit.Dp, onOpenSettings: () -> Unit
+              mode: IslandMode, event: IslandEvent, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp, radius: androidx.compose.ui.unit.Dp, glow: androidx.compose.ui.unit.Dp, onOpenSettings: () -> Unit, onModeChange: (IslandMode) -> Unit
           ) {
-              // التمدد العرضي النحيف للكبسولة
-              val targetWidth = when (mode) {
-                  IslandMode.EVENT_COMPACT -> 280.dp // كبسولة عرضية
-                  IslandMode.EVENT_EXPANDED -> 320.dp
-                  else -> width
-              }
-              // الارتفاع يبقى صغيراً في وضع الكبسولة (EVENT_COMPACT)
-              val targetHeight = when (mode) {
-                  IslandMode.EVENT_COMPACT -> height + 8.dp // زيادة بسيطة جدا في الارتفاع للحفاظ على الأناقة
-                  IslandMode.EVENT_EXPANDED -> height + (if(event.type == "MUSIC") 140.dp else 100.dp) // التوسع الكامل
-                  else -> height
-              }
-              
-              val bgColor = if (mode == IslandMode.IDLE) Color.Black else Color(0xD9000000)
-              val borderModifier = if (mode != IslandMode.IDLE && glow > 0.dp) Modifier.border(width = glow, color = event.color, shape = RoundedCornerShape(radius)) else Modifier
-
-              Box(
-                  modifier = Modifier
-                      .width(targetWidth)
-                      .then(
-                          if (mode == IslandMode.EVENT_EXPANDED) Modifier.heightIn(min = targetHeight, max = height + 300.dp) 
-                          else Modifier.height(targetHeight)
-                      )
-                      .animateContentSize(animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f))
-                      .then(borderModifier)
-                      .background(bgColor, shape = RoundedCornerShape(radius)),
-                  contentAlignment = Alignment.TopCenter
+              Column(
+                  horizontalAlignment = Alignment.CenterHorizontally,
+                  modifier = Modifier.wrapContentSize()
               ) {
-                  // محاذاة في المنتصف لتتناسب مع الكبسولة النحيفة
-                  Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                      if (mode == IslandMode.EVENT_COMPACT) {
-                          // تصميم الكبسولة النحيفة والمصغرة (Nano Pill)
-                          Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                              Box(modifier = Modifier.size(height).clip(CircleShape).background(Color(0x22FFFFFF)), contentAlignment = Alignment.Center) {
-                                  Text(event.icon, fontSize = 14.sp)
+                  // الجزء الثابت: يغطي ثقب الكاميرا دائماً (الجزيرة النانوية)
+                  Box(
+                      modifier = Modifier
+                          .width(width)
+                          .height(height)
+                          .background(Color.Black, shape = RoundedCornerShape(radius))
+                  )
+                  
+                  // الجزء المنفصل: كبسولة الإشعارات التي تطفو أسفل الكاميرا
+                  AnimatedVisibility(
+                      visible = mode != IslandMode.IDLE,
+                      enter = expandVertically(expandFrom = Alignment.Top, animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)) + fadeIn(),
+                      exit = shrinkVertically(shrinkTowards = Alignment.Top, animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)) + fadeOut()
+                  ) {
+                      val targetWidth = when (mode) {
+                          IslandMode.EVENT_COMPACT -> 240.dp
+                          IslandMode.EVENT_EXPANDED -> 300.dp
+                          else -> 0.dp
+                      }
+                      
+                      val targetHeight = when (mode) {
+                          IslandMode.EVENT_COMPACT -> 32.dp // كبسولة صغيرة ونحيفة جداً
+                          IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 130.dp else 90.dp
+                          else -> 0.dp
+                      }
+
+                      val bgColor = Color(0xD9000000) // زجاج أسود شفاف
+                      val borderModifier = if (glow > 0.dp) Modifier.border(glow, event.color, RoundedCornerShape(24.dp)) else Modifier
+
+                      Box(
+                          modifier = Modifier
+                              .padding(top = 8.dp) // المسافة بين الكاميرا والكبسولة
+                              .width(targetWidth)
+                              .height(targetHeight)
+                              .then(borderModifier)
+                              .background(bgColor, RoundedCornerShape(24.dp)),
+                          contentAlignment = Alignment.Center
+                      ) {
+                          if (mode == IslandMode.EVENT_COMPACT) {
+                              // تصميم الكبسولة النحيفة جداً
+                              Row(
+                                  modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                                  verticalAlignment = Alignment.CenterVertically
+                              ) {
+                                  Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                                      Text(event.icon, fontSize = 10.sp)
+                                  }
+                                  Spacer(modifier = Modifier.width(8.dp))
+                                  val combinedText = if(event.title.isNotEmpty() && event.text.isNotEmpty()) "${event.title} • ${event.text}" else event.title + event.text
+                                  Text(text = combinedText, color = Color.White, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                               }
-                              Spacer(modifier = Modifier.width(10.dp))
-                              // دمج العنوان والنص في سطر واحد أنيق
-                              val combinedText = if(event.title.isNotEmpty() && event.text.isNotEmpty()) "${event.title} • ${event.text}" else event.title + event.text
-                              Text(text = combinedText, color = Color.White, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                          }
-                      } else if (mode == IslandMode.EVENT_EXPANDED) {
-                          // التوسع الكامل للأسفل عند النقر
-                          if (event.type == "MUSIC") {
-                              Column(modifier = Modifier.fillMaxWidth().padding(top = height + 8.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-                                  Row(verticalAlignment = Alignment.CenterVertically) {
-                                      Box(modifier = Modifier.size(48.dp).background(Color(0x331DB954), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-                                          Text("🎵", fontSize = 24.sp)
+                          } else if (mode == IslandMode.EVENT_EXPANDED) {
+                              // التوسع الكامل للأسفل عند النقر
+                              if (event.type == "MUSIC") {
+                                  Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                                      Row(verticalAlignment = Alignment.CenterVertically) {
+                                          Box(modifier = Modifier.size(40.dp).background(Color(0x331DB954), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+                                              Text("🎵", fontSize = 20.sp)
+                                          }
+                                          Spacer(modifier = Modifier.width(12.dp))
+                                          Column(modifier = Modifier.weight(1f)) {
+                                              Text(text = event.title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                              Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                          }
+                                          Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(Color(0x33FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                              Text("⚙️", fontSize = 12.sp)
+                                          }
                                       }
-                                      Spacer(modifier = Modifier.width(16.dp))
-                                      Column(modifier = Modifier.weight(1f)) {
-                                          Text(text = event.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                          Text(text = event.text, color = Color.LightGray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                      Spacer(modifier = Modifier.height(16.dp))
+                                      Box(modifier = Modifier.fillMaxWidth().height(3.dp).background(Color(0x33FFFFFF), CircleShape)) {
+                                          Box(modifier = Modifier.fillMaxWidth(0.4f).height(3.dp).background(Color.White, CircleShape))
                                       }
-                                      Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x33FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                          Text("⚙️", fontSize = 14.sp)
-                                      }
-                                  }
-                                  Spacer(modifier = Modifier.height(16.dp))
-                                  Box(modifier = Modifier.fillMaxWidth().height(4.dp).background(Color(0x33FFFFFF), CircleShape)) {
-                                      Box(modifier = Modifier.fillMaxWidth(0.4f).height(4.dp).background(Color.White, CircleShape))
-                                  }
-                                  Spacer(modifier = Modifier.height(16.dp))
-                                  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                      Box(modifier = Modifier.size(44.dp).background(Color(0x22FFFFFF), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏮", fontSize = 20.sp) }
-                                      Box(modifier = Modifier.size(56.dp).background(Color(0xFFA8E5BA), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏸", fontSize = 26.sp) }
-                                      Box(modifier = Modifier.size(44.dp).background(Color(0x22FFFFFF), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏭", fontSize = 20.sp) }
-                                  }
-                              }
-                          } else {
-                              Column(modifier = Modifier.fillMaxWidth().padding(top = height + 8.dp, start = 16.dp, end = 16.dp, bottom = 16.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.Start) {
-                                  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                      Box(modifier = Modifier.size(32.dp).background(Color(0x33FFFFFF), CircleShape), contentAlignment = Alignment.Center) {
-                                          Text(event.icon, fontSize = 14.sp)
-                                      }
-                                      Spacer(modifier = Modifier.width(12.dp))
-                                      Text(text = event.title, color = event.color, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                                      Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x33FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                          Text("⚙️", fontSize = 14.sp)
+                                      Spacer(modifier = Modifier.height(16.dp))
+                                      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                          Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
+                                          Box(modifier = Modifier.size(48.dp).background(Color(0xFFA8E5BA), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
+                                          Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
                                       }
                                   }
-                                  Spacer(modifier = Modifier.height(12.dp))
-                                  Text(text = event.text, color = Color.White, fontSize = 14.sp, lineHeight = 20.sp)
+                              } else {
+                                  Column(modifier = Modifier.fillMaxWidth().padding(12.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.Start) {
+                                      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                          Box(modifier = Modifier.size(28.dp).background(Color(0x33FFFFFF), CircleShape), contentAlignment = Alignment.Center) {
+                                              Text(event.icon, fontSize = 12.sp)
+                                          }
+                                          Spacer(modifier = Modifier.width(8.dp))
+                                          Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                          Box(modifier = Modifier.size(28.dp).clip(CircleShape).background(Color(0x33FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                              Text("⚙️", fontSize = 12.sp)
+                                          }
+                                      }
+                                      Spacer(modifier = Modifier.height(8.dp))
+                                      Text(text = event.text, color = Color.White, fontSize = 12.sp, lineHeight = 18.sp)
+                                  }
                               }
                           }
                       }
@@ -491,18 +508,18 @@ jobs:
                   val scrollView = ScrollView(this).apply { setBackgroundColor(bgDark); isFillViewport = true }
                   val root = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
-                      setPadding((20*dp).toInt(), (32*dp).toInt(), (20*dp).toInt(), (32*dp).toInt())
+                      setPadding((16*dp).toInt(), (24*dp).toInt(), (16*dp).toInt(), (24*dp).toInt())
                   }
                   scrollView.addView(root)
 
                   root.addView(TextView(this).apply {
                       text = "إعدادات الجزيرة 🏝️"
-                      textSize = 28f; setTextColor(textOnDark); gravity = Gravity.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      setPadding(0, 0, 0, (24*dp).toInt())
+                      textSize = 24f; setTextColor(textOnDark); gravity = Gravity.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      setPadding(0, 0, 0, (16*dp).toInt())
                   })
 
                   fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
-                      val containerHeight = (24 * dp).toInt() 
+                      val containerHeight = (8 * dp).toInt() // تصغير سمك الشريط ليصبح نحيفاً جداً
                       val container = FrameLayout(this@MainActivity).apply {
                           layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, containerHeight)
                           background = GradientDrawable().apply { setColor(pillInactive); cornerRadius = containerHeight / 2f }
@@ -544,7 +561,7 @@ jobs:
                   fun createSliderSection(title: String, initial: Float, min: Float, max: Float, onUpdate: (Float) -> Unit) {
                       val label = TextView(this@MainActivity).apply {
                           text = title + ": " + initial.toInt()
-                          textSize = 14f; setTextColor(Color.WHITE); setPadding(0, 0, 0, (8*dp).toInt())
+                          textSize = 12f; setTextColor(Color.WHITE); setPadding(0, 0, 0, (4*dp).toInt()) // تصغير النص والمسافة
                       }
                       val slider = createMaterialSlider(initial, min, max) { newVal ->
                           label.text = title + ": " + newVal.toInt()
@@ -552,7 +569,7 @@ jobs:
                       }
                       val section = LinearLayout(this@MainActivity).apply {
                           orientation = LinearLayout.VERTICAL
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (20*dp).toInt() }
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (12*dp).toInt() } // تصغير المسافة بين الأقسام
                       }
                       section.addView(label); section.addView(slider); root.addView(section)
                   }
@@ -569,31 +586,31 @@ jobs:
                   fun createTestButton(title: String, icon: String, isMusic: Boolean): View {
                       return LinearLayout(this@MainActivity).apply {
                           orientation = LinearLayout.HORIZONTAL
-                          background = GradientDrawable().apply { setColor(Color.parseColor("#1E2320")); cornerRadius = 24f * dp }
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (56*dp).toInt()).apply { topMargin = (12*dp).toInt() }
+                          background = GradientDrawable().apply { setColor(Color.parseColor("#1E2320")); cornerRadius = 16f * dp } // تصغير الاستدارة
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (48*dp).toInt()).apply { topMargin = (8*dp).toInt() } // تصغير الارتفاع والمسافة
                           gravity = Gravity.CENTER
-                          addView(TextView(context).apply { text = "$title $icon"; textSize = 15f; setTextColor(Color.WHITE); typeface = android.graphics.Typeface.DEFAULT_BOLD })
+                          addView(TextView(context).apply { text = "$title $icon"; textSize = 14f; setTextColor(Color.WHITE); typeface = android.graphics.Typeface.DEFAULT_BOLD })
                           setOnClickListener {
                               val i = Intent("com.dynamicisland.aipro.NEW_EVENT")
                               if (isMusic) {
                                   i.putExtra("type", "MUSIC"); i.putExtra("title", "Blinding Lights"); i.putExtra("text", "The Weeknd"); i.putExtra("icon", "🎵"); i.putExtra("color", "#1DB954")
                               } else {
-                                  i.putExtra("type", "MSG"); i.putExtra("title", "✨ تلميح"); i.putExtra("text", "استُخدمت لمدة ساعة و20 دقيقة"); i.putExtra("icon", "💬"); i.putExtra("color", "#0088CC")
+                                  i.putExtra("type", "MSG"); i.putExtra("title", "✨ تلميح"); i.putExtra("text", "استُخدمت لمدة ساعة"); i.putExtra("icon", "💬"); i.putExtra("color", "#0088CC")
                               }
                               sendBroadcast(i)
                           }
                       }
                   }
                   
-                  root.addView(createTestButton("تجربة إشعار نانو (رقيق)", "💬", false))
+                  root.addView(createTestButton("تجربة إشعار منفصل", "💬", false))
                   root.addView(createTestButton("تجربة مشغل الموسيقى", "🎵", true))
 
                   val btn = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
-                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 24f * dp }
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (56*dp).toInt()).apply { topMargin = (12*dp).toInt() }
+                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 16f * dp }
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (48*dp).toInt()).apply { topMargin = (8*dp).toInt() }
                       gravity = Gravity.CENTER
-                      addView(TextView(context).apply { text = "تحديث الجزيرة 🚀"; textSize = 16f; setTextColor(textOnActive); typeface = android.graphics.Typeface.DEFAULT_BOLD })
+                      addView(TextView(context).apply { text = "تحديث الجزيرة 🚀"; textSize = 15f; setTextColor(textOnActive); typeface = android.graphics.Typeface.DEFAULT_BOLD })
                       setOnClickListener {
                           if (!Settings.canDrawOverlays(this@MainActivity)) {
                               startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
