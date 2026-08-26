@@ -67,6 +67,10 @@ jobs:
           }
           dependencies {
               implementation("androidx.core:core-ktx:1.12.0")
+              // تم إضافة المكتبات التالية لإصلاح خطأ الـ Theme
+              implementation("androidx.appcompat:appcompat:1.6.1")
+              implementation("com.google.android.material:material:1.11.0")
+              
               implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
               implementation("androidx.lifecycle:lifecycle-service:2.7.0")
               implementation("androidx.activity:activity-compose:1.8.2")
@@ -133,6 +137,7 @@ jobs:
           import androidx.savedstate.SavedStateRegistryController
           import androidx.savedstate.SavedStateRegistryOwner
           import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+          import android.view.View
 
           class DynamicIslandService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -141,7 +146,6 @@ jobs:
               private lateinit var params: WindowManager.LayoutParams
               private lateinit var prefs: SharedPreferences
 
-              // متطلبات تشغيل Compose داخل Service
               private val store = ViewModelStore()
               private val savedStateRegistryController = SavedStateRegistryController.create(this)
               override val viewModelStore: ViewModelStore get() = store
@@ -200,11 +204,9 @@ jobs:
           ) {
               var isExpanded by remember { mutableStateOf(false) }
               
-              // قراءة الأحجام من الإعدادات مع تحديث فوري
               var islandWidth by remember { mutableStateOf(prefs.getInt("width", 130).dp) }
               var islandHeight by remember { mutableStateOf(prefs.getInt("height", 38).dp) }
 
-              // مستمع لتحديثات الأحجام من التطبيق الرئيسي
               DisposableEffect(Unit) {
                   val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
                       if (key == "width") islandWidth = sharedPreferences.getInt("width", 130).dp
@@ -216,7 +218,6 @@ jobs:
 
               Box(
                   modifier = Modifier
-                      // تحريك الجزيرة بالإصبع وحفظ المكان
                       .pointerInput(Unit) {
                           detectDragGestures(
                               onDragEnd = {
@@ -244,7 +245,6 @@ jobs:
                   contentAlignment = Alignment.Center
               ) {
                   if (!isExpanded) {
-                      // الوضع المصغّر القابل للتعديل
                       Row(
                           modifier = Modifier
                               .width(islandWidth)
@@ -257,7 +257,6 @@ jobs:
                           Text("AI Pro", color = Color.White, fontSize = 12.sp)
                       }
                   } else {
-                      // الوضع الموسّع
                       Column(
                           modifier = Modifier
                               .width(320.dp)
@@ -316,7 +315,7 @@ jobs:
                       MaterialTheme {
                           Surface(
                               modifier = Modifier.fillMaxSize(),
-                              color = Color(0xFF101411) // لون خلفية داكن أنيق
+                              color = Color(0xFF101411) 
                           ) {
                               Column(
                                   modifier = Modifier
@@ -332,7 +331,6 @@ jobs:
                                       modifier = Modifier.padding(bottom = 32.dp, top = 24.dp)
                                   )
 
-                                  // شريط التحكم بالعرض (Width)
                                   var widthValue by remember { mutableStateOf(prefs.getInt("width", 130).toFloat()) }
                                   ControlSlider(
                                       label = "العرض (Width): \${widthValue.toInt()}",
@@ -344,7 +342,6 @@ jobs:
                                       }
                                   )
 
-                                  // شريط التحكم بالارتفاع (Height)
                                   var heightValue by remember { mutableStateOf(prefs.getInt("height", 38).toFloat()) }
                                   ControlSlider(
                                       label = "الارتفاع (Height): \${heightValue.toInt()}",
