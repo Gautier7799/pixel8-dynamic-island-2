@@ -35,7 +35,7 @@ jobs:
       - name: Build Dynamic Island Pro
         run: |
           rm -rf app/src/main/res app/src/main/java
-          mkdir -p app/src/main/res/values app/src/main/res/values-night app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26 app/src/main/res/xml app/src/main/res/layout app/src/main/java/com/aikeyboard/pro
+          mkdir -p app/src/main/res/values app/src/main/res/values-night app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26 app/src/main/res/xml app/src/main/res/layout app/src/main/java/com/dynamicisland/pro
 
           cat << 'EOF' > gradle.properties
           android.useAndroidX=true
@@ -57,9 +57,9 @@ jobs:
           cat << 'EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android {
-              namespace = "com.aikeyboard.pro"
+              namespace = "com.dynamicisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.aikeyboard.pro"; minSdk = 28; targetSdk = 34; versionCode = 63; versionName = "27.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 67; versionName = "5.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
           }
@@ -71,7 +71,7 @@ jobs:
           }
           EOF
 
-          # ---- الألوان ----
+          # ---- Colors ----
           cat << 'EOF' > app/src/main/res/values/colors.xml
           <resources>
               <color name="IosDarkCanvas">#121212</color>       
@@ -88,7 +88,21 @@ jobs:
           </resources>
           EOF
 
-          # ---- أشكال الكيبورد والجزيرة التفاعلية ----
+          # ---- Drawables لواجهة التطبيق الجديدة (نظام البطاقات) ----
+          cat << 'EOF' > app/src/main/res/drawable/bg_card.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#1C1C1E"/><corners android:radius="16dp"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/bg_btn_primary.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#0A84FF"/><corners android:radius="12dp"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/bg_btn_secondary.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#2C2C2E"/><corners android:radius="12dp"/></shape>
+          EOF
+          cat << 'EOF' > app/src/main/res/drawable/bg_input.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#2C2C2E"/><corners android:radius="10dp"/></shape>
+          EOF
+
+          # ---- Drawables الكيبورد ----
           cat << 'EOF' > app/src/main/res/drawable/bg_key.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormal"/><corners android:radius="5dp"/></shape>
           EOF
@@ -116,8 +130,8 @@ jobs:
           cat << 'EOF' > app/src/main/res/drawable/key_return_selector.xml
           <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_return_pressed" /><item android:drawable="@drawable/bg_key_return" /></selector>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_toolbar_pill.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/toolbar_bg"/><corners android:radius="24dp"/></shape>
+          cat << 'EOF' > app/src/main/res/drawable/bg_dynamic_island.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/island_bg"/><corners android:radius="50dp"/></shape>
           EOF
           cat << 'EOF' > app/src/main/res/drawable/bg_keyboard_root.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkCanvas"/></shape>
@@ -125,33 +139,11 @@ jobs:
           cat << 'EOF' > app/src/main/res/drawable/bg_popup_bubble.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormal"/><corners android:radius="12dp"/></shape>
           EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_button.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/btn_bg"/><corners android:radius="24dp"/></shape>
+          cat << 'EOF' > app/src/main/res/drawable/bg_toolbar_pill.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/toolbar_bg"/><corners android:radius="24dp"/></shape>
           EOF
           
-          # شكل الجزيرة التفاعلية (سوداء بحواف دائرية كبيرة)
-          cat << 'EOF' > app/src/main/res/drawable/bg_dynamic_island.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/island_bg"/><corners android:radius="50dp"/></shape>
-          EOF
-
-          # ---- الأيقونات ----
-          cat << 'EOF' > app/src/main/res/drawable/ic_smiley.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10s10,-4.48 10,-10S17.52,2 12,2zM12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8s8,3.59 8,8S16.41,20 12,20zM8.5,8C7.67,8 7,8.67 7,9.5S7.67,11 8.5,11S10,10.33 10,9.5S9.33,8 8.5,8zM15.5,8C14.67,8 14,8.67 14,9.5S14.67,11 15.5,11S17,10.33 17,9.5S16.33,8 15.5,8zM12,17.5c2.33,0 4.31,-1.46 5.11,-3.5H6.89C7.69,16.04 9.67,17.5 12,17.5z"/></vector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_mic.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M12,14C13.66,14 15,12.66 15,11V5C15,3.34 13.66,2 12,2C10.34,2 9,3.34 9,5V11C9,12.66 10.34,14 12,14ZM17.3,11C17.3,14 14.76,16.1 12,16.1C9.24,16.1 6.7,14 6.7,11H5C5,14.41 7.72,17.23 11,17.72V21H13V17.72C16.28,17.23 19,14.41 19,11H17.3Z"/></vector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_text_aa.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M10,18.5v-13h2.5v13H10zM17.5,18.5c-1.38,0 -2.5,-1.12 -2.5,-2.5v-3c0,-1.38 1.12,-2.5 2.5,-2.5h0.5v-1c0,-0.83 -0.67,-1.5 -1.5,-1.5c-0.83,0 -1.5,0.67 -1.5,1.5h-1.5c0,-1.65 1.35,-3 3,-3c1.65,0 3,1.35 3,3v6.5h-1.5v-1.12C18.23,18.17 17.91,18.5 17.5,18.5zM17.5,17c0.83,0 1.5,-0.67 1.5,-1.5v-1.5h-1.5c-0.83,0 -1.5,0.67 -1.5,1.5C16,16.33 16.67,17 17.5,17z"/></vector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_delete.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M22,3H7C6.31,3 5.77,3.38 5.46,3.93L0,12L5.46,20.07C5.77,20.62 6.31,21 7,21H22C23.1,21 24,20.1 24,19V5C24,3.9 23.1,3 22,3ZM19,15.59L17.59,17L14,13.41L10.41,17L9,15.59L12.59,12L9,8.41L10.41,7L14,10.59L17.59,7L19,8.41L15.41,12L19,15.59Z"/></vector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_shift.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M15,15H9V20H15V15ZM12,4L5.5,13H8.5V22H15.5V13H18.5L12,4Z"/></vector>
-          EOF
-
-          # أيقونة Dynamic Island Pro
+          # App Icon (الأيقونة الجديدة)
           cat << 'EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
           <shape xmlns:android="http://schemas.android.com/apk/res/android"><gradient android:startColor="#1A1A1D" android:endColor="#3A3A40" android:angle="45"/><corners android:radius="32dp"/></shape>
           EOF
@@ -172,32 +164,178 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?><input-method xmlns:android="http://schemas.android.com/apk/res/android" android:supportsInlineSuggestions="true"><subtype android:imeSubtypeLocale="en_US" android:imeSubtypeMode="keyboard" /></input-method>
           EOF
 
-          # ---- MainActivity Layout ----
+          # ---- Layouts (التصميم الجديد المقسم والمنظم) ----
           cat << 'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
-          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true" android:background="#121212">
-              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
-                  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="30dp" android:layout_marginBottom="30dp" android:text="Dynamic Island Pro" android:textColor="#FFFFFF" android:textSize="32sp" android:textStyle="bold" android:gravity="center" />
-                  
-                  <!-- زر تفعيل الجزيرة التفاعلية -->
-                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_island" android:layout_width="match_parent" android:layout_height="60dp" android:text="تفعيل الجزيرة التفاعلية (Dynamic Island)" android:textColor="#007AFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="24dp"/>
+          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="#000000"
+              android:fillViewport="true">
 
-                  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="تخصيص ارتفاع الكيبورد:" android:textColor="#FFFFFF" android:textSize="16sp" android:layout_marginBottom="8dp"/>
-                  <SeekBar android:id="@+id/seek_height" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="40" android:progress="10" android:layout_marginBottom="24dp"/>
-                  
-                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_enable" android:layout_width="match_parent" android:layout_height="60dp" android:text="1. تفعيل الكيبورد" android:textColor="#FFFFFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="16dp"/>
-                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_select" android:layout_width="match_parent" android:layout_height="60dp" android:text="2. اختيار الكيبورد" android:textColor="#FFFFFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="40dp"/>
-                  
-                  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="مفتاح الذكاء الاصطناعي:" android:textColor="#FFFFFF" android:textSize="16sp" android:layout_marginBottom="12dp" />
-                  <EditText android:id="@+id/input_api_key" android:layout_width="match_parent" android:layout_height="60dp" android:hint="Gemini API..." android:textColor="#FFFFFF" android:textColorHint="#888888" android:inputType="textPassword" android:background="@drawable/bg_popup_bubble" android:padding="16dp" android:layout_marginBottom="16dp" />
-                  <androidx.appcompat.widget.AppCompatButton android:id="@+id/btn_save_api" android:layout_width="match_parent" android:layout_height="60dp" android:text="حفظ الإعدادات" android:textColor="#FFFFFF" android:background="@drawable/bg_button" android:textSize="18sp" android:layout_marginBottom="40dp"/>
+              <LinearLayout
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical"
+                  android:padding="20dp">
+
+                  <TextView
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="20dp"
+                      android:layout_marginBottom="30dp"
+                      android:text="Dynamic Island Pro"
+                      android:textColor="#FFFFFF"
+                      android:textSize="32sp"
+                      android:textStyle="bold"
+                      android:gravity="center" />
+
+                  <!-- 1. بطاقة الجزيرة التفاعلية -->
+                  <TextView
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:text="الجزيرة التفاعلية (Dynamic Island)"
+                      android:textColor="#8E8E93"
+                      android:textSize="14sp"
+                      android:layout_marginBottom="8dp"
+                      android:layout_marginStart="8dp"/>
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:background="@drawable/bg_card"
+                      android:orientation="vertical"
+                      android:padding="16dp"
+                      android:layout_marginBottom="24dp">
+
+                      <TextView
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:text="قم بتفعيل الجزيرة لتظهر الإشعارات والتفاعلات أعلى الشاشة."
+                          android:textColor="#FFFFFF"
+                          android:textSize="14sp"
+                          android:layout_marginBottom="16dp"/>
+
+                      <androidx.appcompat.widget.AppCompatButton
+                          android:id="@+id/btn_island"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:text="تفعيل الجزيرة التفاعلية"
+                          android:textColor="#FFFFFF"
+                          android:background="@drawable/bg_btn_primary"
+                          android:textSize="16sp"
+                          android:textStyle="bold"
+                          android:textAllCaps="false"/>
+                  </LinearLayout>
+
+                  <!-- 2. بطاقة الكيبورد الذكي -->
+                  <TextView
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:text="لوحة المفاتيح الذكية (AI Keyboard)"
+                      android:textColor="#8E8E93"
+                      android:textSize="14sp"
+                      android:layout_marginBottom="8dp"
+                      android:layout_marginStart="8dp"/>
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:background="@drawable/bg_card"
+                      android:orientation="vertical"
+                      android:padding="16dp"
+                      android:layout_marginBottom="24dp">
+
+                      <androidx.appcompat.widget.AppCompatButton
+                          android:id="@+id/btn_enable"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:text="1. تفعيل الكيبورد في الإعدادات"
+                          android:textColor="#0A84FF"
+                          android:background="@drawable/bg_btn_secondary"
+                          android:textSize="16sp"
+                          android:textStyle="bold"
+                          android:layout_marginBottom="12dp"
+                          android:textAllCaps="false"/>
+
+                      <androidx.appcompat.widget.AppCompatButton
+                          android:id="@+id/btn_select"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:text="2. اختيار الكيبورد كافتراضي"
+                          android:textColor="#0A84FF"
+                          android:background="@drawable/bg_btn_secondary"
+                          android:textSize="16sp"
+                          android:textStyle="bold"
+                          android:layout_marginBottom="20dp"
+                          android:textAllCaps="false"/>
+
+                      <TextView
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:text="تخصيص ارتفاع الكيبورد:"
+                          android:textColor="#FFFFFF"
+                          android:textSize="14sp"
+                          android:layout_marginBottom="12dp"/>
+
+                      <SeekBar
+                          android:id="@+id/seek_height"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:max="40"
+                          android:progress="10" />
+                  </LinearLayout>
+
+                  <!-- 3. بطاقة الذكاء الاصطناعي -->
+                  <TextView
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:text="إعدادات الذكاء الاصطناعي (Gemini)"
+                      android:textColor="#8E8E93"
+                      android:textSize="14sp"
+                      android:layout_marginBottom="8dp"
+                      android:layout_marginStart="8dp"/>
+
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:background="@drawable/bg_card"
+                      android:orientation="vertical"
+                      android:padding="16dp"
+                      android:layout_marginBottom="40dp">
+
+                      <EditText
+                          android:id="@+id/input_api_key"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:hint="أدخل مفتاح API هنا..."
+                          android:textColor="#FFFFFF"
+                          android:textColorHint="#666666"
+                          android:inputType="textPassword"
+                          android:background="@drawable/bg_input"
+                          android:paddingHorizontal="12dp"
+                          android:layout_marginBottom="16dp" />
+
+                      <androidx.appcompat.widget.AppCompatButton
+                          android:id="@+id/btn_save_api"
+                          android:layout_width="match_parent"
+                          android:layout_height="50dp"
+                          android:text="حفظ الإعدادات"
+                          android:textColor="#FFFFFF"
+                          android:background="@drawable/bg_btn_primary"
+                          android:textSize="16sp"
+                          android:textStyle="bold"
+                          android:textAllCaps="false"/>
+                  </LinearLayout>
               </LinearLayout>
           </ScrollView>
           EOF
 
-          # ---- Dynamic Island Service (الجزيرة التفاعلية) ----
-          cat << 'EOF' > app/src/main/java/com/aikeyboard/pro/DynamicIslandService.kt
-          package com.aikeyboard.pro
+          # ---- Kotlin Code ----
+          
+          # 1. Dynamic Island Service
+          cat << 'EOF' > app/src/main/java/com/dynamicisland/pro/DynamicIslandService.kt
+          package com.dynamicisland.pro
 
           import android.animation.ValueAnimator
           import android.app.Service
@@ -232,7 +370,6 @@ jobs:
                       setBackgroundResource(R.drawable.bg_dynamic_island)
                   }
 
-                  // المحتوى الداخلي للجزيرة
                   val contentLayout = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       gravity = Gravity.CENTER
@@ -252,7 +389,7 @@ jobs:
                       textSize = 14f
                       setTextColor(Color.WHITE)
                       setTypeface(null, Typeface.BOLD)
-                      visibility = View.GONE // مخفي في الحالة المصغرة
+                      visibility = View.GONE
                       layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                   }
 
@@ -261,25 +398,18 @@ jobs:
                   islandView.addView(contentLayout)
 
                   params = WindowManager.LayoutParams(
-                      (120 * density).toInt(), // عرض الجزيرة المصغر
-                      (35 * density).toInt(),  // ارتفاع الجزيرة المصغر
+                      (120 * density).toInt(),
+                      (35 * density).toInt(),
                       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                       PixelFormat.TRANSLUCENT
                   ).apply {
                       gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                      y = (10 * density).toInt() // المسافة من الأعلى
+                      y = (10 * density).toInt()
                   }
 
-                  islandView.setOnClickListener {
-                      toggleIsland(titleText)
-                  }
-
-                  try {
-                      windowManager.addView(islandView, params)
-                  } catch (e: Exception) {
-                      e.printStackTrace()
-                  }
+                  islandView.setOnClickListener { toggleIsland(titleText) }
+                  try { windowManager.addView(islandView, params) } catch (e: Exception) { e.printStackTrace() }
               }
 
               private fun toggleIsland(titleView: View) {
@@ -299,12 +429,7 @@ jobs:
                       }
                   }
                   
-                  if (!isExpanded) {
-                      titleView.visibility = View.VISIBLE
-                  } else {
-                      titleView.visibility = View.GONE
-                  }
-
+                  if (!isExpanded) { titleView.visibility = View.VISIBLE } else { titleView.visibility = View.GONE }
                   anim.start()
                   isExpanded = !isExpanded
               }
@@ -316,9 +441,9 @@ jobs:
           }
           EOF
 
-          # ---- MainActivity ----
-          cat << 'EOF' > app/src/main/java/com/aikeyboard/pro/MainActivity.kt
-          package com.aikeyboard.pro
+          # 2. MainActivity
+          cat << 'EOF' > app/src/main/java/com/dynamicisland/pro/MainActivity.kt
+          package com.dynamicisland.pro
 
           import android.content.Context
           import android.content.Intent
@@ -338,16 +463,14 @@ jobs:
                   setContentView(R.layout.activity_main)
                   val prefs = getSharedPreferences("ai_kb_prefs", Context.MODE_PRIVATE)
 
-                  // زر تفعيل الجزيرة
                   findViewById<Button>(R.id.btn_island).setOnClickListener {
                       if (!Settings.canDrawOverlays(this)) {
                           val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
                           startActivity(intent)
-                          Toast.makeText(this, "يرجى منح صلاحية 'الظهور فوق التطبيقات' لتفعيل الجزيرة", Toast.LENGTH_LONG).show()
+                          Toast.makeText(this, "يرجى السماح بالظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
                       } else {
-                          val intent = Intent(this, DynamicIslandService::class.java)
-                          startService(intent)
-                          Toast.makeText(this, "تم تفعيل الجزيرة التفاعلية ✨", Toast.LENGTH_SHORT).show()
+                          startService(Intent(this, DynamicIslandService::class.java))
+                          Toast.makeText(this, "تم تفعيل الجزيرة ✨", Toast.LENGTH_SHORT).show()
                       }
                   }
 
@@ -368,180 +491,12 @@ jobs:
           }
           EOF
 
-          # ---- كيبورد الكود السابق (لم يتغير) ----
-          cat << 'EOF' > app/src/main/java/com/aikeyboard/pro/KeyboardService.kt
-          package com.aikeyboard.pro
-          
-          import android.content.Context
-          import android.content.Intent
-          import android.content.SharedPreferences
-          import android.inputmethodservice.InputMethodService
-          import android.view.inputmethod.InputMethodManager
-          import android.view.View
-          import android.view.ViewGroup
-          import android.widget.LinearLayout
-          import android.widget.HorizontalScrollView
-          import android.widget.FrameLayout
-          import android.widget.TextView
-          import android.widget.ImageView
-          import android.widget.PopupWindow
-          import android.graphics.Color
-          import android.graphics.Typeface
-          import android.view.Gravity
-          import android.view.MotionEvent
-          import android.view.KeyEvent
-          import android.widget.Toast
-          import android.os.Handler
-          import android.os.Looper
-          import android.speech.RecognizerIntent
-          import android.view.HapticFeedbackConstants
-          import android.text.TextUtils
-          import androidx.core.content.ContextCompat
-          import kotlinx.coroutines.*
-          import org.json.JSONObject
-          import java.net.HttpURLConnection
-          import java.net.URL
-          import java.lang.StringBuilder
-          import java.io.OutputStreamWriter
-
-          class KeyboardService : InputMethodService() {
-              private var isCaps = false
-              private var isSymbols = false
-              private var currentLang = "AR" 
-              private lateinit var rootFrame: FrameLayout
-              private lateinit var mainLayout: LinearLayout
-              private lateinit var keysContainer: LinearLayout
-              private lateinit var bottomSafeArea: FrameLayout
-              private lateinit var keyPreviewBubble: TextView
-              private lateinit var sug1: TextView
-              private lateinit var sug2: TextView
-              private lateinit var sug3: TextView
-              private lateinit var prefs: SharedPreferences
-              private val scope = CoroutineScope(Dispatchers.Main + Job())
-              private var density: Float = 1f
-              private var heightProg: Int = 20
-              private val currentTypedWord = StringBuilder()
-              private val arDict = "السلام,عليكم,مرحبا,كيف,حالك,شكرا,صباح,الخير,مساء,اليوم,غدا,الآن,مشروع,تطبيق,جميل,جدا,ممتاز,نعم,لا,ماذا,هذا,أنا,أنت,نحن,الله,في,من,على,إلى,عن,مع,كل,هل,أو".split(",")
-              private val frDict = "bonjour,comment,merci,oui,non,salut,bien,avec,pour,projet,application,dynamic,island,keyboard,clavier,très,beau,bon,jour,nuit,demain".split(",")
-              private val altChars = mapOf("ا" to listOf("أ", "إ", "آ", "ء"), "ي" to listOf("ئ", "ى"), "ى" to listOf("ي", "ئ"), "و" to listOf("ؤ"), "ه" to listOf("ة"), "ة" to listOf("ه"), "ل" to listOf("لا", "لأ", "لإ", "لآ"))
-              data class KeyDef(val label: String, val weight: Float)
-
-              override fun onCreateInputView(): View {
-                  prefs = getSharedPreferences("ai_kb_prefs", Context.MODE_PRIVATE)
-                  density = resources.displayMetrics.density
-                  heightProg = prefs.getInt("kb_height_prog", 10)
-                  val bgColor = ContextCompat.getColor(this, R.color.IosDarkCanvas)
-                  val textColorInt = ContextCompat.getColor(this, R.color.IosTextColor)
-                  val iconColorInt = ContextCompat.getColor(this, R.color.IosTextColor)
-                  window?.window?.navigationBarColor = bgColor
-                  rootFrame = FrameLayout(this).apply { layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); setBackgroundColor(bgColor) }
-                  mainLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundResource(R.drawable.bg_keyboard_root); layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT) }
-                  val toolbarContainer = FrameLayout(this).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (50 * density).toInt()); setPadding((16*density).toInt(), (8*density).toInt(), (16*density).toInt(), (4*density).toInt()) }
-                  val pillToolbar = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT); setBackgroundResource(R.drawable.bg_toolbar_pill); setPadding((12*density).toInt(), 0, (12*density).toInt(), 0) }
-                  val aiSparkleBtn = TextView(this).apply { text = "✨"; textSize = 16f; background = ContextCompat.getDrawable(this@KeyboardService, R.drawable.bg_key_special); layoutParams = LinearLayout.LayoutParams((32*density).toInt(), (26*density).toInt()).apply { setMargins(0,0,(16*density).toInt(),0) }; gravity = Gravity.CENTER; setOnClickListener { performAiAction("FIX") } }
-                  val settingsBtn = ImageView(this).apply { setImageResource(android.R.drawable.ic_menu_preferences); setColorFilter(iconColorInt); layoutParams = LinearLayout.LayoutParams(0, (24*density).toInt(), 1f); setOnClickListener { startActivity(Intent(this@KeyboardService, MainActivity::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) } }
-                  val fontBtn = ImageView(this).apply { setImageResource(R.drawable.ic_text_aa); setColorFilter(iconColorInt); layoutParams = LinearLayout.LayoutParams(0, (24*density).toInt(), 1f) }
-                  val transBtn = TextView(this).apply { text = "🌍"; textSize = 18f; gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(0, (24*density).toInt(), 1f); setOnClickListener { performAiAction("TRANSLATE") } }
-                  pillToolbar.addView(aiSparkleBtn); pillToolbar.addView(settingsBtn); pillToolbar.addView(fontBtn); pillToolbar.addView(transBtn)
-                  toolbarContainer.addView(pillToolbar)
-                  mainLayout.addView(toolbarContainer)
-                  val suggestionContainer = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (30 * density).toInt()); gravity = Gravity.CENTER; setPadding((16*density).toInt(), 0, (16*density).toInt(), 0) }
-                  fun createSugView(isCenter: Boolean = false): TextView { return TextView(this).apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f); gravity = Gravity.CENTER; textSize = 15f; setTextColor(textColorInt); alpha = 0.9f; isClickable = true; typeface = Typeface.create("sans-serif", if(isCenter) Typeface.BOLD else Typeface.NORMAL); setOnClickListener { applySuggestion(this.text.toString()) } } }
-                  sug1 = createSugView(); sug2 = createSugView(isCenter = true); sug3 = createSugView()
-                  suggestionContainer.addView(sug1); suggestionContainer.addView(sug2); suggestionContainer.addView(sug3)
-                  mainLayout.addView(suggestionContainer)
-                  keysContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT); setPadding((6*density).toInt(), 0, (6*density).toInt(), 0) }
-                  mainLayout.addView(keysContainer)
-                  bottomSafeArea = FrameLayout(this).apply { layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (50 * density).toInt()); setPadding((24*density).toInt(), (4*density).toInt(), (24*density).toInt(), (8*density).toInt())
-                      val globeBtn = TextView(this@KeyboardService).apply { text = "🌐"; textSize = 24f; gravity = Gravity.CENTER; layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.START or Gravity.CENTER_VERTICAL); setOnClickListener { currentLang = if(currentLang == "FR") "AR" else "FR"; currentTypedWord.clear(); updateSuggestions(); rebuildKeysLayout() }; setOnLongClickListener { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker(); true } }
-                      val micBtn = TextView(this@KeyboardService).apply { text = "🎙️"; textSize = 24f; gravity = Gravity.CENTER; layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END or Gravity.CENTER_VERTICAL); setOnClickListener { try { startActivity(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM) }) } catch (e: Exception) { Toast.makeText(this@KeyboardService, "غير مدعوم", Toast.LENGTH_SHORT).show() } } }
-                      addView(globeBtn); addView(micBtn)
-                  }
-                  mainLayout.addView(bottomSafeArea)
-                  keyPreviewBubble = TextView(this).apply { textSize = 36f; setTextColor(textColorInt); gravity = Gravity.CENTER; typeface = Typeface.create("sans-serif", Typeface.NORMAL); setBackgroundResource(R.drawable.bg_popup_bubble); elevation = 8f * density; visibility = View.GONE; layoutParams = FrameLayout.LayoutParams((56 * density).toInt(), (64 * density).toInt()) }
-                  rootFrame.addView(mainLayout); rootFrame.addView(keyPreviewBubble)
-                  rebuildKeysLayout()
-                  return rootFrame
-              }
-              private fun getLayoutRows(): List<List<KeyDef>> {
-                  if (isSymbols) { return listOf(listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { KeyDef(it, 1f) }, listOf("-", "/", ":", ";", "(", ")", "€", "&", "@", "\"").map { KeyDef(it, 1f) }, listOf(KeyDef("ABC", 1.3f)) + listOf(".", ",", "?", "!", "'").map { KeyDef(it, 1f) } + listOf(KeyDef("DEL", 1.3f)), listOf(KeyDef("123", 1.5f), KeyDef("SPACE", 6.0f), KeyDef("return", 1.5f))) }
-                  return when (currentLang) {
-                      "AR" -> listOf("ض ص ث ق ف غ ع ه خ ح ج د".split(" ").map { KeyDef(it, 1f) }, listOf(KeyDef("SPACER", 0.5f)) + "ش س ي ب ل ا ت ن م ك ط".split(" ").map { KeyDef(it, 1f) } + listOf(KeyDef("SPACER", 0.5f)), listOf(KeyDef("SHIFT", 1.3f)) + "ذ ر ى ة و ز ظ".split(" ").map { KeyDef(it, 1f) } + listOf(KeyDef("DEL", 1.3f)), listOf(KeyDef("?123", 1.5f), KeyDef("SPACE", 6.0f), KeyDef("return", 1.5f)))
-                      else -> listOf("q w e r t y u i o p".split(" ").map { KeyDef(if (isCaps) it.uppercase() else it.replace("q","a").replace("w","z"), 1f) }, "a s d f g h j k l m".split(" ").map { KeyDef(if (isCaps) it.uppercase() else it.replace("a","q"), 1f) }, listOf(KeyDef("SHIFT", 1.3f)) + "z x c v b n".split(" ").map { KeyDef(if (isCaps) it.uppercase() else it.replace("z","w"), 1f) } + listOf(KeyDef("DEL", 1.3f)), listOf(KeyDef("?123", 1.5f), KeyDef("SPACE", 6.0f), KeyDef("return", 1.5f)))
-                  }
-              }
-              override fun onStartInputView(info: android.view.inputmethod.EditorInfo?, restarting: Boolean) { super.onStartInputView(info, restarting); heightProg = prefs.getInt("kb_height_prog", 10); currentTypedWord.clear(); updateSuggestions(); rebuildKeysLayout() }
-              private fun showAltMenu(anchor: View, chars: List<String>) { val container = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundResource(R.drawable.bg_popup_bubble); elevation = 8f * density; setPadding((8*density).toInt(), (4*density).toInt(), (8*density).toInt(), (4*density).toInt()) }; val popup = PopupWindow(container, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true); for (c in chars) { val btn = TextView(this).apply { text = c; textSize = 24f; setTextColor(Color.WHITE); gravity = Gravity.CENTER; setPadding((14*density).toInt(), (10*density).toInt(), (14*density).toInt(), (10*density).toInt()); typeface = Typeface.create("sans-serif", Typeface.NORMAL); setOnClickListener { currentInputConnection?.commitText(c, 1); currentTypedWord.append(c); updateSuggestions(); popup.dismiss() } }; container.addView(btn) }; val loc = IntArray(2); anchor.getLocationOnScreen(loc); popup.showAtLocation(anchor, Gravity.NO_GRAVITY, loc[0] - (40*density).toInt(), loc[1] - (60 * density).toInt()) }
-              private fun rebuildKeysLayout() {
-                  keysContainer.removeAllViews()
-                  val rows = getLayoutRows(); val baseKeyHeight = (44 * density).toInt(); val extraPadding = (heightProg * 0.5f * density).toInt(); val keyMarginH = (3f * density).toInt(); val keyMarginV = (6f * density).toInt(); val textColorInt = ContextCompat.getColor(this, R.color.IosTextColor); val handler = Handler(Looper.getMainLooper())
-                  for (row in rows) {
-                      val rowLayout = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, baseKeyHeight + extraPadding).apply { setMargins(0, keyMarginV, 0, keyMarginV) } }
-                      for (keyDef in row) {
-                          val label = keyDef.label
-                          if (label == "SPACER") { rowLayout.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, keyDef.weight) }) } else {
-                              val keyView = FrameLayout(this).apply {
-                                  layoutParams = LinearLayout.LayoutParams(0, baseKeyHeight, keyDef.weight).apply { setMargins(keyMarginH, 0, keyMarginH, 0); gravity = Gravity.CENTER_VERTICAL }
-                                  val isSpecial = label == "DEL" || label == "SHIFT" || label == "123" || label == "ABC" || label == "?123"
-                                  val isEnter = label == "return"
-                                  setBackgroundResource(if (isEnter) R.drawable.key_return_selector else if (isSpecial) R.drawable.key_special_selector else R.drawable.key_selector); isClickable = true
-                                  if (label == "SHIFT" || label == "DEL") {
-                                      val iconView = ImageView(this@KeyboardService).apply { layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER); setImageResource(if(label=="SHIFT") R.drawable.ic_shift else R.drawable.ic_delete); setColorFilter(textColorInt); if(label == "SHIFT" && isCaps) alpha = 1.0f else if(label == "SHIFT") alpha = 0.6f }; addView(iconView)
-                                  } else {
-                                      val textView = TextView(this@KeyboardService).apply { text = when (label) { "SPACE" -> "المسافة"; else -> label }; textSize = if (isSpecial || isEnter) 16f else 19f; if (label == "SPACE") alpha = 0.5f; if (isEnter) setTypeface(null, Typeface.BOLD); gravity = Gravity.CENTER; setTextColor(textColorInt); layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) }; addView(textView)
-                                  }
-                                  var longPressRunnable: Runnable? = null; var isLongPressTriggered = false
-                                  setOnTouchListener { v, event ->
-                                      when (event.action) {
-                                          MotionEvent.ACTION_DOWN -> { v.isPressed = true; isLongPressTriggered = false; v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP); if (label.length == 1 && label != " ") { val keyX = v.x + rowLayout.x; val keyY = v.y + rowLayout.y + keysContainer.y + (44*density); keyPreviewBubble.text = label; keyPreviewBubble.x = keyX - (keyPreviewBubble.layoutParams.width - v.width) / 2f; keyPreviewBubble.y = keyY - keyPreviewBubble.layoutParams.height; keyPreviewBubble.visibility = View.VISIBLE; val alternates = altChars[label]; if (alternates != null) { longPressRunnable = Runnable { isLongPressTriggered = true; keyPreviewBubble.visibility = View.GONE; v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS); showAltMenu(v, alternates) }; handler.postDelayed(longPressRunnable!!, 300) } }; true }
-                                          MotionEvent.ACTION_UP -> { v.isPressed = false; keyPreviewBubble.visibility = View.GONE; if (longPressRunnable != null) handler.removeCallbacks(longPressRunnable!!); if (!isLongPressTriggered) handleKeyClick(label); true }
-                                          MotionEvent.ACTION_CANCEL -> { v.isPressed = false; keyPreviewBubble.visibility = View.GONE; if (longPressRunnable != null) handler.removeCallbacks(longPressRunnable!!); true }
-                                          else -> false
-                                      }
-                                  }
-                              }
-                              rowLayout.addView(keyView)
-                          }
-                      }
-                      keysContainer.addView(rowLayout)
-                  }
-              }
-              private fun updateSuggestions() { if(!this::sug1.isInitialized) return; val word = currentTypedWord.toString().trim(); val dict = when(currentLang) { "AR" -> arDict; else -> frDict }; if (word.isEmpty() || isSymbols) { sug1.text = dict[0]; sug2.text = dict[1]; sug3.text = dict[2]; return }; val matches = mutableListOf<String>(); for (item in dict) { if (item.length >= word.length && item.startsWith(word, ignoreCase = true)) matches.add(item) }; sug1.text = if (matches.size > 0) matches[0] else ""; sug2.text = word; sug3.text = if (matches.size > 1) matches[1] else "" }
-              private fun applySuggestion(sug: String) { if (sug.isEmpty()) return; val ic = currentInputConnection ?: return; ic.deleteSurroundingText(currentTypedWord.length, 0); ic.commitText(sug + " ", 1); currentTypedWord.clear(); updateSuggestions() }
-              private fun handleKeyClick(key: String) {
-                  val ic = currentInputConnection ?: return
-                  when (key) {
-                      "DEL" -> { ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL)); ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL)); if (currentTypedWord.isNotEmpty()) currentTypedWord.deleteCharAt(currentTypedWord.length - 1) }
-                      "SPACE", "return" -> { if (key == "SPACE") { val autoCorrect = sug1.text.toString(); if (autoCorrect.isNotEmpty() && autoCorrect != arDict[0] && autoCorrect != frDict[0] && currentTypedWord.isNotEmpty()) { ic.deleteSurroundingText(currentTypedWord.length, 0); ic.commitText(autoCorrect + " ", 1) } else { ic.commitText(" ", 1) } } else { ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER)); ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER)) }; currentTypedWord.clear() }
-                      "SHIFT" -> { isCaps = !isCaps; rebuildKeysLayout() }
-                      "123", "?123" -> { isSymbols = true; rebuildKeysLayout(); updateSuggestions() }
-                      "ABC" -> { isSymbols = false; rebuildKeysLayout(); updateSuggestions() }
-                      else -> { val letter = if (isCaps && !isSymbols && currentLang != "AR") key.uppercase() else key; ic.commitText(letter, 1); if (isCaps) { isCaps = false; rebuildKeysLayout() }; if (key.length == 1 && !isSymbols) { currentTypedWord.append(letter) } }
-                  }
-                  updateSuggestions()
-              }
-              private fun performAiAction(actionType: String) {
-                  val apiKey = prefs.getString("api_key", ""); if (apiKey.isNullOrEmpty()) { Toast.makeText(this, "ضع المفتاح من الإعدادات", Toast.LENGTH_SHORT).show(); return }
-                  val ic = currentInputConnection ?: return; val extractedText = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)?.text?.toString() ?: ""
-                  if (extractedText.isBlank()) { Toast.makeText(this, "حدد نصاً أولاً", Toast.LENGTH_SHORT).show(); return }; Toast.makeText(this, "الذكاء الاصطناعي يعمل...", Toast.LENGTH_SHORT).show()
-                  scope.launch {
-                      try {
-                          val responseStr = withContext(Dispatchers.IO) { val conn = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey").openConnection() as HttpURLConnection; conn.requestMethod = "POST"; conn.setRequestProperty("Content-Type", "application/json"); conn.doOutput = true; val prompt = if(actionType == "FIX") "صحح النص: $extractedText" else "ترجم النص: $extractedText"; val payload = JSONObject().apply { put("contents", org.json.JSONArray().apply { put(JSONObject().apply { put("parts", org.json.JSONArray().apply { put(JSONObject().apply { put("text", prompt) }) }) }) }) }; OutputStreamWriter(conn.outputStream).use { it.write(payload.toString()) }; conn.inputStream.bufferedReader().use { it.readText() } }
-                          val reply = JSONObject(responseStr).getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text").trim(); withContext(Dispatchers.Main) { ic.deleteSurroundingText(extractedText.length, 0); ic.commitText(reply, 1) }
-                      } catch (e: Exception) { withContext(Dispatchers.Main) { Toast.makeText(this@KeyboardService, "خطأ بالاتصال", Toast.LENGTH_SHORT).show() } }
-                  }
-              }
-              override fun onDestroy() { super.onDestroy(); scope.cancel() }
-          }
-          EOF
-
-          # ---- إضافة صلاحية الرسم فوق التطبيقات (System Alert Window) ----
+          # ---- AndroidManifest.xml ----
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.VIBRATE" />
-              <!-- الصلاحية المطلوبة للجزيرة التفاعلية -->
               <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
               
               <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/Theme.AIKeyboard">
@@ -552,13 +507,6 @@ jobs:
                       </intent-filter>
                   </activity>
                   
-                  <!-- كيبورد iOS -->
-                  <service android:name=".KeyboardService" android:label="@string/ime_name" android:permission="android.permission.BIND_INPUT_METHOD" android:exported="true">
-                      <intent-filter><action android:name="android.view.InputMethod" /></intent-filter>
-                      <meta-data android:name="android.view.im" android:resource="@xml/method" />
-                  </service>
-
-                  <!-- خدمة الجزيرة التفاعلية -->
                   <service android:name=".DynamicIslandService" android:exported="false" />
               </application>
           </manifest>
@@ -580,9 +528,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: ios-island-v1.0
-          name: "Dynamic Island Pro - (The First Island 🏝️)"
-          body: "1. 🏝️ **الجزيرة التفاعلية (Dynamic Island):** تمت إضافة خدمة تطفو فوق الشاشة بشريط أسود أنيق.\n2. 🪄 **أنيميشن سلس (Overshoot):** اضغط على الجزيرة لتتوسع وتظهر التفاصيل، واضغط مرة أخرى لتصغر بحركة مرنة وجميلة جداً.\n3. 🔐 **إدارة الصلاحيات:** زر في الإعدادات لطلب سماحية الظهور فوق التطبيقات.\n4. ⌨️ **كيبورد الـ iOS ثابت:** الكيبورد الذي صممناه بكود Compose يعمل بشكل مثالي كالمعتاد."
+          tag_name: dynamic-island-v4.0
+          name: "Dynamic Island Pro - Beautiful UI 📱"
+          body: "تم تصميم واجهة جديدة كلياً مقسمة بنظام البطاقات (Cards) مثل إعدادات الآيفون لإنهاء تداخل الأزرار وتوضيح الأقسام."
           files: release-output/Dynamic-Island-Pro.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
