@@ -1,4 +1,4 @@
-name: Build Dynamic Island Elegant Pro
+name: Build Dynamic Island Light Pro
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 4; versionName = "1.3.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 5; versionName = "1.4.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -104,6 +104,7 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/IslandNotificationListener.kt
           package com.dynamicisland.aipro
 
+          import android.app.Notification
           import android.content.Intent
           import android.service.notification.NotificationListenerService
           import android.service.notification.StatusBarNotification
@@ -113,12 +114,44 @@ jobs:
                   val extras = sbn.notification.extras
                   val title = extras.getString("android.title") ?: return
                   val text = extras.getCharSequence("android.text")?.toString() ?: return
+                  val pkg = sbn.packageName
                   
-                  if (sbn.isOngoing || (sbn.notification.flags and android.app.Notification.FLAG_GROUP_SUMMARY) != 0) return
+                  // تجاهل المجموعات والإشعارات الصامتة
+                  if ((sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
-                  val intent = Intent("com.dynamicisland.aipro.NEW_NOTIFICATION")
-                  intent.putExtra("title", title)
-                  intent.putExtra("text", text)
+                  val isMedia = extras.containsKey(Notification.EXTRA_MEDIA_SESSION) || extras.getString(Notification.EXTRA_TEMPLATE) == "android.app.Notification\$MediaStyle"
+                  
+                  val intent = Intent("com.dynamicisland.aipro.NEW_EVENT")
+                  
+                  if (isMedia) {
+                      intent.putExtra("type", "MUSIC")
+                      intent.putExtra("title", title)
+                      intent.putExtra("text", text)
+                      intent.putExtra("icon", "🎵")
+                      intent.putExtra("color", "#1DB954") // أخضر (Spotify) كإفتراضي
+                  } else {
+                      if (sbn.isOngoing) return // تجاهل الإشعارات المستمرة العادية
+                      
+                      val colorHex = when {
+                          pkg.contains("facebook") || pkg.contains("messenger") -> "#1877F2"
+                          pkg.contains("whatsapp") -> "#25D366"
+                          pkg.contains("instagram") -> "#E1306C"
+                          pkg.contains("twitter") || pkg.contains("x") -> "#1DA1F2"
+                          pkg.contains("snapchat") -> "#FFFC00"
+                          pkg.contains("tiktok") -> "#00F2FE"
+                          pkg.contains("youtube") -> "#FF0000"
+                          pkg.contains("gmail") -> "#EA4335"
+                          pkg.contains("telegram") -> "#0088CC"
+                          else -> "#FFFFFF"
+                      }
+                      
+                      intent.putExtra("type", "MSG")
+                      intent.putExtra("title", title)
+                      intent.putExtra("text", text)
+                      intent.putExtra("icon", "💬")
+                      intent.putExtra("color", colorHex)
+                  }
+                  
                   sendBroadcast(intent)
               }
           }
@@ -136,8 +169,6 @@ jobs:
           import android.os.BatteryManager
           import android.os.Handler
           import android.os.Looper
-          import android.provider.AlarmClock
-          import android.provider.MediaStore
           import android.provider.Settings
           import android.view.Gravity
           import android.view.MotionEvent
@@ -146,10 +177,13 @@ jobs:
           import androidx.compose.animation.core.Spring
           import androidx.compose.animation.core.spring
           import androidx.compose.foundation.background
+          import androidx.compose.foundation.border
           import androidx.compose.foundation.clickable
           import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.rememberScrollState
           import androidx.compose.foundation.shape.CircleShape
           import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.foundation.verticalScroll
           import androidx.compose.material3.Text
           import androidx.compose.runtime.*
           import androidx.compose.ui.Alignment
@@ -164,17 +198,24 @@ jobs:
           import androidx.lifecycle.LifecycleService
           import androidx.lifecycle.ViewModelStore
           import androidx.lifecycle.ViewModelStoreOwner
-          import androidx.lifecycle.lifecycleScope
           import androidx.lifecycle.setViewTreeLifecycleOwner
           import androidx.lifecycle.setViewTreeViewModelStoreOwner
           import androidx.savedstate.SavedStateRegistry
           import androidx.savedstate.SavedStateRegistryController
           import androidx.savedstate.SavedStateRegistryOwner
           import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-          import kotlinx.coroutines.delay
-          import kotlinx.coroutines.launch
 
-          enum class IslandMode { IDLE, SHORTCUTS, CHARGING, NOTIF_COMPACT, NOTIF_EXPANDED }
+          enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED }
+
+          data class IslandEvent(
+              val type: String = "MSG",
+              val title: String = "",
+              val text: String = "",
+              val icon: String = "💬",
+              val colorStr: String = "#FFFFFF"
+          ) {
+              val color: Color get() = try { Color(android.graphics.Color.parseColor(colorStr)) } catch(e:Exception){ Color.White }
+          }
 
           class DynamicIslandService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -189,28 +230,31 @@ jobs:
               override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
               private val islandModeState = mutableStateOf(IslandMode.IDLE)
-              private val batteryLevelState = mutableStateOf(100)
-              
-              private val notifTitleState = mutableStateOf("")
-              private val notifTextState = mutableStateOf("")
+              private val currentEventState = mutableStateOf(IslandEvent())
 
               private val islandWidthState = mutableStateOf(130.dp)
               private val islandHeightState = mutableStateOf(38.dp)
               private val islandRadiusState = mutableStateOf(100.dp)
+              private val glowWidthState = mutableStateOf(2.dp)
 
               private val handler = Handler(Looper.getMainLooper())
               private val collapseRunnable = Runnable { 
-                  if (islandModeState.value == IslandMode.NOTIF_COMPACT) {
+                  if (islandModeState.value == IslandMode.EVENT_COMPACT) {
                       islandModeState.value = IslandMode.IDLE 
                   }
               }
 
-              private val notificationReceiver = object : BroadcastReceiver() {
+              private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
-                      if (intent?.action == "com.dynamicisland.aipro.NEW_NOTIFICATION") {
-                          notifTitleState.value = intent.getStringExtra("title") ?: ""
-                          notifTextState.value = intent.getStringExtra("text") ?: ""
-                          islandModeState.value = IslandMode.NOTIF_COMPACT 
+                      if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
+                          val type = intent.getStringExtra("type") ?: "MSG"
+                          val title = intent.getStringExtra("title") ?: ""
+                          val text = intent.getStringExtra("text") ?: ""
+                          val icon = intent.getStringExtra("icon") ?: "💬"
+                          val color = intent.getStringExtra("color") ?: "#FFFFFF"
+                          
+                          currentEventState.value = IslandEvent(type, title, text, icon, color)
+                          islandModeState.value = IslandMode.EVENT_COMPACT 
                           
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4000)
@@ -222,12 +266,19 @@ jobs:
                   override fun onReceive(context: Context?, intent: Intent?) {
                       if (intent?.action == Intent.ACTION_POWER_CONNECTED) {
                           val bm = context?.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-                          batteryLevelState.value = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                          islandModeState.value = IslandMode.CHARGING
-                          lifecycleScope.launch {
-                              delay(3000)
-                              if (islandModeState.value == IslandMode.CHARGING) islandModeState.value = IslandMode.IDLE
-                          }
+                          val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                          
+                          currentEventState.value = IslandEvent(
+                              type = "CHARGE",
+                              title = "جاري الشحن",
+                              text = "البطارية: \$level%",
+                              icon = "⚡",
+                              colorStr = "#4CAF50"
+                          )
+                          islandModeState.value = IslandMode.EVENT_COMPACT
+                          
+                          handler.removeCallbacks(collapseRunnable)
+                          handler.postDelayed(collapseRunnable, 3500)
                       }
                   }
               }
@@ -237,6 +288,7 @@ jobs:
                       "width" -> islandWidthState.value = sharedPreferences.getInt("width", 130).dp
                       "height" -> islandHeightState.value = sharedPreferences.getInt("height", 38).dp
                       "radius" -> islandRadiusState.value = sharedPreferences.getInt("radius", 100).dp
+                      "glow" -> glowWidthState.value = sharedPreferences.getInt("glow", 2).dp
                       "pos_x" -> {
                           params.x = sharedPreferences.getInt("pos_x", 0)
                           windowManager.updateViewLayout(composeView, params)
@@ -258,6 +310,7 @@ jobs:
                   islandWidthState.value = prefs.getInt("width", 130).dp
                   islandHeightState.value = prefs.getInt("height", 38).dp
                   islandRadiusState.value = prefs.getInt("radius", 100).dp
+                  glowWidthState.value = prefs.getInt("glow", 2).dp
 
                   windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
                   composeView = ComposeView(this)
@@ -266,13 +319,12 @@ jobs:
                   composeView.setViewTreeViewModelStoreOwner(this)
                   composeView.setViewTreeSavedStateRegistryOwner(this)
 
-                  val filter = IntentFilter(Intent.ACTION_POWER_CONNECTED)
-                  registerReceiver(powerReceiver, filter)
+                  registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
 
                   if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                      registerReceiver(notificationReceiver, IntentFilter("com.dynamicisland.aipro.NEW_NOTIFICATION"), Context.RECEIVER_EXPORTED)
+                      registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
                   } else {
-                      registerReceiver(notificationReceiver, IntentFilter("com.dynamicisland.aipro.NEW_NOTIFICATION"))
+                      registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"))
                   }
 
                   params = WindowManager.LayoutParams(
@@ -318,16 +370,13 @@ jobs:
                           }
                           MotionEvent.ACTION_UP -> {
                               if (!isMoving) {
-                                  // نظام النقر الذكي الجديد
                                   when (islandModeState.value) {
-                                      IslandMode.IDLE -> islandModeState.value = IslandMode.SHORTCUTS
-                                      IslandMode.SHORTCUTS -> islandModeState.value = IslandMode.IDLE
-                                      IslandMode.NOTIF_COMPACT -> {
-                                          islandModeState.value = IslandMode.NOTIF_EXPANDED
-                                          handler.removeCallbacks(collapseRunnable) // إيقاف الإغلاق التلقائي
+                                      IslandMode.IDLE -> {} // تم إلغاء قائمة الاختصارات
+                                      IslandMode.EVENT_COMPACT -> {
+                                          islandModeState.value = IslandMode.EVENT_EXPANDED
+                                          handler.removeCallbacks(collapseRunnable)
                                       }
-                                      IslandMode.NOTIF_EXPANDED -> islandModeState.value = IslandMode.IDLE
-                                      IslandMode.CHARGING -> islandModeState.value = IslandMode.IDLE
+                                      IslandMode.EVENT_EXPANDED -> islandModeState.value = IslandMode.IDLE
                                   }
                               } else {
                                   prefs.edit().putInt("pos_x", params.x).putInt("pos_y", params.y).apply()
@@ -341,40 +390,26 @@ jobs:
                   composeView.setContent {
                       DynamicIslandContent(
                           mode = islandModeState.value,
-                          batteryLevel = batteryLevelState.value,
+                          event = currentEventState.value,
                           width = islandWidthState.value,
                           height = islandHeightState.value,
                           radius = islandRadiusState.value,
-                          notifTitle = notifTitleState.value,
-                          notifText = notifTextState.value,
-                          onShortcutClick = { action -> executeAction(action) }
+                          glow = glowWidthState.value,
+                          onOpenSettings = {
+                              islandModeState.value = IslandMode.IDLE
+                              val intent = Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                              startActivity(intent)
+                          }
                       )
                   }
 
                   windowManager.addView(composeView, params)
               }
 
-              private fun executeAction(action: String) {
-                  islandModeState.value = IslandMode.IDLE 
-                  try {
-                      val intent = when (action) {
-                          "settings" -> Intent(Settings.ACTION_SETTINGS)
-                          "clock" -> Intent(AlarmClock.ACTION_SHOW_ALARMS)
-                          "camera" -> Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                          "ai" -> Intent(Intent.ACTION_WEB_SEARCH).apply { putExtra("query", "ChatGPT") }
-                          else -> null
-                      }
-                      intent?.let {
-                          it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                          startActivity(it)
-                      }
-                  } catch (e: Exception) {}
-              }
-
               override fun onDestroy() {
                   super.onDestroy()
                   unregisterReceiver(powerReceiver)
-                  unregisterReceiver(notificationReceiver)
+                  unregisterReceiver(eventReceiver)
                   prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
                   if (::composeView.isInitialized) windowManager.removeView(composeView)
               }
@@ -383,116 +418,77 @@ jobs:
           @Composable
           fun DynamicIslandContent(
               mode: IslandMode,
-              batteryLevel: Int,
+              event: IslandEvent,
               width: androidx.compose.ui.unit.Dp,
               height: androidx.compose.ui.unit.Dp,
               radius: androidx.compose.ui.unit.Dp,
-              notifTitle: String,
-              notifText: String,
-              onShortcutClick: (String) -> Unit
+              glow: androidx.compose.ui.unit.Dp,
+              onOpenSettings: () -> Unit
           ) {
               val targetWidth = when (mode) {
-                  IslandMode.SHORTCUTS -> 320.dp
-                  IslandMode.CHARGING -> 220.dp
-                  IslandMode.NOTIF_COMPACT -> 340.dp
-                  IslandMode.NOTIF_EXPANDED -> 340.dp
+                  IslandMode.EVENT_COMPACT -> 340.dp
+                  IslandMode.EVENT_EXPANDED -> 340.dp
                   else -> width
               }
-              val targetHeight = when (mode) {
-                  IslandMode.SHORTCUTS -> 90.dp
-                  IslandMode.CHARGING -> 50.dp
-                  IslandMode.NOTIF_COMPACT -> 70.dp
-                  IslandMode.NOTIF_EXPANDED -> 160.dp // مساحة أكبر لقراءة الإشعار كاملاً
-                  else -> height
+              
+              val borderModifier = if (mode != IslandMode.IDLE && glow > 0.dp) {
+                  Modifier.border(width = glow, color = event.color, shape = RoundedCornerShape(radius))
+              } else {
+                  Modifier
               }
 
               Box(
                   modifier = Modifier
                       .width(targetWidth)
-                      .height(targetHeight)
-                      .animateContentSize(
-                          // حركة سريعة جداً للقضاء على اللاق والانبثاق للأسفل
-                          animationSpec = spring(
-                              dampingRatio = 0.75f, 
-                              stiffness = 500f 
-                          )
+                      .then(
+                          if (mode == IslandMode.EVENT_EXPANDED) 
+                              Modifier.heightIn(min = 100.dp, max = 350.dp) 
+                          else 
+                              Modifier.height(if (mode == IslandMode.EVENT_COMPACT) 70.dp else height)
                       )
+                      .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f))
+                      .then(borderModifier)
                       .background(Color.Black, shape = RoundedCornerShape(radius)),
-                  contentAlignment = Alignment.TopCenter // التوسيع يكون للأسفل!
+                  contentAlignment = Alignment.TopCenter
               ) {
                   when (mode) {
-                      IslandMode.IDLE -> {
-                          // فارغة تماماً وسوداء لتندمج مع الكاميرا
-                      }
-                      IslandMode.CHARGING -> {
-                          Row(
-                              modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
-                              horizontalArrangement = Arrangement.SpaceBetween,
-                              verticalAlignment = Alignment.CenterVertically
-                          ) {
-                              Text(text = "⚡", fontSize = 18.sp)
-                              Text(text = batteryLevel.toString() + "%", color = Color(0xFF4CAF50), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                          }
-                      }
-                      IslandMode.SHORTCUTS -> {
-                          Row(
-                              modifier = Modifier.fillMaxSize(),
-                              horizontalArrangement = Arrangement.SpaceEvenly,
-                              verticalAlignment = Alignment.CenterVertically
-                          ) {
-                              ShortcutButton("⚙️", { onShortcutClick("settings") })
-                              ShortcutButton("⏰", { onShortcutClick("clock") })
-                              ShortcutButton("📸", { onShortcutClick("camera") })
-                              ShortcutButton("✨", { onShortcutClick("ai") }) // زر الذكاء الاصطناعي كاختيار
-                          }
-                      }
-                      IslandMode.NOTIF_COMPACT -> {
+                      IslandMode.IDLE -> { }
+                      IslandMode.EVENT_COMPACT -> {
                           Row(
                               modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                               verticalAlignment = Alignment.CenterVertically
                           ) {
                               Box(modifier = Modifier.size(36.dp).background(Color(0xFF1E2320), CircleShape), contentAlignment = Alignment.Center) {
-                                  Text("💬", fontSize = 16.sp)
+                                  Text(event.icon, fontSize = 16.sp)
                               }
                               Spacer(modifier = Modifier.width(12.dp))
                               Column(modifier = Modifier.weight(1f)) {
-                                  Text(text = notifTitle, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                  Text(text = notifText, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                  Text(text = event.title, color = event.color, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                  Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                               }
                           }
                       }
-                      IslandMode.NOTIF_EXPANDED -> {
+                      IslandMode.EVENT_EXPANDED -> {
                           Column(
-                              modifier = Modifier.fillMaxSize().padding(16.dp),
+                              modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
                               horizontalAlignment = Alignment.Start
                           ) {
-                              Row(verticalAlignment = Alignment.CenterVertically) {
+                              Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                                   Box(modifier = Modifier.size(32.dp).background(Color(0xFF1E2320), CircleShape), contentAlignment = Alignment.Center) {
-                                      Text("💬", fontSize = 14.sp)
+                                      Text(event.icon, fontSize = 14.sp)
                                   }
                                   Spacer(modifier = Modifier.width(12.dp))
-                                  Text(text = notifTitle, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                  Text(text = event.title, color = event.color, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                  
+                                  Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFF2D322E)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                      Text("⚙️", fontSize = 16.sp)
+                                  }
                               }
                               Spacer(modifier = Modifier.height(12.dp))
-                              // عرض النص كاملاً
-                              Text(text = notifText, color = Color.LightGray, fontSize = 14.sp, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                              Text(text = event.text, color = Color.White, fontSize = 15.sp, lineHeight = 22.sp)
                           }
                       }
                   }
-              }
-          }
-
-          @Composable
-          fun ShortcutButton(icon: String, onClick: () -> Unit) {
-              Box(
-                  modifier = Modifier
-                      .size(44.dp)
-                      .clip(CircleShape)
-                      .background(Color(0xFF1E2320))
-                      .clickable { onClick() },
-                  contentAlignment = Alignment.Center
-              ) {
-                  Text(text = icon, fontSize = 20.sp)
               }
           }
           INNER_EOF
@@ -548,7 +544,6 @@ jobs:
                       setPadding(0, 0, 0, (24*dp).toInt())
                   })
 
-                  // تم تصغير سمك الشريط ليصبح أنحف وأكثر أناقة (24dp بدلاً من 56dp)
                   fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
                       val containerHeight = (24 * dp).toInt() 
                       val container = FrameLayout(this@MainActivity).apply {
@@ -618,11 +613,12 @@ jobs:
                       root.addView(section)
                   }
 
-                  // تم توسيع النطاقات (Limits) بناءً على طلبك
+                  createSliderSection("سمك الضوء المتفاعل (Glow)", prefs.getInt("glow", 2).toFloat(), 0f, 10f) {
+                      prefs.edit().putInt("glow", it.toInt()).apply()
+                  }
                   createSliderSection("العرض (Width)", prefs.getInt("width", 130).toFloat(), 30f, 400f) {
                       prefs.edit().putInt("width", it.toInt()).apply()
                   }
-                  // الحد الأدنى للارتفاع أصبح 10 ليتطابق مع أصغر كاميرا
                   createSliderSection("الارتفاع (Height)", prefs.getInt("height", 38).toFloat(), 10f, 150f) {
                       prefs.edit().putInt("height", it.toInt()).apply()
                   }
@@ -632,7 +628,6 @@ jobs:
                   createSliderSection("يمين / يسار (X Axis)", prefs.getInt("pos_x", 0).toFloat(), -600f, 600f) {
                       prefs.edit().putInt("pos_x", it.toInt()).apply()
                   }
-                  // النطاق أصبح حتى -800 لرفع الجزيرة لأقصى حد
                   createSliderSection("أعلى / أسفل (Y Axis)", prefs.getInt("pos_y", 32).toFloat(), -800f, 500f) {
                       prefs.edit().putInt("pos_y", it.toInt()).apply()
                   }
@@ -664,7 +659,7 @@ jobs:
                       }
                       gravity = Gravity.CENTER
                       addView(TextView(context).apply {
-                          text = "تشغيل الجزيرة التفاعلية 🚀"
+                          text = "تحديث الجزيرة 🚀"
                           textSize = 16f
                           setTextColor(textOnActive)
                           typeface = android.graphics.Typeface.DEFAULT_BOLD
