@@ -1,1 +1,1 @@
-# pixel8-dynamic-island-2
+# pixel8-island-dynamic pro
