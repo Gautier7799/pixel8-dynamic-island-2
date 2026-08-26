@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 1; versionName = "1.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 2; versionName = "1.1.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -67,7 +67,6 @@ jobs:
           }
           dependencies {
               implementation("androidx.core:core-ktx:1.12.0")
-              // تم إضافة المكتبات التالية لإصلاح خطأ الـ Theme
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("com.google.android.material:material:1.11.0")
               
@@ -106,17 +105,15 @@ jobs:
           package com.dynamicisland.aipro
 
           import android.content.Context
-          import android.content.Intent
           import android.content.SharedPreferences
           import android.graphics.PixelFormat
           import android.view.Gravity
+          import android.view.MotionEvent
           import android.view.WindowManager
           import androidx.compose.animation.animateContentSize
           import androidx.compose.animation.core.Spring
           import androidx.compose.animation.core.spring
           import androidx.compose.foundation.background
-          import androidx.compose.foundation.clickable
-          import androidx.compose.foundation.gestures.detectDragGestures
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material3.Text
@@ -124,7 +121,6 @@ jobs:
           import androidx.compose.ui.Alignment
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.graphics.Color
-          import androidx.compose.ui.input.pointer.pointerInput
           import androidx.compose.ui.platform.ComposeView
           import androidx.compose.ui.unit.dp
           import androidx.compose.ui.unit.sp
@@ -137,7 +133,6 @@ jobs:
           import androidx.savedstate.SavedStateRegistryController
           import androidx.savedstate.SavedStateRegistryOwner
           import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-          import android.view.View
 
           class DynamicIslandService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
 
@@ -151,20 +146,42 @@ jobs:
               override val viewModelStore: ViewModelStore get() = store
               override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
+              private val isExpandedState = mutableStateOf(false)
+              private val islandWidthState = mutableStateOf(130.dp)
+              private val islandHeightState = mutableStateOf(38.dp)
+
+              // تحديث فوري مباشر عند تغيير الإعدادات
+              private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
+                  when (key) {
+                      "width" -> islandWidthState.value = sharedPreferences.getInt("width", 130).dp
+                      "height" -> islandHeightState.value = sharedPreferences.getInt("height", 38).dp
+                      "pos_x" -> {
+                          params.x = sharedPreferences.getInt("pos_x", 0)
+                          windowManager.updateViewLayout(composeView, params)
+                      }
+                      "pos_y" -> {
+                          params.y = sharedPreferences.getInt("pos_y", 32)
+                          windowManager.updateViewLayout(composeView, params)
+                      }
+                  }
+              }
+
               override fun onCreate() {
                   super.onCreate()
                   savedStateRegistryController.performRestore(null)
                   
                   prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                  prefs.registerOnSharedPreferenceChangeListener(prefListener)
+                  
+                  islandWidthState.value = prefs.getInt("width", 130).dp
+                  islandHeightState.value = prefs.getInt("height", 38).dp
+
                   windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
                   composeView = ComposeView(this)
 
                   composeView.setViewTreeLifecycleOwner(this)
                   composeView.setViewTreeViewModelStoreOwner(this)
                   composeView.setViewTreeSavedStateRegistryOwner(this)
-
-                  val initialX = prefs.getInt("pos_x", 0)
-                  val initialY = prefs.getInt("pos_y", 32)
 
                   params = WindowManager.LayoutParams(
                       WindowManager.LayoutParams.WRAP_CONTENT,
@@ -176,12 +193,57 @@ jobs:
                       PixelFormat.TRANSLUCENT
                   ).apply {
                       gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                      x = initialX
-                      y = initialY
+                      x = prefs.getInt("pos_x", 0)
+                      y = prefs.getInt("pos_y", 32)
+                  }
+
+                  // النظام الذكي للتفريق بين السحب (Drag) والنقر (Click)
+                  var initialX = 0
+                  var initialY = 0
+                  var initialTouchX = 0f
+                  var initialTouchY = 0f
+                  var isMoving = false
+
+                  composeView.setOnTouchListener { _, event ->
+                      when (event.action) {
+                          MotionEvent.ACTION_DOWN -> {
+                              initialX = params.x
+                              initialY = params.y
+                              initialTouchX = event.rawX
+                              initialTouchY = event.rawY
+                              isMoving = false
+                              true
+                          }
+                          MotionEvent.ACTION_MOVE -> {
+                              val dx = (event.rawX - initialTouchX).toInt()
+                              val dy = (event.rawY - initialTouchY).toInt()
+                              if (Math.abs(dx) > 10 || Math.abs(dy) > 10) { // تجاوز حد النقر
+                                  isMoving = true
+                                  params.x = initialX + dx
+                                  params.y = initialY + dy
+                                  windowManager.updateViewLayout(composeView, params)
+                              }
+                              true
+                          }
+                          MotionEvent.ACTION_UP -> {
+                              if (!isMoving) {
+                                  // لمسة قصيرة = نقرة لتوسيع أو تصغير الجزيرة
+                                  isExpandedState.value = !isExpandedState.value
+                              } else {
+                                  // سحب وافلات = حفظ الموقع الجديد 
+                                  prefs.edit()
+                                      .putInt("pos_x", params.x)
+                                      .putInt("pos_y", params.y)
+                                      .apply()
+                              }
+                              true
+                          }
+                          else -> false
+                      }
                   }
 
                   composeView.setContent {
-                      DynamicIslandComponent(prefs, windowManager, params, composeView)
+                      DynamicIslandContent(isExpandedState.value, islandWidthState.value, islandHeightState.value)
                   }
 
                   windowManager.addView(composeView, params)
@@ -189,6 +251,7 @@ jobs:
 
               override fun onDestroy() {
                   super.onDestroy()
+                  prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
                   if (::composeView.isInitialized) {
                       windowManager.removeView(composeView)
                   }
@@ -196,59 +259,24 @@ jobs:
           }
 
           @Composable
-          fun DynamicIslandComponent(
-              prefs: SharedPreferences,
-              windowManager: WindowManager,
-              params: WindowManager.LayoutParams,
-              view: View
-          ) {
-              var isExpanded by remember { mutableStateOf(false) }
-              
-              var islandWidth by remember { mutableStateOf(prefs.getInt("width", 130).dp) }
-              var islandHeight by remember { mutableStateOf(prefs.getInt("height", 38).dp) }
-
-              DisposableEffect(Unit) {
-                  val listener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
-                      if (key == "width") islandWidth = sharedPreferences.getInt("width", 130).dp
-                      if (key == "height") islandHeight = sharedPreferences.getInt("height", 38).dp
-                  }
-                  prefs.registerOnSharedPreferenceChangeListener(listener)
-                  onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-              }
-
+          fun DynamicIslandContent(isExpanded: Boolean, width: androidx.compose.ui.unit.Dp, height: androidx.compose.ui.unit.Dp) {
               Box(
                   modifier = Modifier
-                      .pointerInput(Unit) {
-                          detectDragGestures(
-                              onDragEnd = {
-                                  prefs.edit()
-                                      .putInt("pos_x", params.x)
-                                      .putInt("pos_y", params.y)
-                                      .apply()
-                              }
-                          ) { change, dragAmount ->
-                              change.consume()
-                              params.x += dragAmount.x.toInt()
-                              params.y += dragAmount.y.toInt()
-                              windowManager.updateViewLayout(view, params)
-                          }
-                      }
-                      .padding(top = 8.dp)
+                      .padding(16.dp) 
                       .animateContentSize(
                           animationSpec = spring(
                               dampingRatio = Spring.DampingRatioLowBouncy,
                               stiffness = Spring.StiffnessLow
                           )
                       )
-                      .background(Color.Black, shape = RoundedCornerShape(100.dp))
-                      .clickable { isExpanded = !isExpanded },
+                      .background(Color.Black, shape = RoundedCornerShape(100.dp)),
                   contentAlignment = Alignment.Center
               ) {
                   if (!isExpanded) {
                       Row(
                           modifier = Modifier
-                              .width(islandWidth)
-                              .height(islandHeight)
+                              .width(width)
+                              .height(height)
                               .padding(horizontal = 12.dp),
                           horizontalArrangement = Arrangement.SpaceBetween,
                           verticalAlignment = Alignment.CenterVertically
@@ -259,8 +287,8 @@ jobs:
                   } else {
                       Column(
                           modifier = Modifier
-                              .width(320.dp)
-                              .height(100.dp)
+                              .width(340.dp)
+                              .height(120.dp)
                               .padding(16.dp),
                           verticalArrangement = Arrangement.Center
                       ) {
@@ -272,11 +300,7 @@ jobs:
                               verticalAlignment = Alignment.CenterVertically
                           ) {
                               Text(text = "مرحباً! يمكنني المساعدة.", color = Color.White, fontSize = 16.sp)
-                              Text(
-                                  text = "✨", 
-                                  fontSize = 18.sp,
-                                  modifier = Modifier.clickable { isExpanded = false }
-                              )
+                              Text(text = "✨", fontSize = 20.sp)
                           }
                       }
                   }
@@ -292,129 +316,162 @@ jobs:
           import android.net.Uri
           import android.os.Bundle
           import android.provider.Settings
-          import androidx.activity.ComponentActivity
-          import androidx.activity.compose.setContent
-          import androidx.compose.foundation.background
-          import androidx.compose.foundation.layout.*
-          import androidx.compose.foundation.shape.RoundedCornerShape
-          import androidx.compose.material3.*
-          import androidx.compose.runtime.*
-          import androidx.compose.ui.Alignment
-          import androidx.compose.ui.Modifier
-          import androidx.compose.ui.graphics.Color
-          import androidx.compose.ui.text.font.FontWeight
-          import androidx.compose.ui.unit.dp
-          import androidx.compose.ui.unit.sp
+          import android.view.Gravity
+          import android.view.View
+          import android.view.ViewGroup
+          import android.widget.FrameLayout
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.TextView
+          import android.graphics.Color
+          import android.graphics.drawable.GradientDrawable
+          import androidx.appcompat.app.AppCompatActivity
 
-          class MainActivity : ComponentActivity() {
+          class MainActivity : AppCompatActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   val prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                  val dp = resources.displayMetrics.density
 
-                  setContent {
-                      MaterialTheme {
-                          Surface(
-                              modifier = Modifier.fillMaxSize(),
-                              color = Color(0xFF101411) 
-                          ) {
-                              Column(
-                                  modifier = Modifier
-                                      .fillMaxSize()
-                                      .padding(24.dp),
-                                  horizontalAlignment = Alignment.CenterHorizontally
-                              ) {
-                                  Text(
-                                      text = "إعدادات الجزيرة 🏝️",
-                                      color = Color.White,
-                                      fontSize = 28.sp,
-                                      fontWeight = FontWeight.Bold,
-                                      modifier = Modifier.padding(bottom = 32.dp, top = 24.dp)
-                                  )
+                  val bgDark = Color.parseColor("#101411")
+                  val pillActive = Color.parseColor("#A8E5BA")
+                  val pillInactive = Color.parseColor("#2D322E")
+                  val textOnActive = Color.parseColor("#0F2015")
+                  val textOnDark = Color.parseColor("#E1E3DF")
 
-                                  var widthValue by remember { mutableStateOf(prefs.getInt("width", 130).toFloat()) }
-                                  ControlSlider(
-                                      label = "العرض (Width): \${widthValue.toInt()}",
-                                      value = widthValue,
-                                      range = 80f..250f,
-                                      onValueChange = { 
-                                          widthValue = it
-                                          prefs.edit().putInt("width", it.toInt()).apply()
-                                      }
-                                  )
+                  val scrollView = ScrollView(this).apply {
+                      setBackgroundColor(bgDark)
+                      isFillViewport = true
+                  }
 
-                                  var heightValue by remember { mutableStateOf(prefs.getInt("height", 38).toFloat()) }
-                                  ControlSlider(
-                                      label = "الارتفاع (Height): \${heightValue.toInt()}",
-                                      value = heightValue,
-                                      range = 24f..80f,
-                                      onValueChange = { 
-                                          heightValue = it
-                                          prefs.edit().putInt("height", it.toInt()).apply()
-                                      }
-                                  )
-                                  
-                                  Spacer(modifier = Modifier.height(24.dp))
-                                  
-                                  Card(
-                                      colors = CardDefaults.cardColors(containerColor = Color(0xFF1E2320)),
-                                      shape = RoundedCornerShape(16.dp),
-                                      modifier = Modifier.fillMaxWidth()
-                                  ) {
-                                      Text(
-                                          text = "💡 نصيحة: يمكنك تحريك الجزيرة وتغيير مكانها بمجرد الضغط عليها وسحبها بإصبعك على الشاشة مباشرة!",
-                                          color = Color(0xFFA8E5BA),
-                                          modifier = Modifier.padding(16.dp),
-                                          fontSize = 14.sp
-                                      )
-                                  }
+                  val root = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setPadding((24*dp).toInt(), (40*dp).toInt(), (24*dp).toInt(), (40*dp).toInt())
+                  }
+                  scrollView.addView(root)
 
-                                  Spacer(modifier = Modifier.weight(1f))
+                  root.addView(TextView(this).apply {
+                      text = "إعدادات الجزيرة 🏝️"
+                      textSize = 32f
+                      setTextColor(textOnDark)
+                      gravity = Gravity.CENTER
+                      typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      setPadding(0, 0, 0, (32*dp).toInt())
+                  })
 
-                                  Button(
-                                      onClick = { checkOverlayAndStart() },
-                                      modifier = Modifier
-                                          .fillMaxWidth()
-                                          .height(64.dp),
-                                      colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA8E5BA)),
-                                      shape = RoundedCornerShape(32.dp)
-                                  ) {
-                                      Text(
-                                          text = "تشغيل الجزيرة التفاعلية 🚀",
-                                          color = Color(0xFF0F2015),
-                                          fontSize = 18.sp,
-                                          fontWeight = FontWeight.Bold
-                                      )
-                                  }
-                              }
+                  // إنشاء لوحة التحكم (Slider) العريضة بتصميم Material You
+                  fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
+                      val containerHeight = (56 * dp).toInt() 
+                      val container = FrameLayout(this@MainActivity).apply {
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, containerHeight)
+                          background = GradientDrawable().apply { setColor(pillInactive); cornerRadius = containerHeight / 2f }
+                      }
+                      
+                      val fillView = View(this@MainActivity).apply {
+                          layoutParams = FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT)
+                          background = GradientDrawable().apply { setColor(pillActive); cornerRadius = containerHeight / 2f }
+                      }
+                      container.addView(fillView)
+
+                      var currentWidth = currentVal
+                      fun updateFillWidth(totalWidth: Int) {
+                          if (totalWidth <= 0) return
+                          val progress = ((currentWidth - min) / (max - min)).coerceIn(0f, 1f)
+                          val fillWidth = (containerHeight + progress * (totalWidth - containerHeight)).toInt()
+                          fillView.layoutParams = FrameLayout.LayoutParams(fillWidth, ViewGroup.LayoutParams.MATCH_PARENT)
+                          fillView.requestLayout()
+                      }
+
+                      container.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+                          val width = right - left
+                          val oldWidth = oldRight - oldLeft
+                          if (width > 0 && width != oldWidth) updateFillWidth(width)
+                      }
+                      container.post { updateFillWidth(container.width) }
+
+                      container.setOnTouchListener { v, event ->
+                          val totalWidth = v.width
+                          if (totalWidth <= 0) return@setOnTouchListener false
+                          var newWidth = event.x.toInt()
+                          if (newWidth < containerHeight) newWidth = containerHeight
+                          if (newWidth > totalWidth) newWidth = totalWidth
+                          
+                          fillView.layoutParams = FrameLayout.LayoutParams(newWidth, ViewGroup.LayoutParams.MATCH_PARENT)
+                          fillView.requestLayout()
+                          
+                          val progress = (newWidth - containerHeight).toFloat() / (totalWidth - containerHeight).toFloat()
+                          currentWidth = min + (progress * (max - min))
+                          onUpdate(currentWidth)
+                          true
+                      }
+                      return container
+                  }
+
+                  // إضافة المحركات الأربعة
+                  fun createSliderSection(title: String, initial: Float, min: Float, max: Float, onUpdate: (Float) -> Unit) {
+                      val label = TextView(this@MainActivity).apply {
+                          text = title + ": " + initial.toInt()
+                          textSize = 16f
+                          setTextColor(Color.WHITE)
+                          setPadding(0, 0, 0, (8*dp).toInt())
+                      }
+                      val slider = createMaterialSlider(initial, min, max) { newVal ->
+                          label.text = title + ": " + newVal.toInt()
+                          onUpdate(newVal)
+                      }
+                      val section = LinearLayout(this@MainActivity).apply {
+                          orientation = LinearLayout.VERTICAL
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                              bottomMargin = (24*dp).toInt()
+                          }
+                      }
+                      section.addView(label)
+                      section.addView(slider)
+                      root.addView(section)
+                  }
+
+                  createSliderSection("العرض (Width)", prefs.getInt("width", 130).toFloat(), 80f, 350f) {
+                      prefs.edit().putInt("width", it.toInt()).apply()
+                  }
+                  createSliderSection("الارتفاع (Height)", prefs.getInt("height", 38).toFloat(), 20f, 100f) {
+                      prefs.edit().putInt("height", it.toInt()).apply()
+                  }
+                  createSliderSection("يمين / يسار (X Axis)", prefs.getInt("pos_x", 0).toFloat(), -500f, 500f) {
+                      prefs.edit().putInt("pos_x", it.toInt()).apply()
+                  }
+                  createSliderSection("أعلى / أسفل (Y Axis)", prefs.getInt("pos_y", 32).toFloat(), -200f, 500f) {
+                      prefs.edit().putInt("pos_y", it.toInt()).apply()
+                  }
+
+                  root.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 1f) }) 
+
+                  val btn = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 32f * dp }
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (64*dp).toInt()).apply {
+                          topMargin = (24*dp).toInt()
+                      }
+                      gravity = Gravity.CENTER
+                      
+                      addView(TextView(context).apply {
+                          text = "تشغيل الجزيرة التفاعلية 🚀"
+                          textSize = 18f
+                          setTextColor(textOnActive)
+                          typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      })
+                      
+                      setOnClickListener {
+                          if (!Settings.canDrawOverlays(this@MainActivity)) {
+                              val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                              startActivity(intent)
+                          } else {
+                              startService(Intent(this@MainActivity, DynamicIslandService::class.java))
                           }
                       }
                   }
-              }
+                  root.addView(btn)
 
-              @Composable
-              fun ControlSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, onValueChange: (Float) -> Unit) {
-                  Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                      Text(text = label, color = Color.LightGray, fontSize = 16.sp)
-                      Slider(
-                          value = value,
-                          onValueChange = onValueChange,
-                          valueRange = range,
-                          colors = SliderDefaults.colors(
-                              thumbColor = Color(0xFFA8E5BA),
-                              activeTrackColor = Color(0xFFA8E5BA),
-                              inactiveTrackColor = Color(0xFF2D322E)
-                          )
-                      )
-                  }
-              }
-
-              private fun checkOverlayAndStart() {
-                  if (!Settings.canDrawOverlays(this)) {
-                      val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:\$packageName"))
-                      startActivity(intent)
-                  } else {
-                      startService(Intent(this, DynamicIslandService::class.java))
-                  }
+                  setContentView(scrollView)
               }
           }
           INNER_EOF
