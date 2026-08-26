@@ -1,4 +1,4 @@
-name: Build AI Keyboard Pro
+name: Build Dynamic Island AI Pro
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Generate Android APK for AI Keyboard
+    name: Generate Android APK for Dynamic Island
     runs-on: ubuntu-latest
 
     steps:
@@ -32,34 +32,34 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Build Dynamic Island Pro
+      - name: Generate Dynamic Island Project
         run: |
           rm -rf app/src/main/res app/src/main/java
-          mkdir -p app/src/main/res/values app/src/main/res/values-night app/src/main/res/drawable app/src/main/res/mipmap-anydpi-v26 app/src/main/res/xml app/src/main/res/layout app/src/main/java/com/dynamicisland/pro
+          mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/dynamicisland/aipro app/src/main/res/mipmap-anydpi-v26
 
-          cat << 'EOF' > gradle.properties
+          cat << 'INNER_EOF' > gradle.properties
           android.useAndroidX=true
           android.enableJetifier=true
           org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          EOF
+          INNER_EOF
 
-          cat << 'EOF' > settings.gradle.kts
+          cat << 'INNER_EOF' > settings.gradle.kts
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name = "DynamicIslandPro"
+          rootProject.name = "DynamicIslandAIPro"
           include(":app")
-          EOF
+          INNER_EOF
 
-          cat << 'EOF' > build.gradle.kts
+          cat << 'INNER_EOF' > build.gradle.kts
           plugins { id("com.android.application") version "8.2.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.22" apply false }
-          EOF
+          INNER_EOF
 
-          cat << 'EOF' > app/build.gradle.kts
+          cat << 'INNER_EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android {
-              namespace = "com.dynamicisland.pro"
+              namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 67; versionName = "5.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 1; versionName = "1.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
           }
@@ -67,470 +67,285 @@ jobs:
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("com.google.android.material:material:1.11.0")
-              implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
           }
-          EOF
+          INNER_EOF
 
-          # ---- Colors ----
-          cat << 'EOF' > app/src/main/res/values/colors.xml
+          cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <color name="IosDarkCanvas">#121212</color>       
-              <color name="IosDarkKeyNormal">#2C2C2E</color>    
-              <color name="IosDarkKeyNormalPressed">#4C4C4E</color> 
-              <color name="IosDarkKeyControl">#1C1C1E</color>   
-              <color name="IosDarkKeyControlPressed">#3C3C3E</color>
-              <color name="IosBlueAction">#007AFF</color>       
-              <color name="IosBlueActionPressed">#005BB5</color>
-              <color name="IosTextColor">#FFFFFF</color>        
-              <color name="toolbar_bg">#2C2C2E</color>
-              <color name="btn_bg">#2C2C2E</color>
-              <color name="island_bg">#000000</color>
+              <string name="app_name">Dynamic Island AI</string>
           </resources>
-          EOF
+          INNER_EOF
 
-          # ---- Drawables لواجهة التطبيق الجديدة (نظام البطاقات) ----
-          cat << 'EOF' > app/src/main/res/drawable/bg_card.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#1C1C1E"/><corners android:radius="16dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_btn_primary.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#0A84FF"/><corners android:radius="12dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_btn_secondary.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#2C2C2E"/><corners android:radius="12dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_input.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#2C2C2E"/><corners android:radius="10dp"/></shape>
-          EOF
-
-          # ---- Drawables الكيبورد ----
-          cat << 'EOF' > app/src/main/res/drawable/bg_key.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormal"/><corners android:radius="5dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_key_pressed.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormalPressed"/><corners android:radius="5dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/key_selector.xml
-          <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_pressed" /><item android:drawable="@drawable/bg_key" /></selector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_key_special.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyControl"/><corners android:radius="5dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_key_special_pressed.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyControlPressed"/><corners android:radius="5dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/key_special_selector.xml
-          <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_special_pressed" /><item android:drawable="@drawable/bg_key_special" /></selector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_key_return.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosBlueAction"/><corners android:radius="5dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_key_return_pressed.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosBlueActionPressed"/><corners android:radius="5dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/key_return_selector.xml
-          <selector xmlns:android="http://schemas.android.com/apk/res/android"><item android:state_pressed="true" android:drawable="@drawable/bg_key_return_pressed" /><item android:drawable="@drawable/bg_key_return" /></selector>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_dynamic_island.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/island_bg"/><corners android:radius="50dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_keyboard_root.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkCanvas"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_popup_bubble.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/IosDarkKeyNormal"/><corners android:radius="12dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/bg_toolbar_pill.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="@color/toolbar_bg"/><corners android:radius="24dp"/></shape>
-          EOF
+          cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#000000"/></shape>
+          INNER_EOF
           
-          # App Icon (الأيقونة الجديدة)
-          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><gradient android:startColor="#1A1A1D" android:endColor="#3A3A40" android:angle="45"/><corners android:radius="32dp"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#FF2A55" android:pathData="M35,60 C35,45 45,35 54,35 C63,35 73,45 73,60 C73,75 63,85 54,85 C45,85 35,75 35,60 Z" /><path android:fillColor="#0A84FF" android:pathData="M54,45 C45,45 35,55 35,70 C35,85 45,95 54,95 C63,95 73,85 73,70 C73,55 63,45 54,45 Z" /></vector>
-          EOF
-          cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#00FF88" android:pathData="M24,44h60v20h-60zM44,44a10,10 0 0,1 20,0a10,10 0 0,1 -20,0z"/>
+          </vector>
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
-          EOF
+          INNER_EOF
 
-          cat << 'EOF' > app/src/main/res/values/strings.xml
-          <resources><string name="app_name">Dynamic Island Pro</string><string name="ime_name">Dynamic Island Pro (iOS 26)</string></resources>
-          EOF
-          cat << 'EOF' > app/src/main/res/values/themes.xml
-          <resources><style name="Theme.AIKeyboard" parent="Theme.AppCompat.DayNight.NoActionBar"><item name="android:windowLightStatusBar">false</item></style></resources>
-          EOF
-          cat << 'EOF' > app/src/main/res/xml/method.xml
-          <?xml version="1.0" encoding="utf-8"?><input-method xmlns:android="http://schemas.android.com/apk/res/android" android:supportsInlineSuggestions="true"><subtype android:imeSubtypeLocale="en_US" android:imeSubtypeMode="keyboard" /></input-method>
-          EOF
-
-          # ---- Layouts (التصميم الجديد المقسم والمنظم) ----
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:background="#000000"
-              android:fillViewport="true">
-
-              <LinearLayout
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:orientation="vertical"
-                  android:padding="20dp">
-
-                  <TextView
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:layout_marginTop="20dp"
-                      android:layout_marginBottom="30dp"
-                      android:text="Dynamic Island Pro"
-                      android:textColor="#FFFFFF"
-                      android:textSize="32sp"
-                      android:textStyle="bold"
-                      android:gravity="center" />
-
-                  <!-- 1. بطاقة الجزيرة التفاعلية -->
-                  <TextView
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:text="الجزيرة التفاعلية (Dynamic Island)"
-                      android:textColor="#8E8E93"
-                      android:textSize="14sp"
-                      android:layout_marginBottom="8dp"
-                      android:layout_marginStart="8dp"/>
-
-                  <LinearLayout
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:background="@drawable/bg_card"
-                      android:orientation="vertical"
-                      android:padding="16dp"
-                      android:layout_marginBottom="24dp">
-
-                      <TextView
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:text="قم بتفعيل الجزيرة لتظهر الإشعارات والتفاعلات أعلى الشاشة."
-                          android:textColor="#FFFFFF"
-                          android:textSize="14sp"
-                          android:layout_marginBottom="16dp"/>
-
-                      <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btn_island"
-                          android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:text="تفعيل الجزيرة التفاعلية"
-                          android:textColor="#FFFFFF"
-                          android:background="@drawable/bg_btn_primary"
-                          android:textSize="16sp"
-                          android:textStyle="bold"
-                          android:textAllCaps="false"/>
-                  </LinearLayout>
-
-                  <!-- 2. بطاقة الكيبورد الذكي -->
-                  <TextView
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:text="لوحة المفاتيح الذكية (AI Keyboard)"
-                      android:textColor="#8E8E93"
-                      android:textSize="14sp"
-                      android:layout_marginBottom="8dp"
-                      android:layout_marginStart="8dp"/>
-
-                  <LinearLayout
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:background="@drawable/bg_card"
-                      android:orientation="vertical"
-                      android:padding="16dp"
-                      android:layout_marginBottom="24dp">
-
-                      <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btn_enable"
-                          android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:text="1. تفعيل الكيبورد في الإعدادات"
-                          android:textColor="#0A84FF"
-                          android:background="@drawable/bg_btn_secondary"
-                          android:textSize="16sp"
-                          android:textStyle="bold"
-                          android:layout_marginBottom="12dp"
-                          android:textAllCaps="false"/>
-
-                      <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btn_select"
-                          android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:text="2. اختيار الكيبورد كافتراضي"
-                          android:textColor="#0A84FF"
-                          android:background="@drawable/bg_btn_secondary"
-                          android:textSize="16sp"
-                          android:textStyle="bold"
-                          android:layout_marginBottom="20dp"
-                          android:textAllCaps="false"/>
-
-                      <TextView
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:text="تخصيص ارتفاع الكيبورد:"
-                          android:textColor="#FFFFFF"
-                          android:textSize="14sp"
-                          android:layout_marginBottom="12dp"/>
-
-                      <SeekBar
-                          android:id="@+id/seek_height"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:max="40"
-                          android:progress="10" />
-                  </LinearLayout>
-
-                  <!-- 3. بطاقة الذكاء الاصطناعي -->
-                  <TextView
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:text="إعدادات الذكاء الاصطناعي (Gemini)"
-                      android:textColor="#8E8E93"
-                      android:textSize="14sp"
-                      android:layout_marginBottom="8dp"
-                      android:layout_marginStart="8dp"/>
-
-                  <LinearLayout
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:background="@drawable/bg_card"
-                      android:orientation="vertical"
-                      android:padding="16dp"
-                      android:layout_marginBottom="40dp">
-
-                      <EditText
-                          android:id="@+id/input_api_key"
-                          android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:hint="أدخل مفتاح API هنا..."
-                          android:textColor="#FFFFFF"
-                          android:textColorHint="#666666"
-                          android:inputType="textPassword"
-                          android:background="@drawable/bg_input"
-                          android:paddingHorizontal="12dp"
-                          android:layout_marginBottom="16dp" />
-
-                      <androidx.appcompat.widget.AppCompatButton
-                          android:id="@+id/btn_save_api"
-                          android:layout_width="match_parent"
-                          android:layout_height="50dp"
-                          android:text="حفظ الإعدادات"
-                          android:textColor="#FFFFFF"
-                          android:background="@drawable/bg_btn_primary"
-                          android:textSize="16sp"
-                          android:textStyle="bold"
-                          android:textAllCaps="false"/>
-                  </LinearLayout>
-              </LinearLayout>
-          </ScrollView>
-          EOF
-
-          # ---- Kotlin Code ----
-          
-          # 1. Dynamic Island Service
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pro/DynamicIslandService.kt
-          package com.dynamicisland.pro
+          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/IslandService.kt
+          package com.dynamicisland.aipro
 
           import android.animation.ValueAnimator
           import android.app.Service
+          import android.content.Context
           import android.content.Intent
+          import android.graphics.Color
           import android.graphics.PixelFormat
+          import android.graphics.drawable.GradientDrawable
           import android.os.IBinder
           import android.view.Gravity
+          import android.view.MotionEvent
           import android.view.View
+          import android.view.ViewGroup
           import android.view.WindowManager
           import android.view.animation.OvershootInterpolator
           import android.widget.FrameLayout
           import android.widget.LinearLayout
           import android.widget.TextView
-          import android.graphics.Color
-          import android.graphics.Typeface
 
-          class DynamicIslandService : Service() {
+          class IslandService : Service() {
               private lateinit var windowManager: WindowManager
               private lateinit var islandView: FrameLayout
+              private lateinit var params: WindowManager.LayoutParams
+              
               private var isExpanded = false
-              private var params: WindowManager.LayoutParams? = null
-              private var density: Float = 1f
+              private val collapsedWidthDp = 160f
+              private val collapsedHeightDp = 40f
+              private val expandedWidthDp = 340f
+              private val expandedHeightDp = 160f
 
               override fun onBind(intent: Intent?): IBinder? = null
 
               override fun onCreate() {
                   super.onCreate()
-                  windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-                  density = resources.displayMetrics.density
-
-                  islandView = FrameLayout(this).apply {
-                      setBackgroundResource(R.drawable.bg_dynamic_island)
-                  }
-
-                  val contentLayout = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      gravity = Gravity.CENTER
-                      layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-                  }
-
-                  val aiSparkle = TextView(this).apply {
-                      text = "✨"
-                      textSize = 16f
-                      gravity = Gravity.CENTER
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                      setPadding((8*density).toInt(), 0, (8*density).toInt(), 0)
-                  }
-                  
-                  val titleText = TextView(this).apply {
-                      text = "Dynamic Island Pro"
-                      textSize = 14f
-                      setTextColor(Color.WHITE)
-                      setTypeface(null, Typeface.BOLD)
-                      visibility = View.GONE
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                  }
-
-                  contentLayout.addView(aiSparkle)
-                  contentLayout.addView(titleText)
-                  islandView.addView(contentLayout)
+                  windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                  val dp = resources.displayMetrics.density
 
                   params = WindowManager.LayoutParams(
-                      (120 * density).toInt(),
-                      (35 * density).toInt(),
+                      (collapsedWidthDp * dp).toInt(),
+                      (collapsedHeightDp * dp).toInt(),
                       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                       PixelFormat.TRANSLUCENT
                   ).apply {
                       gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                      y = (10 * density).toInt()
+                      y = (15 * dp).toInt() // المسافة من أعلى الشاشة
                   }
 
-                  islandView.setOnClickListener { toggleIsland(titleText) }
-                  try { windowManager.addView(islandView, params) } catch (e: Exception) { e.printStackTrace() }
-              }
-
-              private fun toggleIsland(titleView: View) {
-                  val startWidth = if (isExpanded) 320 * density else 120 * density
-                  val endWidth = if (isExpanded) 120 * density else 320 * density
-                  val startHeight = if (isExpanded) 120 * density else 35 * density
-                  val endHeight = if (isExpanded) 35 * density else 120 * density
-
-                  val anim = ValueAnimator.ofFloat(0f, 1f).apply {
-                      duration = 400
-                      interpolator = OvershootInterpolator(1.2f)
-                      addUpdateListener { animator ->
-                          val fraction = animator.animatedFraction
-                          params?.width = (startWidth + (endWidth - startWidth) * fraction).toInt()
-                          params?.height = (startHeight + (endHeight - startHeight) * fraction).toInt()
-                          windowManager.updateViewLayout(islandView, params)
+                  islandView = FrameLayout(this).apply {
+                      background = GradientDrawable().apply {
+                          setColor(Color.BLACK)
+                          cornerRadius = 100f * dp // حواف دائرية مثالية
                       }
                   }
-                  
-                  if (!isExpanded) { titleView.visibility = View.VISIBLE } else { titleView.visibility = View.GONE }
-                  anim.start()
-                  isExpanded = !isExpanded
+
+                  // المحتوى المصغر (أيقونة الذكاء الاصطناعي)
+                  val collapsedContent = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                      gravity = Gravity.CENTER
+                  }
+                  collapsedContent.addView(TextView(this).apply {
+                      text = "✨"
+                      textSize = 18f
+                  })
+
+                  // المحتوى الموسع
+                  val expandedContent = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                      gravity = Gravity.CENTER
+                      alpha = 0f // مخفي في البداية
+                  }
+                  expandedContent.addView(TextView(this).apply {
+                      text = "مرحباً بك في Dynamic Island AI Pro"
+                      textSize = 16f
+                      setTextColor(Color.WHITE)
+                      gravity = Gravity.CENTER
+                  })
+                  expandedContent.addView(TextView(this).apply {
+                      text = "أنا مستعد لأوامرك الذكية..."
+                      textSize = 12f
+                      setTextColor(Color.GRAY)
+                      gravity = Gravity.CENTER
+                      setPadding(0, (8*dp).toInt(), 0, 0)
+                  })
+
+                  islandView.addView(expandedContent)
+                  islandView.addView(collapsedContent)
+
+                  islandView.setOnClickListener {
+                      isExpanded = !isExpanded
+                      animateIsland(isExpanded, collapsedContent, expandedContent)
+                  }
+
+                  windowManager.addView(islandView, params)
+              }
+
+              private fun animateIsland(expand: Boolean, collapsed: View, expanded: View) {
+                  val dp = resources.displayMetrics.density
+                  val startW = if (expand) collapsedWidthDp else expandedWidthDp
+                  val endW = if (expand) expandedWidthDp else collapsedWidthDp
+                  val startH = if (expand) collapsedHeightDp else expandedHeightDp
+                  val endH = if (expand) expandedHeightDp else collapsedHeightDp
+
+                  val animator = ValueAnimator.ofFloat(0f, 1f).apply {
+                      duration = 400
+                      interpolator = OvershootInterpolator(1.2f) // حركة مرنة (Bouncy) مثل iOS
+                      addUpdateListener { anim ->
+                          val fraction = anim.animatedValue as Float
+                          params.width = ((startW + (endW - startW) * fraction) * dp).toInt()
+                          params.height = ((startH + (endH - startH) * fraction) * dp).toInt()
+                          windowManager.updateViewLayout(islandView, params)
+                          
+                          // تلاشي المحتويات
+                          if (expand) {
+                              collapsed.alpha = 1f - (fraction * 2f).coerceIn(0f, 1f)
+                              expanded.alpha = ((fraction - 0.5f) * 2f).coerceIn(0f, 1f)
+                          } else {
+                              expanded.alpha = 1f - (fraction * 2f).coerceIn(0f, 1f)
+                              collapsed.alpha = ((fraction - 0.5f) * 2f).coerceIn(0f, 1f)
+                          }
+                      }
+                  }
+                  animator.start()
               }
 
               override fun onDestroy() {
                   super.onDestroy()
-                  if (::islandView.isInitialized) windowManager.removeView(islandView)
+                  if (::windowManager.isInitialized && ::islandView.isInitialized) {
+                      windowManager.removeView(islandView)
+                  }
               }
           }
-          EOF
+          INNER_EOF
 
-          # 2. MainActivity
-          cat << 'EOF' > app/src/main/java/com/dynamicisland/pro/MainActivity.kt
-          package com.dynamicisland.pro
+          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/MainActivity.kt
+          package com.dynamicisland.aipro
 
-          import android.content.Context
           import android.content.Intent
           import android.net.Uri
           import android.os.Bundle
           import android.provider.Settings
-          import android.view.inputmethod.InputMethodManager
-          import android.widget.Button
-          import android.widget.EditText
-          import android.widget.SeekBar
-          import android.widget.Toast
+          import android.view.Gravity
+          import android.view.ViewGroup
+          import android.widget.LinearLayout
+          import android.widget.TextView
+          import android.graphics.Color
+          import android.graphics.drawable.GradientDrawable
           import androidx.appcompat.app.AppCompatActivity
 
           class MainActivity : AppCompatActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  setContentView(R.layout.activity_main)
-                  val prefs = getSharedPreferences("ai_kb_prefs", Context.MODE_PRIVATE)
+                  val dp = resources.displayMetrics.density
 
-                  findViewById<Button>(R.id.btn_island).setOnClickListener {
-                      if (!Settings.canDrawOverlays(this)) {
-                          val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-                          startActivity(intent)
-                          Toast.makeText(this, "يرجى السماح بالظهور فوق التطبيقات", Toast.LENGTH_LONG).show()
-                      } else {
-                          startService(Intent(this, DynamicIslandService::class.java))
-                          Toast.makeText(this, "تم تفعيل الجزيرة ✨", Toast.LENGTH_SHORT).show()
-                      }
+                  val bgDark = Color.parseColor("#101411")
+                  val pillActive = Color.parseColor("#A8E5BA")
+                  val textOnActive = Color.parseColor("#0F2015")
+                  val textOnDark = Color.parseColor("#E1E3DF")
+
+                  val root = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setBackgroundColor(bgDark)
+                      setPadding((24*dp).toInt(), (60*dp).toInt(), (24*dp).toInt(), (24*dp).toInt())
+                      gravity = Gravity.CENTER_HORIZONTAL
                   }
 
-                  findViewById<Button>(R.id.btn_enable).setOnClickListener { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
-                  findViewById<Button>(R.id.btn_select).setOnClickListener { (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showInputMethodPicker() }
+                  root.addView(TextView(this).apply {
+                      text = "Dynamic Island AI"
+                      textSize = 36f
+                      setTextColor(textOnDark)
+                      typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      setPadding(0, 0, 0, (20*dp).toInt())
+                  })
+
+                  root.addView(TextView(this).apply {
+                      text = "لتشغيل الجزيرة، نحتاج إلى إذن الظهور فوق التطبيقات الأخرى."
+                      textSize = 16f
+                      setTextColor(Color.GRAY)
+                      gravity = Gravity.CENTER
+                      setPadding(0, 0, 0, (40*dp).toInt())
+                  })
+
+                  val btn = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 24f * dp }
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (72*dp).toInt())
+                      gravity = Gravity.CENTER
+                      
+                      addView(TextView(context).apply {
+                          text = "تشغيل الجزيرة التفاعلية 🚀"
+                          textSize = 18f
+                          setTextColor(textOnActive)
+                          typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      })
+                      
+                      setOnClickListener {
+                          checkOverlayAndStart()
+                      }
+                  }
                   
-                  val seekBar = findViewById<SeekBar>(R.id.seek_height)
-                  seekBar.progress = prefs.getInt("kb_height_prog", 10)
+                  root.addView(btn)
+                  setContentView(root)
+              }
 
-                  val inputApiKey = findViewById<EditText>(R.id.input_api_key)
-                  inputApiKey.setText(prefs.getString("api_key", ""))
-
-                  findViewById<Button>(R.id.btn_save_api).setOnClickListener {
-                      prefs.edit().putString("api_key", inputApiKey.text.toString().trim()).putInt("kb_height_prog", seekBar.progress).apply()
-                      Toast.makeText(this, "تم الحفظ!", Toast.LENGTH_SHORT).show()
+              private fun checkOverlayAndStart() {
+                  if (!Settings.canDrawOverlays(this)) {
+                      val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:\$packageName"))
+                      startActivity(intent)
+                  } else {
+                      startService(Intent(this, IslandService::class.java))
+                      finish() // إغلاق التطبيق والبقاء مع الجزيرة
                   }
               }
           }
-          EOF
+          INNER_EOF
 
-          # ---- AndroidManifest.xml ----
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          cat << 'INNER_EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.VIBRATE" />
-              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+              <!-- إذن الظهور فوق التطبيقات للجزيرة التفاعلية -->
+              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
               
-              <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/Theme.AIKeyboard">
-                  <activity android:name=".MainActivity" android:exported="true">
+              <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
+                  <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
                   </activity>
                   
-                  <service android:name=".DynamicIslandService" android:exported="false" />
+                  <service android:name=".IslandService" android:exported="false" />
               </application>
           </manifest>
-          EOF
+          INNER_EOF
+          
+          gradle wrapper --gradle-version 8.4 --no-daemon
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
+
+      - name: Clean Project Cache
+        run: ./gradlew clean --no-daemon
 
       - name: Build APK
         run: |
-          gradle assembleDebug -x test -x lint
+          ./gradlew assembleDebug --no-daemon --stacktrace -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-Pro.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-AI.apk
 
-      - name: Upload APK
+      - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Dynamic-Island-Pro
-          path: release-output/Dynamic-Island-Pro.apk
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        with:
-          tag_name: dynamic-island-v4.0
-          name: "Dynamic Island Pro - Beautiful UI 📱"
-          body: "تم تصميم واجهة جديدة كلياً مقسمة بنظام البطاقات (Cards) مثل إعدادات الآيفون لإنهاء تداخل الأزرار وتوضيح الأقسام."
-          files: release-output/Dynamic-Island-Pro.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Dynamic-Island-AI-Pro
+          path: release-output/Dynamic-Island-AI.apk
+          retention-days: 5
