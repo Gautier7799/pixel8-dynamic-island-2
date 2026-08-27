@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 9; versionName = "1.8.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 10; versionName = "1.9.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -155,6 +155,8 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/DynamicIslandService.kt
           package com.dynamicisland.aipro
 
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
           import android.content.BroadcastReceiver
           import android.content.Context
           import android.content.Intent
@@ -162,6 +164,7 @@ jobs:
           import android.content.SharedPreferences
           import android.graphics.PixelFormat
           import android.os.BatteryManager
+          import android.os.Build
           import android.os.Handler
           import android.os.Looper
           import android.provider.Settings
@@ -190,6 +193,7 @@ jobs:
           import androidx.compose.ui.text.style.TextOverflow
           import androidx.compose.ui.unit.dp
           import androidx.compose.ui.unit.sp
+          import androidx.core.app.NotificationCompat
           import androidx.lifecycle.LifecycleService
           import androidx.lifecycle.ViewModelStore
           import androidx.lifecycle.ViewModelStoreOwner
@@ -263,7 +267,6 @@ jobs:
                           currentEventState.value = IslandEvent(type, title, text, icon, color)
                           islandModeState.value = IslandMode.EVENT_COMPACT 
                           
-                          // استقرار المؤقت (Reset timer safely)
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4500)
                       }
@@ -294,11 +297,37 @@ jobs:
                   }
               }
 
+              // نظام التثبيت (Stabilisation) بخدمة أمامية لا تُغلق
+              private fun startForegroundServiceRobust() {
+                  val channelId = "island_service_channel"
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      val channel = NotificationChannel(channelId, "Dynamic Island Core", NotificationManager.IMPORTANCE_MIN).apply {
+                          description = "Keep Island running in background"
+                          setShowBadge(false)
+                      }
+                      getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+                  }
+                  
+                  val lang = getSharedPreferences("island_prefs", Context.MODE_PRIVATE).getString("lang", "fr")
+                  val msg = if(lang == "fr") "Service actif" else "الخدمة تعمل"
+                  
+                  val notification = NotificationCompat.Builder(this, channelId)
+                      .setContentTitle("Dynamic Island Pro")
+                      .setContentText(msg)
+                      .setSmallIcon(android.R.drawable.btn_star) // أيقونة افتراضية صغيرة
+                      .setPriority(NotificationCompat.PRIORITY_MIN)
+                      .build()
+                      
+                  startForeground(1, notification)
+              }
+
               override fun onCreate() {
                   super.onCreate()
                   savedStateRegistryController.performRestore(null)
                   prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                   prefs.registerOnSharedPreferenceChangeListener(prefListener)
+                  
+                  startForegroundServiceRobust()
                   
                   islandWidthState.value = prefs.getInt("width", 60).dp
                   islandHeightState.value = prefs.getInt("height", 26).dp
@@ -312,7 +341,7 @@ jobs:
                   composeView.setViewTreeSavedStateRegistryOwner(this)
 
                   registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
-                  if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                       registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
                   } else {
                       registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"))
@@ -321,7 +350,7 @@ jobs:
                   params = WindowManager.LayoutParams(
                       WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.WRAP_CONTENT,
-                      WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
                       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
                       PixelFormat.TRANSLUCENT
                   ).apply {
@@ -330,7 +359,6 @@ jobs:
                       y = prefs.getInt("pos_y", 32)
                   }
 
-                  // استقرار نظام اللمس للتمييز بين النقر والسحب بدقة
                   var initialX = 0; var initialY = 0; var initialTouchX = 0f; var initialTouchY = 0f; var isMoving = false
                   val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
 
@@ -393,7 +421,6 @@ jobs:
                   horizontalAlignment = Alignment.CenterHorizontally,
                   modifier = Modifier.wrapContentSize()
               ) {
-                  // الجزء الثابت: الجزيرة النانوية السوداء
                   Box(
                       modifier = Modifier
                           .width(width)
@@ -401,7 +428,6 @@ jobs:
                           .background(Color.Black, shape = RoundedCornerShape(radius))
                   )
                   
-                  // الجزء المنفصل: كبسولة الإشعارات النحيفة
                   AnimatedVisibility(
                       visible = mode != IslandMode.IDLE,
                       enter = expandVertically(expandFrom = Alignment.Top, animationSpec = spring(dampingRatio = 0.75f, stiffness = 450f)) + fadeIn(animationSpec = tween(300)),
@@ -414,7 +440,7 @@ jobs:
                       }
                       
                       val targetHeight = when (mode) {
-                          IslandMode.EVENT_COMPACT -> 32.dp // الحجم النحيف المحافظ عليه
+                          IslandMode.EVENT_COMPACT -> 32.dp
                           IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 130.dp else 90.dp
                           else -> 0.dp
                       }
@@ -436,7 +462,6 @@ jobs:
                                   modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                                   verticalAlignment = Alignment.CenterVertically
                               ) {
-                                  // الموجات الصوتية الحية إذا كانت موسيقى
                                   if (event.type == "MUSIC") {
                                       AudioVisualizer(color = event.color)
                                   } else {
@@ -453,7 +478,7 @@ jobs:
                                   Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                                       Row(verticalAlignment = Alignment.CenterVertically) {
                                           Box(modifier = Modifier.size(40.dp).background(Color(0x331DB954), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-                                              AudioVisualizer(color = Color.White) // موجات موسيقية في الأيقونة أيضاً
+                                              AudioVisualizer(color = Color.White)
                                           }
                                           Spacer(modifier = Modifier.width(12.dp))
                                           Column(modifier = Modifier.weight(1f)) {
@@ -466,7 +491,6 @@ jobs:
                                       }
                                       Spacer(modifier = Modifier.height(16.dp))
                                       Box(modifier = Modifier.fillMaxWidth().height(3.dp).background(Color(0x33FFFFFF), CircleShape)) {
-                                          // حركة تقدم الموسيقى
                                           val progressTransition = rememberInfiniteTransition(label="prog")
                                           val progress by progressTransition.animateFloat(initialValue = 0.1f, targetValue = 0.9f, animationSpec = infiniteRepeatable(animation = tween(15000, easing = LinearEasing)), label="progAnim")
                                           Box(modifier = Modifier.fillMaxWidth(progress).height(3.dp).background(Color.White, CircleShape))
@@ -504,9 +528,12 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/MainActivity.kt
           package com.dynamicisland.aipro
 
+          import android.Manifest
           import android.content.Context
           import android.content.Intent
+          import android.content.pm.PackageManager
           import android.net.Uri
+          import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
           import android.view.Gravity
@@ -521,11 +548,40 @@ jobs:
           import androidx.appcompat.app.AppCompatActivity
 
           class MainActivity : AppCompatActivity() {
+              
+              private fun restartActivity() {
+                  finish()
+                  startActivity(intent)
+              }
+
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   val prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                  val dp = resources.displayMetrics.density
+                  
+                  // طلب صلاحية الإشعارات (للأندرويد 13 وما فوق) لتجنب غلق النظام
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                      if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                          requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+                      }
+                  }
 
+                  // نظام اللغة (Language System)
+                  var currentLang = prefs.getString("lang", "fr") ?: "fr"
+                  val isFr = currentLang == "fr"
+
+                  val tTitle = if(isFr) "Paramètres de l'île 🏝️" else "إعدادات الجزيرة 🏝️"
+                  val tGlow = if(isFr) "Épaisseur de la lueur (Glow)" else "سمك الضوء المتفاعل (Glow)"
+                  val tWidth = if(isFr) "Largeur de l'île (Width)" else "العرض (Width)"
+                  val tHeight = if(isFr) "Hauteur (Height)" else "الارتفاع (Height)"
+                  val tRadius = if(isFr) "Arrondi (Corner Radius)" else "الاستدارة (Corner Radius)"
+                  val tX = if(isFr) "Gauche / Droite (X Axis)" else "يمين / يسار (X Axis)"
+                  val tY = if(isFr) "Haut / Bas (Y Axis)" else "أعلى / أسفل (Y Axis)"
+                  val tTestMsg = if(isFr) "Tester Notification 💬" else "تجربة إشعار منفصل 💬"
+                  val tTestMus = if(isFr) "Tester Musique 🎵" else "تجربة مشغل الموسيقى 🎵"
+                  val tStart = if(isFr) "Mettre à jour / Démarrer 🚀" else "تحديث / تشغيل الجزيرة 🚀"
+                  val tLangBtn = if(isFr) "تغيير اللغة (العربية) 🌍" else "Changer la langue (Français) 🌍"
+
+                  val dp = resources.displayMetrics.density
                   val bgDark = Color.parseColor("#101411")
                   val pillActive = Color.parseColor("#A8E5BA")
                   val pillInactive = Color.parseColor("#2D322E")
@@ -538,15 +594,31 @@ jobs:
                       setPadding((16*dp).toInt(), (24*dp).toInt(), (16*dp).toInt(), (24*dp).toInt())
                   }
                   scrollView.addView(root)
+                  
+                  // زر تغيير اللغة
+                  val langBtn = TextView(this).apply {
+                      text = tLangBtn
+                      textSize = 14f
+                      setTextColor(pillActive)
+                      gravity = Gravity.END or Gravity.TOP
+                      setPadding(0, 0, 0, (12*dp).toInt())
+                      setOnClickListener {
+                          val newLang = if (isFr) "ar" else "fr"
+                          prefs.edit().putString("lang", newLang).apply()
+                          restartActivity()
+                      }
+                  }
+                  root.addView(langBtn)
 
                   root.addView(TextView(this).apply {
-                      text = "إعدادات الجزيرة 🏝️"
-                      textSize = 24f; setTextColor(textOnDark); gravity = Gravity.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      setPadding(0, 0, 0, (16*dp).toInt())
+                      text = tTitle
+                      textSize = 26f; setTextColor(textOnDark); gravity = Gravity.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      setPadding(0, 0, 0, (24*dp).toInt()) // مسافة أكبر
                   })
 
                   fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
-                      val containerHeight = (8 * dp).toInt() 
+                      // زيادة سمك الأشرطة قليلاً لتبدو أوضح وتملأ الفراغ
+                      val containerHeight = (14 * dp).toInt() 
                       val container = FrameLayout(this@MainActivity).apply {
                           layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, containerHeight)
                           background = GradientDrawable().apply { setColor(pillInactive); cornerRadius = containerHeight / 2f }
@@ -588,7 +660,7 @@ jobs:
                   fun createSliderSection(title: String, initial: Float, min: Float, max: Float, onUpdate: (Float) -> Unit) {
                       val label = TextView(this@MainActivity).apply {
                           text = title + ": " + initial.toInt()
-                          textSize = 12f; setTextColor(Color.WHITE); setPadding(0, 0, 0, (4*dp).toInt()) 
+                          textSize = 14f; setTextColor(Color.WHITE); setPadding(0, 0, 0, (6*dp).toInt()) // تكبير النص قليلاً
                       }
                       val slider = createMaterialSlider(initial, min, max) { newVal ->
                           label.text = title + ": " + newVal.toInt()
@@ -596,53 +668,58 @@ jobs:
                       }
                       val section = LinearLayout(this@MainActivity).apply {
                           orientation = LinearLayout.VERTICAL
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (12*dp).toInt() } 
+                          // زيادة المسافة بين الأقسام لملء الفراغ بشكل مريح
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (22*dp).toInt() } 
                       }
                       section.addView(label); section.addView(slider); root.addView(section)
                   }
 
-                  createSliderSection("سمك الضوء المتفاعل (Glow)", prefs.getInt("glow", 2).toFloat(), 0f, 10f) { prefs.edit().putInt("glow", it.toInt()).apply() }
-                  createSliderSection("العرض (Width)", prefs.getInt("width", 60).toFloat(), 30f, 400f) { prefs.edit().putInt("width", it.toInt()).apply() }
-                  createSliderSection("الارتفاع (Height)", prefs.getInt("height", 26).toFloat(), 10f, 150f) { prefs.edit().putInt("height", it.toInt()).apply() }
-                  createSliderSection("الاستدارة (Corner Radius)", prefs.getInt("radius", 100).toFloat(), 0f, 150f) { prefs.edit().putInt("radius", it.toInt()).apply() }
-                  createSliderSection("يمين / يسار (X Axis)", prefs.getInt("pos_x", 0).toFloat(), -600f, 600f) { prefs.edit().putInt("pos_x", it.toInt()).apply() }
-                  createSliderSection("أعلى / أسفل (Y Axis)", prefs.getInt("pos_y", 32).toFloat(), -800f, 500f) { prefs.edit().putInt("pos_y", it.toInt()).apply() }
+                  createSliderSection(tGlow, prefs.getInt("glow", 2).toFloat(), 0f, 10f) { prefs.edit().putInt("glow", it.toInt()).apply() }
+                  createSliderSection(tWidth, prefs.getInt("width", 60).toFloat(), 30f, 400f) { prefs.edit().putInt("width", it.toInt()).apply() }
+                  createSliderSection(tHeight, prefs.getInt("height", 26).toFloat(), 10f, 150f) { prefs.edit().putInt("height", it.toInt()).apply() }
+                  createSliderSection(tRadius, prefs.getInt("radius", 100).toFloat(), 0f, 150f) { prefs.edit().putInt("radius", it.toInt()).apply() }
+                  createSliderSection(tX, prefs.getInt("pos_x", 0).toFloat(), -600f, 600f) { prefs.edit().putInt("pos_x", it.toInt()).apply() }
+                  createSliderSection(tY, prefs.getInt("pos_y", 32).toFloat(), -800f, 500f) { prefs.edit().putInt("pos_y", it.toInt()).apply() }
 
                   root.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 1f) }) 
 
-                  fun createTestButton(title: String, icon: String, isMusic: Boolean): View {
+                  fun createTestButton(title: String, isMusic: Boolean): View {
                       return LinearLayout(this@MainActivity).apply {
                           orientation = LinearLayout.HORIZONTAL
                           background = GradientDrawable().apply { setColor(Color.parseColor("#1E2320")); cornerRadius = 16f * dp } 
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (48*dp).toInt()).apply { topMargin = (8*dp).toInt() } 
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52*dp).toInt()).apply { topMargin = (10*dp).toInt() } 
                           gravity = Gravity.CENTER
-                          addView(TextView(context).apply { text = "$title $icon"; textSize = 14f; setTextColor(Color.WHITE); typeface = android.graphics.Typeface.DEFAULT_BOLD })
+                          addView(TextView(context).apply { text = title; textSize = 15f; setTextColor(Color.WHITE); typeface = android.graphics.Typeface.DEFAULT_BOLD })
                           setOnClickListener {
                               val i = Intent("com.dynamicisland.aipro.NEW_EVENT")
                               if (isMusic) {
                                   i.putExtra("type", "MUSIC"); i.putExtra("title", "Blinding Lights"); i.putExtra("text", "The Weeknd"); i.putExtra("icon", "🎵"); i.putExtra("color", "#1DB954")
                               } else {
-                                  i.putExtra("type", "MSG"); i.putExtra("title", "✨ تلميح"); i.putExtra("text", "استُخدمت لمدة ساعة"); i.putExtra("icon", "💬"); i.putExtra("color", "#0088CC")
+                                  i.putExtra("type", "MSG"); i.putExtra("title", "✨ Info"); i.putExtra("text", "Test de Notification"); i.putExtra("icon", "💬"); i.putExtra("color", "#0088CC")
                               }
                               sendBroadcast(i)
                           }
                       }
                   }
                   
-                  root.addView(createTestButton("تجربة إشعار منفصل", "💬", false))
-                  root.addView(createTestButton("تجربة مشغل الموسيقى", "🎵", true))
+                  root.addView(createTestButton(tTestMsg, false))
+                  root.addView(createTestButton(tTestMus, true))
 
                   val btn = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 16f * dp }
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (48*dp).toInt()).apply { topMargin = (8*dp).toInt() }
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (54*dp).toInt()).apply { topMargin = (12*dp).toInt() }
                       gravity = Gravity.CENTER
-                      addView(TextView(context).apply { text = "تحديث الجزيرة 🚀"; textSize = 15f; setTextColor(textOnActive); typeface = android.graphics.Typeface.DEFAULT_BOLD })
+                      addView(TextView(context).apply { text = tStart; textSize = 16f; setTextColor(textOnActive); typeface = android.graphics.Typeface.DEFAULT_BOLD })
                       setOnClickListener {
                           if (!Settings.canDrawOverlays(this@MainActivity)) {
                               startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
                           } else {
-                              startService(Intent(this@MainActivity, DynamicIslandService::class.java))
+                              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                  startForegroundService(Intent(this@MainActivity, DynamicIslandService::class.java))
+                              } else {
+                                  startService(Intent(this@MainActivity, DynamicIslandService::class.java))
+                              }
                           }
                       }
                   }
@@ -656,6 +733,11 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+              <!-- الصلاحيات الجديدة لضمان استقرار التطبيق كخدمة أمامية قوية (Solid) -->
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+              <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
               <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
                   <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
                       <intent-filter>
@@ -663,7 +745,10 @@ jobs:
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
                   </activity>
-                  <service android:name=".DynamicIslandService" android:exported="false" />
+                  
+                  <!-- تعريف الخدمة كخدمة أمامية (Foreground Service) لمنع النظام من غلقها -->
+                  <service android:name=".DynamicIslandService" android:exported="false" android:foregroundServiceType="specialUse" />
+                  
                   <service android:name=".IslandNotificationListener" android:label="Dynamic Island Notifications" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
                       <intent-filter>
                           <action android:name="android.service.notification.NotificationListenerService" />
