@@ -1,4 +1,4 @@
-name: Build NOVA ISLAND Pro V1.3 (UI Fixes)
+name: Build NOVA ISLAND Pro V1.4 (Touch & Layout Fixes)
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 4; versionName = "1.3.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 5; versionName = "1.4.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -91,7 +91,6 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/res/values/themes.xml
           <resources>
               <style name="Theme.NovaIslandPro" parent="Theme.AppCompat.DayNight.NoActionBar">
-                  <!-- Enable Edge-to-Edge -->
                   <item name="android:windowTranslucentStatus">true</item>
                   <item name="android:windowTranslucentNavigation">true</item>
               </style>
@@ -166,15 +165,24 @@ jobs:
           import androidx.compose.animation.*
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.background
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.interaction.MutableInteractionSource
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.shape.CircleShape
           import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.rounded.*
+          import androidx.compose.material3.Button
+          import androidx.compose.material3.ButtonDefaults
+          import androidx.compose.material3.Icon
+          import androidx.compose.material3.IconButton
           import androidx.compose.material3.Text
           import androidx.compose.runtime.*
           import androidx.compose.ui.Alignment
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.graphics.Color
           import androidx.compose.ui.platform.ComposeView
+          import androidx.compose.ui.platform.LocalContext
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.Dp
           import androidx.compose.ui.unit.dp
@@ -236,7 +244,7 @@ jobs:
               private val islandHeightState = mutableStateOf(28.dp)
 
               private val handler = Handler(Looper.getMainLooper())
-              private val collapseRunnable = Runnable { if (islandModeState.value == IslandMode.EVENT_COMPACT) islandModeState.value = IslandMode.IDLE }
+              private val collapseRunnable = Runnable { if (islandModeState.value == IslandMode.EVENT_COMPACT || islandModeState.value == IslandMode.EVENT_EXPANDED) islandModeState.value = IslandMode.IDLE }
 
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
@@ -288,7 +296,6 @@ jobs:
                       registerReceiver(eventReceiver, IntentFilter("com.novaisland.pro.EVENT"))
                   }
 
-                  // EXTREME FIX FOR NOTCH OVERLAP (FORCE DRAWING OVER EVERYTHING)
                   params = WindowManager.LayoutParams(
                       WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.WRAP_CONTENT,
@@ -308,7 +315,31 @@ jobs:
                   }
 
                   composeView.setContent {
-                      NovaIslandContent(mode = islandModeState.value, event = currentEventState.value, baseWidth = islandWidthState.value, baseHeight = islandHeightState.value)
+                      val context = LocalContext.current
+                      NovaIslandContent(
+                          mode = islandModeState.value, 
+                          event = currentEventState.value, 
+                          baseWidth = islandWidthState.value, 
+                          baseHeight = islandHeightState.value,
+                          onClick = {
+                              if (islandModeState.value == IslandMode.EVENT_COMPACT) {
+                                  islandModeState.value = IslandMode.EVENT_EXPANDED
+                                  handler.removeCallbacks(collapseRunnable)
+                                  handler.postDelayed(collapseRunnable, 10000L) // Auto close expanded after 10s
+                              } else if (islandModeState.value == IslandMode.EVENT_EXPANDED) {
+                                  islandModeState.value = IslandMode.IDLE
+                                  handler.removeCallbacks(collapseRunnable)
+                              }
+                          },
+                          onSettingsClick = {
+                              islandModeState.value = IslandMode.IDLE
+                              handler.removeCallbacks(collapseRunnable)
+                              val intent = Intent(context, MainActivity::class.java).apply {
+                                  addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                              }
+                              context.startActivity(intent)
+                          }
+                      )
                   }
                   windowManager.addView(composeView, params)
               }
@@ -326,15 +357,26 @@ jobs:
           }
 
           @Composable
-          fun NovaIslandContent(mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp) {
-              val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 330.dp }
-              val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 125.dp }
+          fun NovaIslandContent(mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp, onClick: () -> Unit, onSettingsClick: () -> Unit) {
+              val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 340.dp }
+              val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 160.dp }
               
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
-              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else (baseHeight / 2f), label = "")
+              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 32.dp else (baseHeight / 2f), label = "")
 
-              Box(modifier = Modifier.width(animatedWidth).height(animatedHeight).background(Color.Black, RoundedCornerShape(cornerRadius))) {
+              Box(
+                  modifier = Modifier
+                      .width(animatedWidth)
+                      .height(animatedHeight)
+                      .background(Color.Black, RoundedCornerShape(cornerRadius))
+                      .clickable(
+                          interactionSource = remember { MutableInteractionSource() },
+                          indication = null, // No ripple for clean Apple-like feel
+                          onClick = onClick
+                      )
+              ) {
+                  // COMPACT MODE
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_COMPACT, 
                       modifier = Modifier.align(Alignment.Center),
@@ -350,6 +392,46 @@ jobs:
                               AudioVisualizer(color = event.color)
                           } else {
                               Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                          }
+                      }
+                  }
+
+                  // EXPANDED MODE (WHEN TOUCHED)
+                  androidx.compose.animation.AnimatedVisibility(
+                      visible = mode == IslandMode.EVENT_EXPANDED, 
+                      modifier = Modifier.fillMaxSize(),
+                      enter = fadeIn(tween(300, delayMillis = 150)), exit = fadeOut(tween(150))
+                  ) {
+                      Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                          Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                              Row(verticalAlignment = Alignment.Top, modifier = Modifier.weight(1f)) {
+                                  Text(event.icon, fontSize = 28.sp)
+                                  Spacer(modifier = Modifier.width(12.dp))
+                                  Column {
+                                      Text(text = event.title, color = event.color, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                      Spacer(modifier = Modifier.height(4.dp))
+                                      Text(text = event.text, color = Color.LightGray, fontSize = 14.sp, maxLines = 2, lineHeight = 18.sp)
+                                  }
+                              }
+                              // SETTINGS (STINGE) ICON
+                              IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp).background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)) {
+                                  Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = Color.White, modifier = Modifier.size(20.dp))
+                              }
+                          }
+                          
+                          if(event.type == "MUSIC") {
+                              Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                  Icon(Icons.Rounded.SkipPrevious, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
+                                  Icon(Icons.Rounded.PauseCircleFilled, contentDescription = null, tint = event.color, modifier = Modifier.size(52.dp))
+                                  Icon(Icons.Rounded.SkipNext, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
+                              }
+                          } else {
+                              Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                  Spacer(modifier = Modifier.weight(1f))
+                                  Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = event.color)) {
+                                      Text("Ouvrir", color = Color.Black, fontWeight = FontWeight.Bold)
+                                  }
+                              }
                           }
                       }
                   }
@@ -396,7 +478,6 @@ jobs:
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  // Enable Edge-to-Edge display
                   WindowCompat.setDecorFitsSystemWindows(window, false)
                   
                   val prefs = getSharedPreferences("nova_prefs", Context.MODE_PRIVATE)
@@ -481,19 +562,16 @@ jobs:
               var posY by remember { mutableStateOf(prefs.getInt("pos_y", 28).toFloat()) }
               val context = LocalContext.current
 
-              // Added WindowInsets padding for Edge-to-Edge layout
-              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(WindowInsets.systemBars.asPaddingValues()).padding(horizontal = 16.dp)) {
-                  Spacer(modifier = Modifier.height(16.dp))
+              // UI LAYOUT FIX: Perfect scrolling padding so the bottom button is never cut off
+              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+                  Spacer(modifier = Modifier.height(48.dp))
                   Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                  Text("Édition Pro V1.3", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                  Text("Édition Pro V1.4", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
                   Spacer(modifier = Modifier.height(24.dp))
 
-                  // FIX: White/Light background for the preview card to clearly see the black island
                   Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)), shape = RoundedCornerShape(24.dp)) {
                       Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                          // Mock Notch/Camera (Black)
                           Box(modifier = Modifier.padding(top = 16.dp).size(20.dp).background(Color.Black, CircleShape))
-                          // The Island (Black)
                           Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(height.dp / 2)))
                           Text("Laboratoire de taille", modifier = Modifier.align(Alignment.TopStart).padding(16.dp), color = Color.DarkGray, fontWeight = FontWeight.Bold)
                       }
@@ -526,7 +604,8 @@ jobs:
                           }
                       }
                   }
-                  Spacer(modifier = Modifier.height(32.dp))
+                  // Extra padding at the bottom so the last item is 100% visible
+                  Spacer(modifier = Modifier.height(64.dp)) 
               }
           }
 
@@ -548,8 +627,8 @@ jobs:
           @Composable
           fun EventsScreen() {
               val context = LocalContext.current
-              Column(modifier = Modifier.fillMaxSize().padding(WindowInsets.systemBars.asPaddingValues()).padding(horizontal = 16.dp)) {
-                  Spacer(modifier = Modifier.height(16.dp))
+              Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+                  Spacer(modifier = Modifier.height(48.dp))
                   Text("Événements", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                   Spacer(modifier = Modifier.height(24.dp))
                   
@@ -575,8 +654,8 @@ jobs:
           @Composable
           fun SystemScreen() {
               val context = LocalContext.current
-              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(WindowInsets.systemBars.asPaddingValues()).padding(horizontal = 16.dp)) {
-                  Spacer(modifier = Modifier.height(16.dp))
+              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+                  Spacer(modifier = Modifier.height(48.dp))
                   Text("Système", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                   Spacer(modifier = Modifier.height(24.dp))
                   
@@ -590,6 +669,7 @@ jobs:
                           SettingItem(icon = Icons.Rounded.BatteryAlert, title = "Économiseur de batterie", subtitle = "Ignorer pour empêcher l'arrêt", onClick = { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) })
                       }
                   }
+                  Spacer(modifier = Modifier.height(64.dp)) 
               }
           }
 
