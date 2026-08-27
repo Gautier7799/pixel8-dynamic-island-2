@@ -1,4 +1,4 @@
-name: Build MT Capsule Material You V4.0
+name: Build NOVA ISLAND Pro V1.0
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Generate Android APK for MT Capsule
+    name: Generate Android APK for NOVA ISLAND Pro
     runs-on: ubuntu-latest
 
     steps:
@@ -32,10 +32,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Dynamic Island Compose Project
+      - name: Generate NOVA ISLAND Pro Project
         run: |
           rm -rf app/src/main/res app/src/main/java
-          mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/dynamicisland/aipro app/src/main/res/mipmap-anydpi-v26
+          mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/novaisland/pro app/src/main/res/mipmap-anydpi-v26
 
           cat << 'INNER_EOF' > gradle.properties
           android.useAndroidX=true
@@ -46,7 +46,7 @@ jobs:
           cat << 'INNER_EOF' > settings.gradle.kts
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name = "DynamicIslandAIPro"
+          rootProject.name = "NovaIslandPro"
           include(":app")
           INNER_EOF
 
@@ -57,9 +57,9 @@ jobs:
           cat << 'INNER_EOF' > app/build.gradle.kts
           plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android {
-              namespace = "com.dynamicisland.aipro"
+              namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 19; versionName = "4.0.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 1; versionName = "1.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -82,8 +82,8 @@ jobs:
 
           cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">MT Capsule Pro</string>
-              <string name="accessibility_desc">MT Capsule nécessite le service d\'accessibilité pour afficher la capsule par-dessus la barre d\'état et pour garantir des performances optimales sans interruption.</string>
+              <string name="app_name">NOVA ISLAND Pro</string>
+              <string name="accessibility_desc">NOVA ISLAND Pro nécessite le service d\'accessibilité pour fonctionner de manière fluide, afficher l\'île dynamique par-dessus l\'écran, et offrir la meilleure expérience sans être arrêté par le système.</string>
           </resources>
           INNER_EOF
           
@@ -99,12 +99,12 @@ jobs:
           INNER_EOF
 
           cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#EAF5EB"/></shape>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#0F172A"/></shape>
           INNER_EOF
           
           cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-              <path android:fillColor="#0C3D1F" android:pathData="M34,44h40v20h-40zM44,44a10,10 0 0,1 20,0a10,10 0 0,1 -20,0z"/>
+              <path android:fillColor="#38BDF8" android:pathData="M34,44h40v20h-40zM44,44a10,10 0 0,1 20,0a10,10 0 0,1 -20,0z"/>
           </vector>
           INNER_EOF
           
@@ -112,26 +112,33 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
           INNER_EOF
 
-          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/IslandNotificationListener.kt
-          package com.dynamicisland.aipro
+          cat << 'INNER_EOF' > app/src/main/java/com/novaisland/pro/NovaNotificationListener.kt
+          package com.novaisland.pro
           import android.app.Notification
           import android.content.Intent
           import android.service.notification.NotificationListenerService
           import android.service.notification.StatusBarNotification
-          class IslandNotificationListener : NotificationListenerService() {
+          class NovaNotificationListener : NotificationListenerService() {
               override fun onNotificationPosted(sbn: StatusBarNotification) {
                   val extras = sbn.notification.extras
                   val title = extras.getString("android.title") ?: return
                   val text = extras.getCharSequence("android.text")?.toString() ?: return
-                  val intent = Intent("com.dynamicisland.aipro.NEW_EVENT")
-                  intent.putExtra("type", "MSG"); intent.putExtra("title", title); intent.putExtra("text", text); intent.putExtra("icon", "💬"); intent.putExtra("color", "#0C3D1F")
+                  val intent = Intent("com.novaisland.pro.EVENT")
+                  
+                  val isMedia = extras.containsKey(Notification.EXTRA_MEDIA_SESSION) || extras.getString(Notification.EXTRA_TEMPLATE) == "android.app.Notification\$MediaStyle"
+                  if (isMedia) {
+                      intent.putExtra("type", "MUSIC"); intent.putExtra("title", title); intent.putExtra("text", text); intent.putExtra("icon", "🎵"); intent.putExtra("color", "#38BDF8")
+                  } else {
+                      if ((sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0 || sbn.isOngoing) return
+                      intent.putExtra("type", "MSG"); intent.putExtra("title", title); intent.putExtra("text", text); intent.putExtra("icon", "💬"); intent.putExtra("color", "#FFFFFF")
+                  }
                   sendBroadcast(intent)
               }
           }
           INNER_EOF
 
-          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/DynamicIslandService.kt
-          package com.dynamicisland.aipro
+          cat << 'INNER_EOF' > app/src/main/java/com/novaisland/pro/NovaIslandService.kt
+          package com.novaisland.pro
           import android.accessibilityservice.AccessibilityService
           import android.content.BroadcastReceiver
           import android.content.Context
@@ -149,6 +156,7 @@ jobs:
           import androidx.compose.animation.core.*
           import androidx.compose.foundation.background
           import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.shape.CircleShape
           import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material3.Text
           import androidx.compose.runtime.*
@@ -186,8 +194,22 @@ jobs:
           data class IslandEvent(val type: String = "MSG", val title: String = "", val text: String = "", val icon: String = "💬", val colorStr: String = "#FFFFFF") {
               val color: Color get() = try { Color(android.graphics.Color.parseColor(colorStr)) } catch(e:Exception){ Color.White }
           }
+          
+          @Composable
+          fun AudioVisualizer(color: Color) {
+              val transition = rememberInfiniteTransition(label = "audio")
+              val anim1 by transition.animateFloat(initialValue = 0.3f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(300, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a1")
+              val anim2 by transition.animateFloat(initialValue = 0.9f, targetValue = 0.2f, animationSpec = infiniteRepeatable(animation = tween(250, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a2")
+              val anim3 by transition.animateFloat(initialValue = 0.4f, targetValue = 0.9f, animationSpec = infiniteRepeatable(animation = tween(400, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a3")
 
-          class DynamicIslandService : AccessibilityService() {
+              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.height(14.dp)) {
+                  Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim1).background(color, CircleShape))
+                  Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim2).background(color, CircleShape))
+                  Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim3).background(color, CircleShape))
+              }
+          }
+
+          class NovaIslandService : AccessibilityService() {
               private lateinit var windowManager: WindowManager
               private lateinit var composeView: ComposeView
               private lateinit var params: WindowManager.LayoutParams
@@ -204,7 +226,7 @@ jobs:
 
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
-                      if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
+                      if (intent?.action == "com.novaisland.pro.EVENT") {
                           val type = intent.getStringExtra("type") ?: "MSG"
                           val title = intent.getStringExtra("title") ?: ""
                           val text = intent.getStringExtra("text") ?: ""
@@ -229,7 +251,7 @@ jobs:
 
               override fun onServiceConnected() {
                   super.onServiceConnected()
-                  prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                  prefs = getSharedPreferences("nova_prefs", Context.MODE_PRIVATE)
                   prefs.registerOnSharedPreferenceChangeListener(prefListener)
                   
                   lifecycleOwner.onCreate()
@@ -247,9 +269,9 @@ jobs:
                   }
 
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                      registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
+                      registerReceiver(eventReceiver, IntentFilter("com.novaisland.pro.EVENT"), Context.RECEIVER_EXPORTED)
                   } else {
-                      registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"))
+                      registerReceiver(eventReceiver, IntentFilter("com.novaisland.pro.EVENT"))
                   }
 
                   params = WindowManager.LayoutParams(
@@ -265,7 +287,7 @@ jobs:
                   }
 
                   composeView.setContent {
-                      DynamicIslandContent(mode = islandModeState.value, event = currentEventState.value, baseWidth = islandWidthState.value, baseHeight = islandHeightState.value)
+                      NovaIslandContent(mode = islandModeState.value, event = currentEventState.value, baseWidth = islandWidthState.value, baseHeight = islandHeightState.value)
                   }
                   windowManager.addView(composeView, params)
               }
@@ -283,30 +305,40 @@ jobs:
           }
 
           @Composable
-          fun DynamicIslandContent(mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp) {
+          fun NovaIslandContent(mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp) {
               val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 330.dp }
               val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 125.dp }
-              val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f), label = "")
-              val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f), label = "")
+              
+              // Physics Animation for that Apple-like smooth bounce
+              val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
+              val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else (baseHeight / 2f), label = "")
 
               Box(modifier = Modifier.width(animatedWidth).height(animatedHeight).background(Color.Black, RoundedCornerShape(cornerRadius))) {
-                  androidx.compose.animation.AnimatedVisibility(visible = mode == IslandMode.EVENT_COMPACT, modifier = Modifier.align(Alignment.Center)) {
+                  androidx.compose.animation.AnimatedVisibility(
+                      visible = mode == IslandMode.EVENT_COMPACT, 
+                      modifier = Modifier.align(Alignment.Center),
+                      enter = fadeIn(tween(200)), exit = fadeOut(tween(200))
+                  ) {
                       Row(modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                          Row(verticalAlignment = Alignment.CenterVertically) {
-                              Text(event.icon, fontSize = 12.sp)
+                          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                              Text(event.icon, fontSize = 14.sp)
                               Spacer(modifier = Modifier.width(8.dp))
                               Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                           }
-                          Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1)
+                          if(event.type == "MUSIC") {
+                              AudioVisualizer(color = event.color)
+                          } else {
+                              Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                          }
                       }
                   }
               }
           }
           INNER_EOF
 
-          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/MainActivity.kt
-          package com.dynamicisland.aipro
+          cat << 'INNER_EOF' > app/src/main/java/com/novaisland/pro/MainActivity.kt
+          package com.novaisland.pro
 
           import android.content.ComponentName
           import android.content.Context
@@ -338,15 +370,16 @@ jobs:
           import androidx.compose.ui.unit.dp
           import androidx.compose.ui.unit.sp
 
-          val MTCapsuleBg = Color(0xFFEAF5EB)
-          val MTCapsuleText = Color(0xFF0C3D1F)
-          val MTCapsuleAccent = Color(0xFFC4E8CE)
-          val MTCapsuleCard = Color(0xFFFFFFFF)
+          // NOVA Theme Palette
+          val NovaBg = Color(0xFF0F172A)         // Dark Slate
+          val NovaCard = Color(0xFF1E293B)       // Lighter Slate
+          val NovaAccent = Color(0xFF38BDF8)     // Electric Blue
+          val NovaText = Color(0xFFF8FAFC)       // White/Gray
 
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  val prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                  val prefs = getSharedPreferences("nova_prefs", Context.MODE_PRIVATE)
                   setContent { MaterialTheme { MainScreen(prefs) } }
               }
           }
@@ -366,49 +399,49 @@ jobs:
           fun MainScreen(prefs: SharedPreferences) {
               var selectedTab by remember { mutableStateOf(0) }
               val context = LocalContext.current
-              val isEnabled = remember { mutableStateOf(isAccessibilityServiceEnabled(context, DynamicIslandService::class.java)) }
+              val isEnabled = remember { mutableStateOf(isAccessibilityServiceEnabled(context, NovaIslandService::class.java)) }
 
-              LaunchedEffect(Unit) { isEnabled.value = isAccessibilityServiceEnabled(context, DynamicIslandService::class.java) }
+              LaunchedEffect(Unit) { isEnabled.value = isAccessibilityServiceEnabled(context, NovaIslandService::class.java) }
 
               Scaffold(
                   bottomBar = {
-                      NavigationBar(containerColor = MTCapsuleBg) {
+                      NavigationBar(containerColor = NovaBg) {
                           NavigationBarItem(
                               selected = selectedTab == 0,
                               onClick = { selectedTab = 0 },
                               icon = { Icon(Icons.Rounded.SquareFoot, contentDescription = null) },
-                              label = { Text("Taille", fontWeight = FontWeight.Bold) },
-                              colors = NavigationBarItemDefaults.colors(selectedIconColor = MTCapsuleText, unselectedIconColor = MTCapsuleText.copy(alpha = 0.5f), selectedTextColor = MTCapsuleText, unselectedTextColor = MTCapsuleText.copy(alpha = 0.5f), indicatorColor = MTCapsuleAccent)
+                              label = { Text("Apparence") },
+                              colors = NavigationBarItemDefaults.colors(selectedIconColor = NovaBg, unselectedIconColor = NovaText.copy(alpha = 0.5f), selectedTextColor = NovaAccent, unselectedTextColor = NovaText.copy(alpha = 0.5f), indicatorColor = NovaAccent)
                           )
                           NavigationBarItem(
                               selected = selectedTab == 1,
                               onClick = { selectedTab = 1 },
-                              icon = { Icon(Icons.Rounded.FlashOn, contentDescription = null) },
-                              label = { Text("Cartes", fontWeight = FontWeight.Bold) },
-                              colors = NavigationBarItemDefaults.colors(selectedIconColor = MTCapsuleText, unselectedIconColor = MTCapsuleText.copy(alpha = 0.5f), selectedTextColor = MTCapsuleText, unselectedTextColor = MTCapsuleText.copy(alpha = 0.5f), indicatorColor = MTCapsuleAccent)
+                              icon = { Icon(Icons.Rounded.NotificationsActive, contentDescription = null) },
+                              label = { Text("Événements") },
+                              colors = NavigationBarItemDefaults.colors(selectedIconColor = NovaBg, unselectedIconColor = NovaText.copy(alpha = 0.5f), selectedTextColor = NovaAccent, unselectedTextColor = NovaText.copy(alpha = 0.5f), indicatorColor = NovaAccent)
                           )
                           NavigationBarItem(
                               selected = selectedTab == 2,
                               onClick = { selectedTab = 2 },
                               icon = { Icon(Icons.Rounded.Settings, contentDescription = null) },
-                              label = { Text("Paramètres", fontWeight = FontWeight.Bold) },
-                              colors = NavigationBarItemDefaults.colors(selectedIconColor = MTCapsuleText, unselectedIconColor = MTCapsuleText.copy(alpha = 0.5f), selectedTextColor = MTCapsuleText, unselectedTextColor = MTCapsuleText.copy(alpha = 0.5f), indicatorColor = MTCapsuleAccent)
+                              label = { Text("Système") },
+                              colors = NavigationBarItemDefaults.colors(selectedIconColor = NovaBg, unselectedIconColor = NovaText.copy(alpha = 0.5f), selectedTextColor = NovaAccent, unselectedTextColor = NovaText.copy(alpha = 0.5f), indicatorColor = NovaAccent)
                           )
                       }
                   }
               ) { padding ->
-                  Box(modifier = Modifier.padding(padding).fillMaxSize().background(MTCapsuleBg)) {
+                  Box(modifier = Modifier.padding(padding).fillMaxSize().background(NovaBg)) {
                       when (selectedTab) {
-                          0 -> TailleEtPositionScreen(prefs, isEnabled.value)
-                          1 -> CartesScreen()
-                          2 -> ParametresScreen()
+                          0 -> AppearanceScreen(prefs, isEnabled.value)
+                          1 -> EventsScreen()
+                          2 -> SystemScreen()
                       }
                   }
               }
           }
 
           @Composable
-          fun TailleEtPositionScreen(prefs: SharedPreferences, isEnabled: Boolean) {
+          fun AppearanceScreen(prefs: SharedPreferences, isEnabled: Boolean) {
               var width by remember { mutableStateOf(prefs.getInt("width", 77).toFloat()) }
               var height by remember { mutableStateOf(prefs.getInt("height", 28).toFloat()) }
               var posX by remember { mutableStateOf(prefs.getInt("pos_x", 0).toFloat()) }
@@ -416,31 +449,43 @@ jobs:
               val context = LocalContext.current
 
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                  Text("Taille et position", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MTCapsuleText)
-                  Spacer(modifier = Modifier.height(16.dp))
+                  Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = NovaAccent)
+                  Text("Édition Pro V1.0", fontSize = 14.sp, color = NovaText.copy(alpha = 0.7f))
+                  Spacer(modifier = Modifier.height(24.dp))
 
-                  Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = MTCapsuleCard), shape = RoundedCornerShape(24.dp)) {
+                  Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = NovaCard), shape = RoundedCornerShape(24.dp)) {
                       Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                           Box(modifier = Modifier.padding(top = 16.dp).size(20.dp).background(Color.Black, CircleShape))
-                          Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.9f), RoundedCornerShape(height.dp / 2)))
-                          Text("Exemple", modifier = Modifier.align(Alignment.TopStart).padding(16.dp), color = MTCapsuleText, fontWeight = FontWeight.Bold)
+                          Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(height.dp / 2)))
+                          Text("Laboratoire de taille", modifier = Modifier.align(Alignment.TopStart).padding(16.dp), color = NovaText, fontWeight = FontWeight.Bold)
                       }
                   }
 
                   Spacer(modifier = Modifier.height(24.dp))
-                  SliderControl("Position X", posX, -200f, 200f) { posX = it; prefs.edit().putInt("pos_x", it.toInt()).apply() }
-                  SliderControl("Position Y", posY, 0f, 200f) { posY = it; prefs.edit().putInt("pos_y", it.toInt()).apply() }
-                  SliderControl("Largeur", width, 30f, 300f) { width = it; prefs.edit().putInt("width", it.toInt()).apply() }
-                  SliderControl("Hauteur", height, 10f, 100f) { height = it; prefs.edit().putInt("height", it.toInt()).apply() }
+                  SliderControl("Position X (Gauche / Droite)", posX, -200f, 200f) { posX = it; prefs.edit().putInt("pos_x", it.toInt()).apply() }
+                  SliderControl("Position Y (Haut / Bas)", posY, 0f, 200f) { posY = it; prefs.edit().putInt("pos_y", it.toInt()).apply() }
+                  SliderControl("Largeur de l'île", width, 30f, 300f) { width = it; prefs.edit().putInt("width", it.toInt()).apply() }
+                  SliderControl("Hauteur de l'île", height, 10f, 100f) { height = it; prefs.edit().putInt("height", it.toInt()).apply() }
                   Spacer(modifier = Modifier.height(24.dp))
                   
                   if (!isEnabled) {
                       Button(
                           onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                           modifier = Modifier.fillMaxWidth().height(56.dp),
-                          colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                          colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                          shape = RoundedCornerShape(16.dp)
                       ) {
-                          Text("Activer l'Accessibilité pour MT Capsule", fontSize = 16.sp, color = Color.White)
+                          Icon(Icons.Rounded.Warning, contentDescription = null, tint = Color.White)
+                          Spacer(modifier = Modifier.width(8.dp))
+                          Text("Activer le moteur NOVA (Requis)", fontSize = 16.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                      }
+                  } else {
+                      Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = NovaAccent.copy(alpha = 0.1f)), shape = RoundedCornerShape(16.dp)) {
+                          Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                              Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = NovaAccent)
+                              Spacer(modifier = Modifier.width(8.dp))
+                              Text("Moteur NOVA Actif et Stable", color = NovaAccent, fontWeight = FontWeight.Bold)
+                          }
                       }
                   }
               }
@@ -448,65 +493,60 @@ jobs:
 
           @Composable
           fun SliderControl(label: String, value: Float, min: Float, max: Float, onValueChange: (Float) -> Unit) {
-              Column(modifier = Modifier.padding(vertical = 4.dp)) {
+              Column(modifier = Modifier.padding(vertical = 6.dp)) {
                   Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-                      Text(label, color = MTCapsuleText, fontWeight = FontWeight.Bold)
-                      Text(value.toInt().toString(), color = Color.Gray, fontWeight = FontWeight.Bold)
+                      Text(label, color = NovaText, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                      Text(value.toInt().toString(), color = NovaAccent, fontWeight = FontWeight.Bold)
                   }
                   Row(verticalAlignment = Alignment.CenterVertically) {
-                      IconButton(onClick = { onValueChange((value - 1f).coerceAtLeast(min)) }, modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White)) { Icon(Icons.Rounded.Remove, contentDescription = "-", tint = MTCapsuleText) }
-                      Slider(value = value, onValueChange = onValueChange, valueRange = min..max, modifier = Modifier.weight(1f).padding(horizontal = 8.dp), colors = SliderDefaults.colors(thumbColor = MTCapsuleText, activeTrackColor = MTCapsuleText, inactiveTrackColor = MTCapsuleAccent))
-                      IconButton(onClick = { onValueChange((value + 1f).coerceAtMost(max)) }, modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White)) { Icon(Icons.Rounded.Add, contentDescription = "+", tint = MTCapsuleText) }
+                      IconButton(onClick = { onValueChange((value - 1f).coerceAtLeast(min)) }, modifier = Modifier.size(36.dp).clip(CircleShape).background(NovaCard)) { Icon(Icons.Rounded.Remove, contentDescription = "-", tint = NovaText) }
+                      Slider(value = value, onValueChange = onValueChange, valueRange = min..max, modifier = Modifier.weight(1f).padding(horizontal = 8.dp), colors = SliderDefaults.colors(thumbColor = NovaAccent, activeTrackColor = NovaAccent, inactiveTrackColor = NovaCard))
+                      IconButton(onClick = { onValueChange((value + 1f).coerceAtMost(max)) }, modifier = Modifier.size(36.dp).clip(CircleShape).background(NovaCard)) { Icon(Icons.Rounded.Add, contentDescription = "+", tint = NovaText) }
                   }
               }
           }
 
           @Composable
-          fun CartesScreen() {
+          fun EventsScreen() {
               val context = LocalContext.current
               Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                  Text("Material Capsule", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MTCapsuleText)
-                  Spacer(modifier = Modifier.height(16.dp))
-                  Text("Événements de la mini-capsule", color = MTCapsuleText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MTCapsuleCard), shape = RoundedCornerShape(24.dp)) {
+                  Text("Événements", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = NovaText)
+                  Spacer(modifier = Modifier.height(24.dp))
+                  
+                  Text("Tester l'animation", color = NovaAccent, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = NovaCard), shape = RoundedCornerShape(24.dp)) {
                       Row(modifier = Modifier.padding(20.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                          Box(modifier = Modifier.size(48.dp).background(MTCapsuleAccent, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Bolt, contentDescription = null, tint = MTCapsuleText) }
-                          Box(modifier = Modifier.size(48.dp).background(MTCapsuleAccent, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.MusicNote, contentDescription = null, tint = MTCapsuleText) }
-                          Box(modifier = Modifier.size(48.dp).background(MTCapsuleAccent, CircleShape), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ChatBubbleOutline, contentDescription = null, tint = MTCapsuleText) }
+                          Box(modifier = Modifier.size(56.dp).background(NovaBg, CircleShape).clickable {
+                              val i = Intent("com.novaisland.pro.EVENT")
+                              i.putExtra("type", "MSG"); i.putExtra("title", "NOVA PRO"); i.putExtra("text", "L'île fonctionne!"); i.putExtra("icon", "🚀"); i.putExtra("color", "#38BDF8")
+                              context.sendBroadcast(i)
+                          }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Message, contentDescription = null, tint = NovaAccent) }
+                          
+                          Box(modifier = Modifier.size(56.dp).background(NovaBg, CircleShape).clickable {
+                              val i = Intent("com.novaisland.pro.EVENT")
+                              i.putExtra("type", "MUSIC"); i.putExtra("title", "Starboy"); i.putExtra("text", "The Weeknd"); i.putExtra("icon", "🎵"); i.putExtra("color", "#38BDF8")
+                              context.sendBroadcast(i)
+                          }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.LibraryMusic, contentDescription = null, tint = NovaAccent) }
                       }
                   }
-                  Spacer(modifier = Modifier.height(24.dp))
-                  Button(
-                      onClick = {
-                          val i = Intent("com.dynamicisland.aipro.NEW_EVENT")
-                          i.putExtra("type", "MSG"); i.putExtra("title", "MT Capsule"); i.putExtra("text", "L'animation Material fonctionne!"); i.putExtra("icon", "✨"); i.putExtra("color", "#0C3D1F")
-                          context.sendBroadcast(i)
-                      },
-                      modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = MTCapsuleText)
-                  ) { Text("Tester Animation", fontSize = 16.sp, color = Color.White) }
               }
           }
 
           @Composable
-          fun ParametresScreen() {
+          fun SystemScreen() {
               val context = LocalContext.current
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                  Text("Paramètres", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MTCapsuleText)
-                  Spacer(modifier = Modifier.height(16.dp))
-                  Text("Apparence", color = MTCapsuleText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                  Card(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp), colors = CardDefaults.cardColors(containerColor = MTCapsuleCard), shape = RoundedCornerShape(24.dp)) {
+                  Text("Système", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = NovaText)
+                  Spacer(modifier = Modifier.height(24.dp))
+                  
+                  Text("Gestion", color = NovaAccent, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = NovaCard), shape = RoundedCornerShape(24.dp)) {
                       Column(modifier = Modifier.padding(16.dp)) {
-                          SettingItem(icon = Icons.Rounded.Palette, title = "Thème de l'application", subtitle = "Suivre le système")
-                          HorizontalDivider(color = MTCapsuleBg)
-                          SettingItem(icon = Icons.Rounded.Language, title = "Langue de l'application", subtitle = "Par défaut du système")
-                      }
-                  }
-                  Text("Avancé", color = MTCapsuleText, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MTCapsuleCard), shape = RoundedCornerShape(24.dp)) {
-                      Column(modifier = Modifier.padding(16.dp)) {
-                          SettingItem(icon = Icons.Rounded.AccessibilityNew, title = "Accessibilité", subtitle = "Activer le service MT Capsule pour le fonctionnement", onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) })
-                          HorizontalDivider(color = MTCapsuleBg)
-                          SettingItem(icon = Icons.Rounded.BatteryAlert, title = "Ignorer l'optimisation batterie", subtitle = "Nécessaire si la capsule s'arrête", onClick = { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) })
+                          SettingItem(icon = Icons.Rounded.AccessibilityNew, title = "Droits d'accessibilité", subtitle = "Gérer les permissions système", onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) })
+                          HorizontalDivider(color = NovaBg)
+                          SettingItem(icon = Icons.Rounded.NotificationsActive, title = "Droits de notification", subtitle = "Permettre la lecture des messages", onClick = { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) })
+                          HorizontalDivider(color = NovaBg)
+                          SettingItem(icon = Icons.Rounded.BatteryAlert, title = "Économiseur de batterie", subtitle = "Ignorer pour empêcher l'arrêt", onClick = { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) })
                       }
                   }
               }
@@ -514,14 +554,16 @@ jobs:
 
           @Composable
           fun SettingItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit = {}) {
-              Row(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                  Icon(icon, contentDescription = null, tint = MTCapsuleText, modifier = Modifier.size(28.dp))
+              Row(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                  Box(modifier = Modifier.size(40.dp).background(NovaBg, CircleShape), contentAlignment = Alignment.Center) {
+                      Icon(icon, contentDescription = null, tint = NovaAccent, modifier = Modifier.size(24.dp))
+                  }
                   Spacer(modifier = Modifier.width(16.dp))
                   Column(modifier = Modifier.weight(1f)) {
-                      Text(title, fontWeight = FontWeight.Bold, color = MTCapsuleText, fontSize = 15.sp)
-                      Text(subtitle, fontSize = 13.sp, color = Color.Gray, lineHeight = 16.sp)
+                      Text(title, fontWeight = FontWeight.Bold, color = NovaText, fontSize = 15.sp)
+                      Text(subtitle, fontSize = 13.sp, color = NovaText.copy(alpha = 0.6f), lineHeight = 16.sp)
                   }
-                  Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = Color.LightGray)
+                  Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = NovaText.copy(alpha = 0.3f))
               }
           }
           INNER_EOF
@@ -533,21 +575,21 @@ jobs:
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
               <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
-                  <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
                   </activity>
                   
-                  <service android:name=".DynamicIslandService" android:exported="true" android:label="MT Capsule Pro" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+                  <service android:name=".NovaIslandService" android:exported="true" android:label="NOVA ISLAND Pro" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
                       <intent-filter>
                           <action android:name="android.accessibilityservice.AccessibilityService" />
                       </intent-filter>
                       <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service_config" />
                   </service>
                   
-                  <service android:name=".IslandNotificationListener" android:label="Dynamic Island Notifications" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
+                  <service android:name=".NovaNotificationListener" android:label="Nova Island Notifications" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true">
                       <intent-filter>
                           <action android:name="android.service.notification.NotificationListenerService" />
                       </intent-filter>
@@ -568,11 +610,11 @@ jobs:
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/MTCapsule-Pro.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/NovaIsland-Pro.apk
 
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MTCapsule-Pro
-          path: release-output/MTCapsule-Pro.apk
+          name: NovaIsland-Pro
+          path: release-output/NovaIsland-Pro.apk
           retention-days: 5
