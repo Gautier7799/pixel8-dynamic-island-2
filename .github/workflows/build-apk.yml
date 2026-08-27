@@ -1,4 +1,4 @@
-name: Build Dynamic Island Nano Pro V2.4
+name: Build Dynamic Island Nano Pro V2.5
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 16; versionName = "2.4.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 17; versionName = "2.5.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -514,8 +514,9 @@ jobs:
                               }
                           }
                           
+                          // هنا تم إصلاح خطأ التصميم بالأسفل
                           Column(
-                              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, bottom = 12.dp),
+                              modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                               verticalArrangement = Arrangement.Center
                           ) {
                               if (event.type == "MUSIC") {
