@@ -1,4 +1,4 @@
-name: Build NOVA ISLAND Pro V1.5 (Landscape Fix & UI)
+name: Build NOVA ISLAND Pro V1.6 (Landscape & Intent Fix)
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 6; versionName = "1.5.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 7; versionName = "1.6.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -128,6 +128,7 @@ jobs:
           import android.content.Intent
           import android.service.notification.NotificationListenerService
           import android.service.notification.StatusBarNotification
+
           class NovaNotificationListener : NotificationListenerService() {
               override fun onNotificationPosted(sbn: StatusBarNotification) {
                   val extras = sbn.notification.extras
@@ -135,6 +136,12 @@ jobs:
                   val text = extras.getCharSequence("android.text")?.toString() ?: return
                   val intent = Intent("com.novaisland.pro.EVENT")
                   
+                  // Extract PendingIntent so we can open the app later
+                  val contentIntent = sbn.notification.contentIntent
+                  if (contentIntent != null) {
+                      intent.putExtra("contentIntent", contentIntent)
+                  }
+
                   val isMedia = extras.containsKey(Notification.EXTRA_MEDIA_SESSION) || extras.getString(Notification.EXTRA_TEMPLATE) == "android.app.Notification\$MediaStyle"
                   if (isMedia) {
                       intent.putExtra("type", "MUSIC"); intent.putExtra("title", title); intent.putExtra("text", text); intent.putExtra("icon", "🎵"); intent.putExtra("color", "#38BDF8")
@@ -150,12 +157,12 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/java/com/novaisland/pro/NovaIslandService.kt
           package com.novaisland.pro
           import android.accessibilityservice.AccessibilityService
+          import android.app.PendingIntent
           import android.content.BroadcastReceiver
           import android.content.Context
           import android.content.Intent
           import android.content.IntentFilter
           import android.content.SharedPreferences
-          import android.content.res.Configuration
           import android.graphics.PixelFormat
           import android.os.Build
           import android.os.Handler
@@ -183,6 +190,7 @@ jobs:
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.graphics.Color
           import androidx.compose.ui.platform.ComposeView
+          import androidx.compose.ui.platform.LocalConfiguration
           import androidx.compose.ui.platform.LocalContext
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.unit.Dp
@@ -213,8 +221,16 @@ jobs:
               fun onDestroy() { lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY) }
           }
 
-          enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED, HIDDEN }
-          data class IslandEvent(val type: String = "MSG", val title: String = "", val text: String = "", val icon: String = "💬", val colorStr: String = "#FFFFFF") {
+          enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED }
+          
+          data class IslandEvent(
+              val type: String = "MSG", 
+              val title: String = "", 
+              val text: String = "", 
+              val icon: String = "💬", 
+              val colorStr: String = "#FFFFFF",
+              val pendingIntent: PendingIntent? = null
+          ) {
               val color: Color get() = try { Color(android.graphics.Color.parseColor(colorStr)) } catch(e:Exception){ Color.White }
           }
           
@@ -246,7 +262,7 @@ jobs:
 
               private val handler = Handler(Looper.getMainLooper())
               private val collapseRunnable = Runnable { 
-                  if (islandModeState.value == IslandMode.EVENT_COMPACT || islandModeState.value == IslandMode.EVENT_EXPANDED) {
+                  if (islandModeState.value != IslandMode.IDLE) {
                       islandModeState.value = IslandMode.IDLE
                   }
               }
@@ -254,15 +270,20 @@ jobs:
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
                       if (intent?.action == "com.novaisland.pro.EVENT") {
-                          // Do not show events if we are in landscape (hidden) mode
-                          if (islandModeState.value == IslandMode.HIDDEN) return
-                          
                           val type = intent.getStringExtra("type") ?: "MSG"
                           val title = intent.getStringExtra("title") ?: ""
                           val text = intent.getStringExtra("text") ?: ""
                           val icon = intent.getStringExtra("icon") ?: "💬"
                           val color = intent.getStringExtra("color") ?: "#FFFFFF"
-                          currentEventState.value = IslandEvent(type, title, text, icon, color)
+                          
+                          val pendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                              intent.getParcelableExtra("contentIntent", PendingIntent::class.java)
+                          } else {
+                              @Suppress("DEPRECATION")
+                              intent.getParcelableExtra<PendingIntent>("contentIntent")
+                          }
+
+                          currentEventState.value = IslandEvent(type, title, text, icon, color, pendingIntent)
                           islandModeState.value = IslandMode.EVENT_COMPACT 
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4500L)
@@ -279,16 +300,6 @@ jobs:
                   }
               }
 
-              // LISTENER FOR LANDSCAPE/PORTRAIT CHANGES
-              override fun onConfigurationChanged(newConfig: Configuration) {
-                  super.onConfigurationChanged(newConfig)
-                  if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                      islandModeState.value = IslandMode.HIDDEN
-                  } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-                      islandModeState.value = IslandMode.IDLE
-                  }
-              }
-
               override fun onServiceConnected() {
                   super.onServiceConnected()
                   prefs = getSharedPreferences("nova_prefs", Context.MODE_PRIVATE)
@@ -300,11 +311,6 @@ jobs:
 
                   islandWidthState.value = prefs.getInt("width", 77).dp
                   islandHeightState.value = prefs.getInt("height", 28).dp
-
-                  // Initial check for orientation
-                  if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                      islandModeState.value = IslandMode.HIDDEN
-                  }
 
                   windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
                   composeView = ComposeView(this).apply {
@@ -344,14 +350,18 @@ jobs:
                           event = currentEventState.value, 
                           baseWidth = islandWidthState.value, 
                           baseHeight = islandHeightState.value,
-                          onClick = {
-                              if (islandModeState.value == IslandMode.EVENT_COMPACT) {
-                                  islandModeState.value = IslandMode.EVENT_EXPANDED
-                                  handler.removeCallbacks(collapseRunnable)
-                                  handler.postDelayed(collapseRunnable, 10000L)
-                              } else if (islandModeState.value == IslandMode.EVENT_EXPANDED) {
+                          onExpandClick = {
+                              islandModeState.value = IslandMode.EVENT_EXPANDED
+                              handler.removeCallbacks(collapseRunnable)
+                              handler.postDelayed(collapseRunnable, 10000L)
+                          },
+                          onOpenAppClick = {
+                              try {
+                                  currentEventState.value.pendingIntent?.send()
                                   islandModeState.value = IslandMode.IDLE
                                   handler.removeCallbacks(collapseRunnable)
+                              } catch (e: Exception) {
+                                  e.printStackTrace()
                               }
                           },
                           onSettingsClick = {
@@ -380,12 +390,25 @@ jobs:
           }
 
           @Composable
-          fun NovaIslandContent(mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp, onClick: () -> Unit, onSettingsClick: () -> Unit) {
-              // Hide everything instantly if in landscape mode
-              if (mode == IslandMode.HIDDEN) return
+          fun NovaIslandContent(
+              mode: IslandMode, 
+              event: IslandEvent, 
+              baseWidth: Dp, 
+              baseHeight: Dp, 
+              onExpandClick: () -> Unit, 
+              onOpenAppClick: () -> Unit,
+              onSettingsClick: () -> Unit
+          ) {
+              // LANDSCAPE FIX: This checks the actual screen dimensions. 
+              // If width > height (Landscape), we immediately return and draw NOTHING!
+              val configuration = LocalConfiguration.current
+              val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+              if (isLandscape) {
+                  return 
+              }
 
-              val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 340.dp; else -> 0.dp }
-              val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 160.dp; else -> 0.dp }
+              val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 340.dp }
+              val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 160.dp }
               
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
@@ -399,7 +422,13 @@ jobs:
                       .clickable(
                           interactionSource = remember { MutableInteractionSource() },
                           indication = null, 
-                          onClick = onClick
+                          onClick = {
+                              if (mode == IslandMode.EVENT_COMPACT) {
+                                  onExpandClick()
+                              } else if (mode == IslandMode.EVENT_EXPANDED) {
+                                  onOpenAppClick() // Opens the notification app!
+                              }
+                          }
                       )
               ) {
                   // COMPACT MODE
@@ -439,6 +468,7 @@ jobs:
                                       Text(text = event.text, color = Color.LightGray, fontSize = 14.sp, maxLines = 2, lineHeight = 18.sp)
                                   }
                               }
+                              // SETTINGS BUTTON
                               IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp).background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)) {
                                   Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = Color.White, modifier = Modifier.size(20.dp))
                               }
@@ -453,7 +483,7 @@ jobs:
                           } else {
                               Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                   Spacer(modifier = Modifier.weight(1f))
-                                  Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = event.color)) {
+                                  Button(onClick = onOpenAppClick, colors = ButtonDefaults.buttonColors(containerColor = event.color)) {
                                       Text("Ouvrir", color = Color.Black, fontWeight = FontWeight.Bold)
                                   }
                               }
@@ -590,7 +620,7 @@ jobs:
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                   Spacer(modifier = Modifier.height(48.dp))
                   Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                  Text("Édition Pro V1.5", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                  Text("Édition Pro V1.6", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
                   Spacer(modifier = Modifier.height(24.dp))
 
                   Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)), shape = RoundedCornerShape(24.dp)) {
@@ -598,7 +628,6 @@ jobs:
                           Box(modifier = Modifier.padding(top = 16.dp).size(20.dp).background(Color.Black, CircleShape))
                           Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(height.dp / 2)))
                           
-                          // MOVED TEXT TO THE BOTTOM LEFT
                           Text("Laboratoire de taille", modifier = Modifier.align(Alignment.BottomStart).padding(16.dp), color = Color.DarkGray, fontWeight = FontWeight.Bold)
                       }
                   }
