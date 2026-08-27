@@ -1,4 +1,4 @@
-name: Build Dynamic Island Nano Pro V2.2
+name: Build Dynamic Island Nano Pro V2.3
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 14; versionName = "2.2.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 15; versionName = "2.3.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -84,7 +84,7 @@ jobs:
 
           cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Dynamic Island Pro</string>
+              <string name="app_name">Dynamic Island Pixel Edition</string>
           </resources>
           INNER_EOF
 
@@ -172,6 +172,7 @@ jobs:
           import android.provider.Settings
           import android.view.Gravity
           import android.view.MotionEvent
+          import android.view.View
           import android.view.ViewConfiguration
           import android.view.WindowManager
           import androidx.compose.animation.*
@@ -257,7 +258,10 @@ jobs:
 
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
-                      if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
+                      if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                          islandModeState.value = IslandMode.IDLE
+                          return
+                      }
                       if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
                           val type = intent.getStringExtra("type") ?: "MSG"
                           val title = intent.getStringExtra("title") ?: ""
@@ -285,6 +289,18 @@ jobs:
                           islandModeState.value = IslandMode.EVENT_COMPACT
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4000)
+                      }
+                  }
+              }
+
+              override fun onConfigurationChanged(newConfig: Configuration) {
+                  super.onConfigurationChanged(newConfig)
+                  if (::composeView.isInitialized) {
+                      if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                          composeView.visibility = View.GONE
+                          islandModeState.value = IslandMode.IDLE
+                      } else {
+                          composeView.visibility = View.VISIBLE
                       }
                   }
               }
@@ -386,7 +402,6 @@ jobs:
                   }
 
                   composeView.setContent {
-                      // إخفاء فوري في الوضع الأفقي عبر Compose
                       val config = LocalConfiguration.current
                       if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                           return@setContent
@@ -420,23 +435,24 @@ jobs:
           fun DynamicIslandContent(
               mode: IslandMode, event: IslandEvent, baseWidth: androidx.compose.ui.unit.Dp, baseHeight: androidx.compose.ui.unit.Dp, glow: androidx.compose.ui.unit.Dp, onOpenSettings: () -> Unit
           ) {
+              // أبعاد متناسقة خصيصاً لهواتف Pixel (حجم مناسب وغير مبالغ فيه)
               val targetWidth = when (mode) {
                   IslandMode.IDLE -> baseWidth
-                  IslandMode.EVENT_COMPACT -> 300.dp // عرض كافي لتجنب الكاميرا
-                  IslandMode.EVENT_EXPANDED -> 340.dp
+                  IslandMode.EVENT_COMPACT -> 280.dp 
+                  IslandMode.EVENT_EXPANDED -> 330.dp
               }
               
               val targetHeight = when (mode) {
                   IslandMode.IDLE -> baseHeight
                   IslandMode.EVENT_COMPACT -> baseHeight
-                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 170.dp else 130.dp // مساحة أكبر للأسفل
+                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 160.dp else 125.dp
               }
 
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "width")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "height")
               
-              // تحويل الشكل بذكاء: كبسولة في الصغر، ومربع ناعم في الكبر
-              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 32.dp else baseHeight / 2, label = "radius")
+              // انحناء ذكي: كبسولة في الصغر، وحواف هواتف بيكسل الناعمة في الكبر (Squircle)
+              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else baseHeight / 2, label = "radius")
 
               val borderColor = if (mode != IslandMode.IDLE && glow > 0.dp) event.color else Color.Transparent
 
@@ -447,7 +463,7 @@ jobs:
                       .border(glow, borderColor, RoundedCornerShape(cornerRadius))
                       .background(Color.Black, RoundedCornerShape(cornerRadius)),
               ) {
-                  // محتوى الإشعار النحيف (تجنب الكاميرا بوضع العناصر على الأطراف)
+                  // الوضع المصغر (Pixel Punch-Hole Adapter)
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_COMPACT,
                       enter = fadeIn(animationSpec = tween(150)),
@@ -457,31 +473,33 @@ jobs:
                       Row(
                           modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
                           verticalAlignment = Alignment.CenterVertically,
-                          horizontalArrangement = Arrangement.SpaceBetween // أقصى اليمين وأقصى اليسار
+                          horizontalArrangement = Arrangement.SpaceBetween // الأطراف فقط والمنتصف فارغ للكاميرا
                       ) {
-                          // الجانب الأيسر (الأيقونة)
-                          Row(verticalAlignment = Alignment.CenterVertically) {
+                          // الجانب الأيسر (أيقونة واسم التطبيق) - عرض محدود لتجنب الكاميرا
+                          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 110.dp)) {
                               if (event.type == "MUSIC") {
-                                  Text("🎵", fontSize = 13.sp)
+                                  Text("🎵", fontSize = 12.sp)
                               } else {
                                   Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
                                       Text(event.icon, fontSize = 11.sp)
                                   }
                               }
+                              Spacer(modifier = Modifier.width(8.dp))
+                              Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                           }
                           
-                          // الجانب الأيمن (النص)
-                          Row(verticalAlignment = Alignment.CenterVertically) {
+                          // الجانب الأيمن (التفاصيل أو الموجات الصوتية)
+                          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 110.dp), horizontalArrangement = Arrangement.End) {
                               if (event.type == "MUSIC") {
                                   AudioVisualizer(color = event.color)
                               } else {
-                                  Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
+                                  Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                               }
                           }
                       }
                   }
 
-                  // محتوى الإشعار الموسع (أسفل منطقة الكاميرا)
+                  // الوضع الموسع (Material You Style - أسفل الكاميرا)
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_EXPANDED,
                       enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
@@ -489,7 +507,7 @@ jobs:
                       modifier = Modifier.align(Alignment.TopCenter)
                   ) {
                       Column(modifier = Modifier.fillMaxSize()) {
-                          // الصف العلوي (بمحاذاة الكاميرا على الأطراف)
+                          // مساحة علوية لتفادي عدسة كاميرا البيكسل تماماً
                           Row(
                               modifier = Modifier.fillMaxWidth().height(baseHeight).padding(horizontal = 16.dp),
                               verticalAlignment = Alignment.CenterVertically,
@@ -503,7 +521,7 @@ jobs:
                               }
                           }
                           
-                          // المحتوى الرئيسي (تحت الكاميرا)
+                          // المحتوى الرئيسي أسفل الكاميرا
                           Column(
                               modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, bottom = 12.dp),
                               verticalArrangement = Arrangement.Center
