@@ -1,4 +1,4 @@
-name: Build Dynamic Island Nano Pro V2.5
+name: Build Dynamic Island MT Capsule Edition V3.0
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 17; versionName = "2.5.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 18; versionName = "3.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -68,8 +68,6 @@ jobs:
           dependencies {
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
-              implementation("com.google.android.material:material:1.11.0")
-              
               implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
               implementation("androidx.lifecycle:lifecycle-service:2.7.0")
               implementation("androidx.activity:activity-compose:1.8.2")
@@ -84,17 +82,17 @@ jobs:
 
           cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">Dynamic Island Pixel Edition</string>
+              <string name="app_name">MT Capsule Pro</string>
           </resources>
           INNER_EOF
 
           cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#000000"/></shape>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#A8E5BA"/></shape>
           INNER_EOF
           
           cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
           <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-              <path android:fillColor="#00FF88" android:pathData="M24,44h60v20h-60zM44,44a10,10 0 0,1 20,0a10,10 0 0,1 -20,0z"/>
+              <path android:fillColor="#1B5E20" android:pathData="M24,44h60v20h-60zM44,44a10,10 0 0,1 20,0a10,10 0 0,1 -20,0z"/>
           </vector>
           INNER_EOF
           
@@ -129,23 +127,11 @@ jobs:
                       intent.putExtra("color", "#1DB954")
                   } else {
                       if (sbn.isOngoing) return
-                      val colorHex = when {
-                          pkg.contains("facebook") || pkg.contains("messenger") -> "#1877F2"
-                          pkg.contains("whatsapp") -> "#25D366"
-                          pkg.contains("instagram") -> "#E1306C"
-                          pkg.contains("twitter") || pkg.contains("x") -> "#1DA1F2"
-                          pkg.contains("snapchat") -> "#FFFC00"
-                          pkg.contains("tiktok") -> "#00F2FE"
-                          pkg.contains("youtube") -> "#FF0000"
-                          pkg.contains("gmail") -> "#EA4335"
-                          pkg.contains("telegram") -> "#0088CC"
-                          else -> "#FFFFFF"
-                      }
                       intent.putExtra("type", "MSG")
                       intent.putExtra("title", title)
                       intent.putExtra("text", text)
                       intent.putExtra("icon", "💬")
-                      intent.putExtra("color", colorHex)
+                      intent.putExtra("color", "#1B5E20")
                   }
                   sendBroadcast(intent)
               }
@@ -209,33 +195,11 @@ jobs:
           import kotlin.math.abs
 
           enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED }
-
-          data class IslandEvent(
-              val type: String = "MSG",
-              val title: String = "",
-              val text: String = "",
-              val icon: String = "💬",
-              val colorStr: String = "#FFFFFF"
-          ) {
+          data class IslandEvent(val type: String = "MSG", val title: String = "", val text: String = "", val icon: String = "💬", val colorStr: String = "#FFFFFF") {
               val color: Color get() = try { Color(android.graphics.Color.parseColor(colorStr)) } catch(e:Exception){ Color.White }
           }
 
-          @Composable
-          fun AudioVisualizer(color: Color) {
-              val transition = rememberInfiniteTransition(label = "audio")
-              val anim1 by transition.animateFloat(initialValue = 0.3f, targetValue = 1f, animationSpec = infiniteRepeatable(animation = tween(300, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a1")
-              val anim2 by transition.animateFloat(initialValue = 0.9f, targetValue = 0.2f, animationSpec = infiniteRepeatable(animation = tween(250, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a2")
-              val anim3 by transition.animateFloat(initialValue = 0.4f, targetValue = 0.9f, animationSpec = infiniteRepeatable(animation = tween(400, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a3")
-
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.height(14.dp)) {
-                  Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim1).background(color, CircleShape))
-                  Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim2).background(color, CircleShape))
-                  Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim3).background(color, CircleShape))
-              }
-          }
-
           class DynamicIslandService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
-
               private lateinit var windowManager: WindowManager
               private lateinit var composeView: ComposeView
               private lateinit var params: WindowManager.LayoutParams
@@ -248,29 +212,21 @@ jobs:
 
               private val islandModeState = mutableStateOf(IslandMode.IDLE)
               private val currentEventState = mutableStateOf(IslandEvent())
-
-              private val islandWidthState = mutableStateOf(60.dp)
-              private val islandHeightState = mutableStateOf(26.dp)
-              private val glowWidthState = mutableStateOf(2.dp)
+              private val islandWidthState = mutableStateOf(77.dp)
+              private val islandHeightState = mutableStateOf(28.dp)
+              private val glowWidthState = mutableStateOf(0.dp)
 
               private val handler = Handler(Looper.getMainLooper())
-              private val collapseRunnable = Runnable { 
-                  if (islandModeState.value == IslandMode.EVENT_COMPACT) islandModeState.value = IslandMode.IDLE 
-              }
+              private val collapseRunnable = Runnable { if (islandModeState.value == IslandMode.EVENT_COMPACT) islandModeState.value = IslandMode.IDLE }
 
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
-                      if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          islandModeState.value = IslandMode.IDLE
-                          return
-                      }
                       if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
                           val type = intent.getStringExtra("type") ?: "MSG"
                           val title = intent.getStringExtra("title") ?: ""
                           val text = intent.getStringExtra("text") ?: ""
                           val icon = intent.getStringExtra("icon") ?: "💬"
                           val color = intent.getStringExtra("color") ?: "#FFFFFF"
-                          
                           currentEventState.value = IslandEvent(type, title, text, icon, color)
                           islandModeState.value = IslandMode.EVENT_COMPACT 
                           handler.removeCallbacks(collapseRunnable)
@@ -279,61 +235,13 @@ jobs:
                   }
               }
 
-              private val powerReceiver = object : BroadcastReceiver() {
-                  override fun onReceive(context: Context?, intent: Intent?) {
-                      if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
-                      if (intent?.action == Intent.ACTION_POWER_CONNECTED) {
-                          val bm = context?.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
-                          val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 100
-                          val isFr = prefs.getString("lang", "ar") == "fr"
-                          val title = if (isFr) "En charge" else "جاري الشحن"
-                          currentEventState.value = IslandEvent(type = "CHARGE", title = title, text = "${level}%", icon = "⚡", colorStr = "#4CAF50")
-                          islandModeState.value = IslandMode.EVENT_COMPACT
-                          handler.removeCallbacks(collapseRunnable)
-                          handler.postDelayed(collapseRunnable, 4000L)
-                      }
-                  }
-              }
-
-              override fun onConfigurationChanged(newConfig: Configuration) {
-                  super.onConfigurationChanged(newConfig)
-                  if (::composeView.isInitialized) {
-                      if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          composeView.visibility = View.GONE
-                          islandModeState.value = IslandMode.IDLE
-                      } else {
-                          composeView.visibility = View.VISIBLE
-                      }
-                  }
-              }
-
               private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
                   when (key) {
-                      "width" -> islandWidthState.value = sharedPreferences.getInt("width", 60).dp
-                      "height" -> islandHeightState.value = sharedPreferences.getInt("height", 26).dp
-                      "glow" -> glowWidthState.value = sharedPreferences.getInt("glow", 2).dp
+                      "width" -> islandWidthState.value = sharedPreferences.getInt("width", 77).dp
+                      "height" -> islandHeightState.value = sharedPreferences.getInt("height", 28).dp
                       "pos_x" -> { params.x = sharedPreferences.getInt("pos_x", 0); windowManager.updateViewLayout(composeView, params) }
-                      "pos_y" -> { params.y = sharedPreferences.getInt("pos_y", 32); windowManager.updateViewLayout(composeView, params) }
+                      "pos_y" -> { params.y = sharedPreferences.getInt("pos_y", 28); windowManager.updateViewLayout(composeView, params) }
                   }
-              }
-
-              private fun startForegroundServiceRobust() {
-                  val channelId = "island_service_hidden"
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                      val channel = NotificationChannel(channelId, "System", NotificationManager.IMPORTANCE_MIN).apply {
-                          description = "Core Process"
-                          setShowBadge(false)
-                      }
-                      getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-                  }
-                  val notification = NotificationCompat.Builder(this, channelId)
-                      .setContentTitle("")
-                      .setContentText("")
-                      .setSmallIcon(android.R.drawable.stat_sys_warning)
-                      .setPriority(NotificationCompat.PRIORITY_MIN)
-                      .setCategory(Notification.CATEGORY_SERVICE)
-                      .build()
-                  startForeground(1, notification)
               }
 
               override fun onCreate() {
@@ -342,19 +250,23 @@ jobs:
                   prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                   prefs.registerOnSharedPreferenceChangeListener(prefListener)
                   
-                  startForegroundServiceRobust()
-                  
-                  islandWidthState.value = prefs.getInt("width", 60).dp
-                  islandHeightState.value = prefs.getInt("height", 26).dp
-                  glowWidthState.value = prefs.getInt("glow", 2).dp
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      val channel = NotificationChannel("island_service", "System", NotificationManager.IMPORTANCE_MIN)
+                      getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+                      val notification = NotificationCompat.Builder(this, "island_service").setSmallIcon(android.R.drawable.stat_sys_warning).build()
+                      startForeground(1, notification)
+                  }
+
+                  islandWidthState.value = prefs.getInt("width", 77).dp
+                  islandHeightState.value = prefs.getInt("height", 28).dp
 
                   windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                  composeView = ComposeView(this)
-                  composeView.setViewTreeLifecycleOwner(this)
-                  composeView.setViewTreeViewModelStoreOwner(this)
-                  composeView.setViewTreeSavedStateRegistryOwner(this)
+                  composeView = ComposeView(this).apply {
+                      setViewTreeLifecycleOwner(this@DynamicIslandService)
+                      setViewTreeViewModelStoreOwner(this@DynamicIslandService)
+                      setViewTreeSavedStateRegistryOwner(this@DynamicIslandService)
+                  }
 
-                  registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                       registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
                   } else {
@@ -370,61 +282,23 @@ jobs:
                   ).apply {
                       gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
                       x = prefs.getInt("pos_x", 0)
-                      y = prefs.getInt("pos_y", 32)
-                  }
-
-                  var initialX = 0; var initialY = 0; var initialTouchX = 0f; var initialTouchY = 0f; var isMoving = false
-                  val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
-
-                  composeView.setOnTouchListener { _, event ->
-                      when (event.action) {
-                          MotionEvent.ACTION_DOWN -> { 
-                              initialX = params.x; initialY = params.y; initialTouchX = event.rawX; initialTouchY = event.rawY; isMoving = false 
-                              true 
-                          }
-                          MotionEvent.ACTION_MOVE -> {
-                              val dx = (event.rawX - initialTouchX).toInt(); val dy = (event.rawY - initialTouchY).toInt()
-                              if (abs(dx) > touchSlop || abs(dy) > touchSlop) { 
-                                  isMoving = true; params.x = initialX + dx; params.y = initialY + dy; windowManager.updateViewLayout(composeView, params)
-                              }
-                              true
-                          }
-                          MotionEvent.ACTION_UP -> {
-                              if (!isMoving) {
-                                  when (islandModeState.value) {
-                                      IslandMode.IDLE -> {}
-                                      IslandMode.EVENT_COMPACT -> { islandModeState.value = IslandMode.EVENT_EXPANDED; handler.removeCallbacks(collapseRunnable) }
-                                      IslandMode.EVENT_EXPANDED -> islandModeState.value = IslandMode.IDLE
-                                  }
-                              } else { prefs.edit().putInt("pos_x", params.x).putInt("pos_y", params.y).apply() }
-                              true
-                          }
-                          else -> false
-                      }
+                      y = prefs.getInt("pos_y", 28)
                   }
 
                   composeView.setContent {
-                      val config = LocalConfiguration.current
-                      if (config.orientation != Configuration.ORIENTATION_LANDSCAPE) {
-                          DynamicIslandContent(
-                              mode = islandModeState.value,
-                              event = currentEventState.value,
-                              baseWidth = islandWidthState.value,
-                              baseHeight = islandHeightState.value,
-                              glow = glowWidthState.value,
-                              onOpenSettings = {
-                                  islandModeState.value = IslandMode.IDLE
-                                  startActivity(Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-                              }
-                          )
-                      }
+                      DynamicIslandContent(
+                          mode = islandModeState.value,
+                          event = currentEventState.value,
+                          baseWidth = islandWidthState.value,
+                          baseHeight = islandHeightState.value,
+                          glow = glowWidthState.value
+                      )
                   }
                   windowManager.addView(composeView, params)
               }
 
               override fun onDestroy() {
                   super.onDestroy()
-                  unregisterReceiver(powerReceiver)
                   unregisterReceiver(eventReceiver)
                   prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
                   if (::composeView.isInitialized) windowManager.removeView(composeView)
@@ -432,113 +306,22 @@ jobs:
           }
 
           @Composable
-          fun DynamicIslandContent(
-              mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp, glow: Dp, onOpenSettings: () -> Unit
-          ) {
-              val targetWidth = when (mode) {
-                  IslandMode.IDLE -> baseWidth
-                  IslandMode.EVENT_COMPACT -> 280.dp 
-                  IslandMode.EVENT_EXPANDED -> 330.dp
-              }
-              
-              val targetHeight = when (mode) {
-                  IslandMode.IDLE -> baseHeight
-                  IslandMode.EVENT_COMPACT -> baseHeight
-                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 160.dp else 125.dp
-              }
+          fun DynamicIslandContent(mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp, glow: Dp) {
+              val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 330.dp }
+              val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 125.dp }
+              val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f), label = "")
+              val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f), label = "")
+              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else (baseHeight / 2f), label = "")
 
-              val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "width")
-              val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "height")
-              
-              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else (baseHeight / 2f), label = "radius")
-
-              val borderColor = if (mode != IslandMode.IDLE && glow > 0.dp) event.color else Color.Transparent
-
-              Box(
-                  modifier = Modifier
-                      .width(animatedWidth)
-                      .height(animatedHeight)
-                      .border(glow, borderColor, RoundedCornerShape(cornerRadius))
-                      .background(Color.Black, RoundedCornerShape(cornerRadius))
-              ) {
-                  androidx.compose.animation.AnimatedVisibility(
-                      visible = mode == IslandMode.EVENT_COMPACT,
-                      enter = fadeIn(animationSpec = tween(150)),
-                      exit = fadeOut(animationSpec = tween(150)),
-                      modifier = Modifier.align(Alignment.Center)
-                  ) {
-                      Row(
-                          modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
-                          verticalAlignment = Alignment.CenterVertically,
-                          horizontalArrangement = Arrangement.SpaceBetween
-                      ) {
-                          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 110.dp)) {
-                              if (event.type == "MUSIC") {
-                                  Text("🎵", fontSize = 12.sp)
-                              } else {
-                                  Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                                      Text(event.icon, fontSize = 11.sp)
-                                  }
-                              }
+              Box(modifier = Modifier.width(animatedWidth).height(animatedHeight).background(Color.Black, RoundedCornerShape(cornerRadius))) {
+                  androidx.compose.animation.AnimatedVisibility(visible = mode == IslandMode.EVENT_COMPACT, modifier = Modifier.align(Alignment.Center)) {
+                      Row(modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                          Row(verticalAlignment = Alignment.CenterVertically) {
+                              Text(event.icon, fontSize = 12.sp)
                               Spacer(modifier = Modifier.width(8.dp))
-                              Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                              Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                           }
-                          
-                          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 110.dp), horizontalArrangement = Arrangement.End) {
-                              if (event.type == "MUSIC") {
-                                  AudioVisualizer(color = event.color)
-                              } else {
-                                  Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                              }
-                          }
-                      }
-                  }
-
-                  androidx.compose.animation.AnimatedVisibility(
-                      visible = mode == IslandMode.EVENT_EXPANDED,
-                      enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
-                      exit = fadeOut(animationSpec = tween(100)),
-                      modifier = Modifier.align(Alignment.TopCenter)
-                  ) {
-                      Column(modifier = Modifier.fillMaxSize()) {
-                          Row(
-                              modifier = Modifier.fillMaxWidth().height(baseHeight).padding(horizontal = 16.dp),
-                              verticalAlignment = Alignment.CenterVertically,
-                              horizontalArrangement = Arrangement.SpaceBetween
-                          ) {
-                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                                  Text(event.icon, fontSize = 12.sp)
-                              }
-                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(Color(0x22FFFFFFL)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                  Text("⚙️", fontSize = 12.sp)
-                              }
-                          }
-                          
-                          // هنا تم إصلاح خطأ التصميم بالأسفل
-                          Column(
-                              modifier = Modifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                              verticalArrangement = Arrangement.Center
-                          ) {
-                              if (event.type == "MUSIC") {
-                                  Row(verticalAlignment = Alignment.CenterVertically) {
-                                      Column(modifier = Modifier.weight(1f)) {
-                                          Text(text = event.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                          Text(text = event.text, color = Color.LightGray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                      }
-                                      AudioVisualizer(color = event.color)
-                                  }
-                                  Spacer(modifier = Modifier.height(16.dp))
-                                  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFFL), CircleShape), contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
-                                      Box(modifier = Modifier.size(54.dp).background(Color(0xFFA8E5BAL), CircleShape), contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
-                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFFL), CircleShape), contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
-                                  }
-                              } else {
-                                  Text(text = event.title, color = event.color, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                                  Spacer(modifier = Modifier.height(4.dp))
-                                  Text(text = event.text, color = Color.White, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                              }
-                          }
+                          Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1)
                       }
                   }
               }
@@ -551,205 +334,236 @@ jobs:
           import android.Manifest
           import android.content.Context
           import android.content.Intent
+          import android.content.SharedPreferences
           import android.content.pm.PackageManager
           import android.net.Uri
           import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
-          import android.view.Gravity
-          import android.view.View
-          import android.view.ViewGroup
-          import android.widget.FrameLayout
-          import android.widget.LinearLayout
-          import android.widget.ScrollView
-          import android.widget.TextView
-          import android.graphics.Color
-          import android.graphics.drawable.GradientDrawable
-          import androidx.appcompat.app.AppCompatActivity
+          import androidx.activity.ComponentActivity
+          import androidx.activity.compose.setContent
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.shape.CircleShape
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.draw.clip
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.platform.LocalContext
+          import androidx.compose.ui.text.font.FontWeight
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
+          import androidx.core.app.ActivityCompat
 
-          class MainActivity : AppCompatActivity() {
+          val MTCapsuleGreen = Color(0xFFE8F5E9)
+          val MTCapsuleDarkGreen = Color(0xFF1B5E20)
+          val MTCapsuleAccent = Color(0xFF4CAF50)
+          val MTCapsuleCard = Color(0xFFFFFFFF)
 
+          class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   val prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
-                  
+
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                       if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                          requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+                          ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
                       }
                   }
 
-                  val currentLang = prefs.getString("lang", "ar") ?: "ar"
-                  val isFr = currentLang == "fr"
-
-                  val tTitle = if(isFr) "Paramètres de l'île 🏝️" else "إعدادات الجزيرة 🏝️"
-                  val tGlow = if(isFr) "Épaisseur de la lueur (Glow)" else "سمك الضوء المتفاعل (Glow)"
-                  val tWidth = if(isFr) "Largeur de l'île (Width)" else "العرض (Width)"
-                  val tHeight = if(isFr) "Hauteur (Height)" else "الارتفاع (Height)"
-                  val tX = if(isFr) "Gauche / Droite (X Axis)" else "يمين / يسار (X Axis)"
-                  val tY = if(isFr) "Haut / Bas (Y Axis)" else "أعلى / أسفل (Y Axis)"
-                  val tTestMsg = if(isFr) "Tester Notification 💬" else "تجربة إشعار منفصل 💬"
-                  val tTestMus = if(isFr) "Tester Musique 🎵" else "تجربة مشغل الموسيقى 🎵"
-                  val tStart = if(isFr) "Mettre à jour / Démarrer 🚀" else "تحديث / تشغيل الجزيرة 🚀"
-
-                  val dp = resources.displayMetrics.density
-                  val bgDark = Color.parseColor("#101411")
-                  val pillActive = Color.parseColor("#A8E5BA")
-                  val pillInactive = Color.parseColor("#2D322E")
-                  val textOnActive = Color.parseColor("#0F2015")
-                  val textOnDark = Color.parseColor("#E1E3DF")
-
-                  val scrollView = ScrollView(this).apply { setBackgroundColor(bgDark); isFillViewport = true }
-                  val root = LinearLayout(this).apply {
-                      orientation = LinearLayout.VERTICAL
-                      setPadding((16*dp).toInt(), (24*dp).toInt(), (16*dp).toInt(), (24*dp).toInt())
+                  setContent {
+                      MaterialTheme {
+                          MainScreen(prefs)
+                      }
                   }
-                  scrollView.addView(root)
+              }
+          }
+
+          @Composable
+          fun MainScreen(prefs: SharedPreferences) {
+              var selectedTab by remember { mutableStateOf(0) }
+              val context = LocalContext.current
+
+              Scaffold(
+                  bottomBar = {
+                      NavigationBar(containerColor = MTCapsuleGreen) {
+                          NavigationBarItem(
+                              selected = selectedTab == 0,
+                              onClick = { selectedTab = 0 },
+                              icon = { Text("📐", fontSize = 20.sp) },
+                              label = { Text("Taille", color = MTCapsuleDarkGreen) },
+                              colors = NavigationBarItemDefaults.colors(indicatorColor = MTCapsuleAccent.copy(alpha = 0.2f))
+                          )
+                          NavigationBarItem(
+                              selected = selectedTab == 1,
+                              onClick = { selectedTab = 1 },
+                              icon = { Text("⚡", fontSize = 20.sp) },
+                              label = { Text("Cartes", color = MTCapsuleDarkGreen) },
+                              colors = NavigationBarItemDefaults.colors(indicatorColor = MTCapsuleAccent.copy(alpha = 0.2f))
+                          )
+                          NavigationBarItem(
+                              selected = selectedTab == 2,
+                              onClick = { selectedTab = 2 },
+                              icon = { Text("⚙️", fontSize = 20.sp) },
+                              label = { Text("Paramètres", color = MTCapsuleDarkGreen) },
+                              colors = NavigationBarItemDefaults.colors(indicatorColor = MTCapsuleAccent.copy(alpha = 0.2f))
+                          )
+                      }
+                  }
+              ) { padding ->
+                  Box(modifier = Modifier.padding(padding).fillMaxSize().background(MTCapsuleGreen)) {
+                      when (selectedTab) {
+                          0 -> TailleEtPositionScreen(prefs)
+                          1 -> CartesScreen()
+                          2 -> ParametresScreen()
+                      }
+                  }
+              }
+          }
+
+          @Composable
+          fun TailleEtPositionScreen(prefs: SharedPreferences) {
+              var width by remember { mutableStateOf(prefs.getInt("width", 77).toFloat()) }
+              var height by remember { mutableStateOf(prefs.getInt("height", 28).toFloat()) }
+              var posX by remember { mutableStateOf(prefs.getInt("pos_x", 0).toFloat()) }
+              var posY by remember { mutableStateOf(prefs.getInt("pos_y", 28).toFloat()) }
+              val context = LocalContext.current
+
+              Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                  Text("Taille et position", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MTCapsuleDarkGreen)
+                  Spacer(modifier = Modifier.height(16.dp))
+
+                  // Visualizer (Exemple) exactly like MT Capsule
+                  Card(
+                      modifier = Modifier.fillMaxWidth().height(180.dp),
+                      colors = CardDefaults.cardColors(containerColor = MTCapsuleCard),
+                      shape = RoundedCornerShape(24.dp)
+                  ) {
+                      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                          // Fake Phone Camera
+                          Box(modifier = Modifier.padding(top = 16.dp).size(20.dp).background(Color.Black, CircleShape))
+                          // Fake Island
+                          Box(
+                              modifier = Modifier
+                                  .offset(x = posX.dp, y = posY.dp)
+                                  .width(width.dp)
+                                  .height(height.dp)
+                                  .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(height.dp / 2))
+                          )
+                          Text("Exemple", modifier = Modifier.align(Alignment.TopStart).padding(16.dp), color = MTCapsuleDarkGreen, fontWeight = FontWeight.Bold)
+                      }
+                  }
+
+                  Spacer(modifier = Modifier.height(24.dp))
+
+                  SliderControl("Position X", posX, -200f, 200f) { posX = it; prefs.edit().putInt("pos_x", it.toInt()).apply() }
+                  SliderControl("Position Y", posY, 0f, 200f) { posY = it; prefs.edit().putInt("pos_y", it.toInt()).apply() }
+                  SliderControl("Largeur", width, 30f, 300f) { width = it; prefs.edit().putInt("width", it.toInt()).apply() }
+                  SliderControl("Hauteur", height, 10f, 100f) { height = it; prefs.edit().putInt("height", it.toInt()).apply() }
+
+                  Spacer(modifier = Modifier.weight(1f))
                   
-                  val langContainer = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      gravity = Gravity.CENTER
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (16*dp).toInt() }
-                  }
-
-                  fun createLangChip(title: String, code: String, isSelected: Boolean): View {
-                      return TextView(this@MainActivity).apply {
-                          text = title
-                          textSize = 14f
-                          setTextColor(if (isSelected) textOnActive else Color.WHITE)
-                          typeface = android.graphics.Typeface.DEFAULT_BOLD
-                          background = GradientDrawable().apply { 
-                              setColor(if (isSelected) pillActive else pillInactive)
-                              cornerRadius = 20f * dp 
-                          }
-                          setPadding((24*dp).toInt(), (10*dp).toInt(), (24*dp).toInt(), (10*dp).toInt())
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = (12*dp).toInt() }
-                          setOnClickListener {
-                              if (!isSelected) {
-                                  prefs.edit().putString("lang", code).apply()
-                                  finish()
-                                  startActivity(intent) 
-                              }
-                          }
-                      }
-                  }
-
-                  langContainer.addView(createLangChip("العربية", "ar", currentLang == "ar"))
-                  langContainer.addView(createLangChip("Français", "fr", currentLang == "fr"))
-                  root.addView(langContainer)
-
-                  root.addView(TextView(this).apply {
-                      text = tTitle
-                      textSize = 26f; setTextColor(textOnDark); gravity = Gravity.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      setPadding(0, (8*dp).toInt(), 0, (24*dp).toInt())
-                  })
-
-                  fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
-                      val containerHeight = (14 * dp).toInt() 
-                      val container = FrameLayout(this@MainActivity).apply {
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, containerHeight)
-                          background = GradientDrawable().apply { setColor(pillInactive); cornerRadius = containerHeight / 2f }
-                      }
-                      val fillView = View(this@MainActivity).apply {
-                          layoutParams = FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT)
-                          background = GradientDrawable().apply { setColor(pillActive); cornerRadius = containerHeight / 2f }
-                      }
-                      container.addView(fillView)
-                      var currentWidth = currentVal
-                      fun updateFillWidth(totalWidth: Int) {
-                          if (totalWidth <= 0) return
-                          val progress = ((currentWidth - min) / (max - min)).coerceIn(0f, 1f)
-                          val fillWidth = (containerHeight + progress * (totalWidth - containerHeight)).toInt()
-                          fillView.layoutParams = FrameLayout.LayoutParams(fillWidth, ViewGroup.LayoutParams.MATCH_PARENT)
-                          fillView.requestLayout()
-                      }
-                      container.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-                          val width = right - left; val oldWidth = oldRight - oldLeft
-                          if (width > 0 && width != oldWidth) updateFillWidth(width)
-                      }
-                      container.post { updateFillWidth(container.width) }
-                      container.setOnTouchListener { v, event ->
-                          val totalWidth = v.width
-                          if (totalWidth <= 0) return@setOnTouchListener false
-                          var newWidth = event.x.toInt()
-                          if (newWidth < containerHeight) newWidth = containerHeight
-                          if (newWidth > totalWidth) newWidth = totalWidth
-                          fillView.layoutParams = FrameLayout.LayoutParams(newWidth, ViewGroup.LayoutParams.MATCH_PARENT)
-                          fillView.requestLayout()
-                          val progress = (newWidth - containerHeight).toFloat() / (totalWidth - containerHeight).toFloat()
-                          currentWidth = min + (progress * (max - min))
-                          onUpdate(currentWidth)
-                          true
-                      }
-                      return container
-                  }
-
-                  fun createSliderSection(title: String, initial: Float, min: Float, max: Float, onUpdate: (Float) -> Unit) {
-                      val label = TextView(this@MainActivity).apply {
-                          text = title + ": " + initial.toInt()
-                          textSize = 14f; setTextColor(Color.WHITE); setPadding(0, 0, 0, (6*dp).toInt()) 
-                      }
-                      val slider = createMaterialSlider(initial, min, max) { newVal ->
-                          label.text = title + ": " + newVal.toInt()
-                          onUpdate(newVal)
-                      }
-                      val section = LinearLayout(this@MainActivity).apply {
-                          orientation = LinearLayout.VERTICAL
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (22*dp).toInt() } 
-                      }
-                      section.addView(label); section.addView(slider); root.addView(section)
-                  }
-
-                  createSliderSection(tGlow, prefs.getInt("glow", 2).toFloat(), 0f, 10f) { prefs.edit().putInt("glow", it.toInt()).apply() }
-                  createSliderSection(tWidth, prefs.getInt("width", 60).toFloat(), 30f, 400f) { prefs.edit().putInt("width", it.toInt()).apply() }
-                  createSliderSection(tHeight, prefs.getInt("height", 26).toFloat(), 10f, 150f) { prefs.edit().putInt("height", it.toInt()).apply() }
-                  createSliderSection(tX, prefs.getInt("pos_x", 0).toFloat(), -600f, 600f) { prefs.edit().putInt("pos_x", it.toInt()).apply() }
-                  createSliderSection(tY, prefs.getInt("pos_y", 32).toFloat(), -800f, 500f) { prefs.edit().putInt("pos_y", it.toInt()).apply() }
-
-                  root.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 1f) }) 
-
-                  fun createTestButton(title: String, isMusic: Boolean): View {
-                      return LinearLayout(this@MainActivity).apply {
-                          orientation = LinearLayout.HORIZONTAL
-                          background = GradientDrawable().apply { setColor(Color.parseColor("#1E2320")); cornerRadius = 16f * dp } 
-                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (52*dp).toInt()).apply { topMargin = (10*dp).toInt() } 
-                          gravity = Gravity.CENTER
-                          addView(TextView(context).apply { text = title; textSize = 15f; setTextColor(Color.WHITE); typeface = android.graphics.Typeface.DEFAULT_BOLD })
-                          setOnClickListener {
-                              val i = Intent("com.dynamicisland.aipro.NEW_EVENT")
-                              if (isMusic) {
-                                  i.putExtra("type", "MUSIC"); i.putExtra("title", "Blinding Lights"); i.putExtra("text", "The Weeknd"); i.putExtra("icon", "🎵"); i.putExtra("color", "#1DB954")
-                              } else {
-                                  i.putExtra("type", "MSG"); i.putExtra("title", "✨ Info"); i.putExtra("text", "Test de Notification"); i.putExtra("icon", "💬"); i.putExtra("color", "#0088CC")
-                              }
-                              sendBroadcast(i)
-                          }
-                      }
-                  }
-                  
-                  root.addView(createTestButton(tTestMsg, false))
-                  root.addView(createTestButton(tTestMus, true))
-
-                  val btn = LinearLayout(this).apply {
-                      orientation = LinearLayout.HORIZONTAL
-                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 16f * dp }
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (54*dp).toInt()).apply { topMargin = (12*dp).toInt() }
-                      gravity = Gravity.CENTER
-                      addView(TextView(context).apply { text = tStart; textSize = 16f; setTextColor(textOnActive); typeface = android.graphics.Typeface.DEFAULT_BOLD })
-                      setOnClickListener {
-                          if (!Settings.canDrawOverlays(this@MainActivity)) {
-                              startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+                  Button(
+                      onClick = {
+                          if (!Settings.canDrawOverlays(context)) {
+                              context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:\${context.packageName}")))
                           } else {
                               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                  startForegroundService(Intent(this@MainActivity, DynamicIslandService::class.java))
+                                  context.startForegroundService(Intent(context, DynamicIslandService::class.java))
                               } else {
-                                  startService(Intent(this@MainActivity, DynamicIslandService::class.java))
+                                  context.startService(Intent(context, DynamicIslandService::class.java))
                               }
                           }
+                      },
+                      modifier = Modifier.fillMaxWidth().height(56.dp),
+                      colors = ButtonDefaults.buttonColors(containerColor = MTCapsuleDarkGreen)
+                  ) {
+                      Text("Activer / Appliquer", fontSize = 16.sp, color = Color.White)
+                  }
+              }
+          }
+
+          @Composable
+          fun SliderControl(label: String, value: Float, min: Float, max: Float, onValueChange: (Float) -> Unit) {
+              Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                  Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                      Text(label, color = MTCapsuleDarkGreen, fontWeight = FontWeight.Bold)
+                      Text(value.toInt().toString(), color = Color.Gray)
+                  }
+                  Row(verticalAlignment = Alignment.CenterVertically) {
+                      Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White).clickable { onValueChange((value - 1f).coerceAtLeast(min)) }, contentAlignment = Alignment.Center) { Text("-", fontSize = 20.sp, color = MTCapsuleDarkGreen) }
+                      Slider(
+                          value = value,
+                          onValueChange = onValueChange,
+                          valueRange = min..max,
+                          modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                          colors = SliderDefaults.colors(thumbColor = MTCapsuleDarkGreen, activeTrackColor = MTCapsuleDarkGreen, inactiveTrackColor = MTCapsuleAccent.copy(alpha = 0.3f))
+                      )
+                      Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.White).clickable { onValueChange((value + 1f).coerceAtMost(max)) }, contentAlignment = Alignment.Center) { Text("+", fontSize = 20.sp, color = MTCapsuleDarkGreen) }
+                  }
+              }
+          }
+
+          @Composable
+          fun CartesScreen() {
+              val context = LocalContext.current
+              Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                  Text("Material Capsule", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MTCapsuleDarkGreen)
+                  Spacer(modifier = Modifier.height(16.dp))
+                  Text("Événements de la mini-capsule", color = MTCapsuleDarkGreen, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+                  
+                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MTCapsuleCard), shape = RoundedCornerShape(24.dp)) {
+                      Row(modifier = Modifier.padding(20.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                          Box(modifier = Modifier.size(48.dp).background(MTCapsuleAccent.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) { Text("⚡") }
+                          Box(modifier = Modifier.size(48.dp).background(MTCapsuleAccent.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) { Text("🎵") }
+                          Box(modifier = Modifier.size(48.dp).background(MTCapsuleAccent.copy(alpha = 0.2f), CircleShape), contentAlignment = Alignment.Center) { Text("💬") }
                       }
                   }
-                  root.addView(btn)
-                  setContentView(scrollView)
+                  
+                  Spacer(modifier = Modifier.height(24.dp))
+                  
+                  Button(
+                      onClick = {
+                          val i = Intent("com.dynamicisland.aipro.NEW_EVENT")
+                          i.putExtra("type", "MSG"); i.putExtra("title", "Test Capsule"); i.putExtra("text", "Ceci est un test MT"); i.putExtra("icon", "🚀"); i.putExtra("color", "#1B5E20")
+                          context.sendBroadcast(i)
+                      },
+                      modifier = Modifier.fillMaxWidth().height(56.dp),
+                      colors = ButtonDefaults.buttonColors(containerColor = MTCapsuleDarkGreen)
+                  ) {
+                      Text("Tester Animation", fontSize = 16.sp, color = Color.White)
+                  }
+              }
+          }
+
+          @Composable
+          fun ParametresScreen() {
+              Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                  Text("Paramètres", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MTCapsuleDarkGreen)
+                  Spacer(modifier = Modifier.height(16.dp))
+                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MTCapsuleCard), shape = RoundedCornerShape(24.dp)) {
+                      Column(modifier = Modifier.padding(16.dp)) {
+                          SettingItem(icon = "🎨", title = "Thème de l'application", subtitle = "Suivre le système")
+                          Divider(color = MTCapsuleGreen)
+                          SettingItem(icon = "🌐", title = "Langue de l'application", subtitle = "Par défaut du système")
+                      }
+                  }
+              }
+          }
+          
+          @Composable
+          fun SettingItem(icon: String, title: String, subtitle: String) {
+              Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                  Text(icon, fontSize = 24.sp)
+                  Spacer(modifier = Modifier.width(16.dp))
+                  Column {
+                      Text(title, fontWeight = FontWeight.Bold, color = MTCapsuleDarkGreen)
+                      Text(subtitle, fontSize = 12.sp, color = Color.Gray)
+                  }
               }
           }
           INNER_EOF
@@ -763,7 +577,7 @@ jobs:
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
               <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
-                  <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
@@ -793,11 +607,11 @@ jobs:
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-Pro.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/MTCapsule-Pro.apk
 
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Dynamic-Island-Pro
-          path: release-output/Dynamic-Island-Pro.apk
+          name: MTCapsule-Pro
+          path: release-output/MTCapsule-Pro.apk
           retention-days: 5
