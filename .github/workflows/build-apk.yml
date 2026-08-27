@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 11; versionName = "2.0.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 12; versionName = "2.0.1" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -155,6 +155,7 @@ jobs:
           cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/DynamicIslandService.kt
           package com.dynamicisland.aipro
 
+          import android.app.Notification
           import android.app.NotificationChannel
           import android.app.NotificationManager
           import android.content.BroadcastReceiver
@@ -257,7 +258,7 @@ jobs:
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
                       if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
-                          if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return // تجاهل الإشعارات في الوضع الأفقي
+                          if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
                           
                           val type = intent.getStringExtra("type") ?: "MSG"
                           val title = intent.getStringExtra("title") ?: ""
@@ -303,11 +304,10 @@ jobs:
                       getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
                   }
                   
-                  // جعل الإشعار مزعجاً أقل قدر الإمكان
                   val notification = NotificationCompat.Builder(this, channelId)
                       .setContentTitle("")
                       .setContentText("")
-                      .setSmallIcon(android.R.drawable.stat_sys_warning) // أيقونة صغيرة جداً
+                      .setSmallIcon(android.R.drawable.stat_sys_warning)
                       .setPriority(NotificationCompat.PRIORITY_MIN)
                       .setCategory(Notification.CATEGORY_SERVICE)
                       .build()
@@ -413,37 +413,33 @@ jobs:
           fun DynamicIslandContent(
               mode: IslandMode, event: IslandEvent, baseWidth: androidx.compose.ui.unit.Dp, baseHeight: androidx.compose.ui.unit.Dp, glow: androidx.compose.ui.unit.Dp, onOpenSettings: () -> Unit
           ) {
-              // 1. حساب العرض والارتفاع المطلوبين (الانبثاق يحدث من الجزيرة نفسها!)
               val targetWidth = when (mode) {
                   IslandMode.IDLE -> baseWidth
-                  IslandMode.EVENT_COMPACT -> 260.dp // الكبسولة العرضية
+                  IslandMode.EVENT_COMPACT -> 260.dp
                   IslandMode.EVENT_EXPANDED -> 320.dp
                   else -> 0.dp
               }
               
               val targetHeight = when (mode) {
                   IslandMode.IDLE -> baseHeight
-                  IslandMode.EVENT_COMPACT -> baseHeight // تحافظ على نحافتها
+                  IslandMode.EVENT_COMPACT -> baseHeight
                   IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 140.dp else 100.dp
                   else -> 0.dp
               }
 
-              // 2. أنيميشن أسرع (Snappy) لتغيير الأبعاد
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 600f), label = "width")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 600f), label = "height")
 
-              // التوهج: يعرض لون الإشعار حتى وهو مصغر!
               val borderColor = if (mode != IslandMode.IDLE && glow > 0.dp) event.color else Color.Transparent
 
               Box(
                   modifier = Modifier
                       .width(animatedWidth)
                       .height(animatedHeight)
-                      .border(glow, borderColor, CircleShape) // الكبسولة الدائرية دائماً
+                      .border(glow, borderColor, CircleShape)
                       .background(Color.Black, CircleShape),
                   contentAlignment = Alignment.Center
               ) {
-                  // محتوى الإشعار المصغر النحيف
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_COMPACT,
                       enter = fadeIn(animationSpec = tween(150)),
@@ -466,7 +462,6 @@ jobs:
                       }
                   }
 
-                  // محتوى الإشعار الموسع (Expanded)
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_EXPANDED,
                       enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
@@ -483,7 +478,6 @@ jobs:
                                       Text(text = event.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                       Text(text = event.text, color = Color.LightGray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                   }
-                                  // زر الإعدادات بتصميم Material You أنيق
                                   Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
                                       Text("⚙️", fontSize = 16.sp)
                                   }
@@ -567,8 +561,6 @@ jobs:
                   val tTestMsg = if(isFr) "Tester Notification 💬" else "تجربة إشعار منفصل 💬"
                   val tTestMus = if(isFr) "Tester Musique 🎵" else "تجربة مشغل الموسيقى 🎵"
                   val tStart = if(isFr) "Mettre à jour / Démarrer 🚀" else "تحديث / تشغيل الجزيرة 🚀"
-                  
-                  // تم تعديل منطق زر اللغة (إذا كانت فرنسية، الزر يعرض التبديل للعربية)
                   val tLangBtn = if(isFr) "🌍 التبديل إلى العربية" else "🌍 Passer au Français"
 
                   val dp = resources.displayMetrics.density
@@ -585,7 +577,6 @@ jobs:
                   }
                   scrollView.addView(root)
                   
-                  // زر اللغة بتصميم Material You (كبسولة صغيرة أعلى الشاشة)
                   val langBtnContainer = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       gravity = Gravity.END or Gravity.CENTER_VERTICAL
@@ -672,7 +663,6 @@ jobs:
                   createSliderSection(tGlow, prefs.getInt("glow", 2).toFloat(), 0f, 10f) { prefs.edit().putInt("glow", it.toInt()).apply() }
                   createSliderSection(tWidth, prefs.getInt("width", 60).toFloat(), 30f, 400f) { prefs.edit().putInt("width", it.toInt()).apply() }
                   createSliderSection(tHeight, prefs.getInt("height", 26).toFloat(), 10f, 150f) { prefs.edit().putInt("height", it.toInt()).apply() }
-                  // تم إزالة الاستدارة (Corner Radius) وجعلها Pill شكل الكبسولة الموحد
                   createSliderSection(tX, prefs.getInt("pos_x", 0).toFloat(), -600f, 600f) { prefs.edit().putInt("pos_x", it.toInt()).apply() }
                   createSliderSection(tY, prefs.getInt("pos_y", 32).toFloat(), -800f, 500f) { prefs.edit().putInt("pos_y", it.toInt()).apply() }
 
