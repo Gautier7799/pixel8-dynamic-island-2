@@ -1,4 +1,4 @@
-name: Build NOVA ISLAND Pro V1.0
+name: Build NOVA ISLAND Pro V1.1
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 1; versionName = "1.0.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 2; versionName = "1.1.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -69,6 +69,7 @@ jobs:
               implementation("androidx.core:core-ktx:1.12.0")
               implementation("androidx.appcompat:appcompat:1.6.1")
               implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+              implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
               implementation("androidx.activity:activity-compose:1.8.2")
               implementation(platform("androidx.compose:compose-bom:2024.02.00"))
               implementation("androidx.compose.ui:ui")
@@ -173,9 +174,12 @@ jobs:
           import androidx.lifecycle.LifecycleRegistry
           import androidx.lifecycle.ViewModelStore
           import androidx.lifecycle.ViewModelStoreOwner
+          import androidx.lifecycle.setViewTreeLifecycleOwner
+          import androidx.lifecycle.setViewTreeViewModelStoreOwner
           import androidx.savedstate.SavedStateRegistry
           import androidx.savedstate.SavedStateRegistryController
           import androidx.savedstate.SavedStateRegistryOwner
+          import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
           class MyLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
               private val lifecycleRegistry = LifecycleRegistry(this)
@@ -309,7 +313,6 @@ jobs:
               val targetWidth = when (mode) { IslandMode.IDLE -> baseWidth; IslandMode.EVENT_COMPACT -> 280.dp; IslandMode.EVENT_EXPANDED -> 330.dp }
               val targetHeight = when (mode) { IslandMode.IDLE -> baseHeight; IslandMode.EVENT_COMPACT -> baseHeight; IslandMode.EVENT_EXPANDED -> 125.dp }
               
-              // Physics Animation for that Apple-like smooth bounce
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else (baseHeight / 2f), label = "")
@@ -370,11 +373,10 @@ jobs:
           import androidx.compose.ui.unit.dp
           import androidx.compose.ui.unit.sp
 
-          // NOVA Theme Palette
-          val NovaBg = Color(0xFF0F172A)         // Dark Slate
-          val NovaCard = Color(0xFF1E293B)       // Lighter Slate
-          val NovaAccent = Color(0xFF38BDF8)     // Electric Blue
-          val NovaText = Color(0xFFF8FAFC)       // White/Gray
+          val NovaBg = Color(0xFF0F172A)
+          val NovaCard = Color(0xFF1E293B)
+          val NovaAccent = Color(0xFF38BDF8)
+          val NovaText = Color(0xFFF8FAFC)
 
           class MainActivity : ComponentActivity() {
               override fun onCreate(savedInstanceState: Bundle?) {
@@ -450,7 +452,7 @@ jobs:
 
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                   Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = NovaAccent)
-                  Text("Édition Pro V1.0", fontSize = 14.sp, color = NovaText.copy(alpha = 0.7f))
+                  Text("Édition Pro V1.1", fontSize = 14.sp, color = NovaText.copy(alpha = 0.7f))
                   Spacer(modifier = Modifier.height(24.dp))
 
                   Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = NovaCard), shape = RoundedCornerShape(24.dp)) {
