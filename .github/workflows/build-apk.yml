@@ -1,4 +1,4 @@
-name: Build Dynamic Island Nano Pro V2
+name: Build Dynamic Island Nano Pro V2.1
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 12; versionName = "2.0.1" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 13; versionName = "2.1.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -172,6 +172,7 @@ jobs:
           import android.provider.Settings
           import android.view.Gravity
           import android.view.MotionEvent
+          import android.view.View
           import android.view.ViewConfiguration
           import android.view.WindowManager
           import androidx.compose.animation.*
@@ -180,9 +181,7 @@ jobs:
           import androidx.compose.foundation.border
           import androidx.compose.foundation.clickable
           import androidx.compose.foundation.layout.*
-          import androidx.compose.foundation.rememberScrollState
           import androidx.compose.foundation.shape.CircleShape
-          import androidx.compose.foundation.verticalScroll
           import androidx.compose.material3.Text
           import androidx.compose.runtime.*
           import androidx.compose.ui.Alignment
@@ -205,7 +204,7 @@ jobs:
           import androidx.savedstate.SavedStateRegistryOwner
           import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
-          enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED, HIDDEN }
+          enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED }
 
           data class IslandEvent(
               val type: String = "MSG",
@@ -257,9 +256,8 @@ jobs:
 
               private val eventReceiver = object : BroadcastReceiver() {
                   override fun onReceive(context: Context?, intent: Intent?) {
+                      if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
                       if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
-                          if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
-                          
                           val type = intent.getStringExtra("type") ?: "MSG"
                           val title = intent.getStringExtra("title") ?: ""
                           val text = intent.getStringExtra("text") ?: ""
@@ -268,19 +266,37 @@ jobs:
                           
                           currentEventState.value = IslandEvent(type, title, text, icon, color)
                           islandModeState.value = IslandMode.EVENT_COMPACT 
-                          
+                          handler.removeCallbacks(collapseRunnable)
+                          handler.postDelayed(collapseRunnable, 4500)
+                      }
+                  }
+              }
+
+              private val powerReceiver = object : BroadcastReceiver() {
+                  override fun onReceive(context: Context?, intent: Intent?) {
+                      if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
+                      if (intent?.action == Intent.ACTION_POWER_CONNECTED) {
+                          val bm = context?.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+                          val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                          val isFr = prefs.getString("lang", "ar") == "fr"
+                          val title = if (isFr) "En charge" else "جاري الشحن"
+                          currentEventState.value = IslandEvent(type = "CHARGE", title = title, text = "${level}%", icon = "⚡", colorStr = "#4CAF50")
+                          islandModeState.value = IslandMode.EVENT_COMPACT
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4000)
                       }
                   }
               }
 
+              // الإخفاء التام في الوضع الأفقي
               override fun onConfigurationChanged(newConfig: Configuration) {
                   super.onConfigurationChanged(newConfig)
-                  if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                      islandModeState.value = IslandMode.HIDDEN
-                  } else {
-                      islandModeState.value = IslandMode.IDLE
+                  if (::composeView.isInitialized) {
+                      if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                          composeView.visibility = View.GONE
+                      } else {
+                          composeView.visibility = View.VISIBLE
+                      }
                   }
               }
 
@@ -303,7 +319,6 @@ jobs:
                       }
                       getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
                   }
-                  
                   val notification = NotificationCompat.Builder(this, channelId)
                       .setContentTitle("")
                       .setContentText("")
@@ -311,7 +326,6 @@ jobs:
                       .setPriority(NotificationCompat.PRIORITY_MIN)
                       .setCategory(Notification.CATEGORY_SERVICE)
                       .build()
-                      
                   startForeground(1, notification)
               }
 
@@ -333,6 +347,7 @@ jobs:
                   composeView.setViewTreeViewModelStoreOwner(this)
                   composeView.setViewTreeSavedStateRegistryOwner(this)
 
+                  registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                       registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
                   } else {
@@ -355,8 +370,6 @@ jobs:
                   val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
 
                   composeView.setOnTouchListener { _, event ->
-                      if (islandModeState.value == IslandMode.HIDDEN) return@setOnTouchListener false
-
                       when (event.action) {
                           MotionEvent.ACTION_DOWN -> { 
                               initialX = params.x; initialY = params.y; initialTouchX = event.rawX; initialTouchY = event.rawY; isMoving = false 
@@ -375,7 +388,6 @@ jobs:
                                       IslandMode.IDLE -> {}
                                       IslandMode.EVENT_COMPACT -> { islandModeState.value = IslandMode.EVENT_EXPANDED; handler.removeCallbacks(collapseRunnable) }
                                       IslandMode.EVENT_EXPANDED -> islandModeState.value = IslandMode.IDLE
-                                      IslandMode.HIDDEN -> {}
                                   }
                               } else { prefs.edit().putInt("pos_x", params.x).putInt("pos_y", params.y).apply() }
                               true
@@ -385,26 +397,26 @@ jobs:
                   }
 
                   composeView.setContent {
-                      if (islandModeState.value != IslandMode.HIDDEN) {
-                          DynamicIslandContent(
-                              mode = islandModeState.value,
-                              event = currentEventState.value,
-                              baseWidth = islandWidthState.value,
-                              baseHeight = islandHeightState.value,
-                              glow = glowWidthState.value,
-                              onOpenSettings = {
-                                  islandModeState.value = IslandMode.IDLE
-                                  startActivity(Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-                              }
-                          )
-                      }
+                      DynamicIslandContent(
+                          mode = islandModeState.value,
+                          event = currentEventState.value,
+                          baseWidth = islandWidthState.value,
+                          baseHeight = islandHeightState.value,
+                          glow = glowWidthState.value,
+                          onOpenSettings = {
+                              islandModeState.value = IslandMode.IDLE
+                              startActivity(Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+                          }
+                      )
                   }
                   windowManager.addView(composeView, params)
               }
 
               override fun onDestroy() {
                   super.onDestroy()
-                  unregisterReceiver(eventReceiver); prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
+                  unregisterReceiver(powerReceiver)
+                  unregisterReceiver(eventReceiver)
+                  prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
                   if (::composeView.isInitialized) windowManager.removeView(composeView)
               }
           }
@@ -415,20 +427,18 @@ jobs:
           ) {
               val targetWidth = when (mode) {
                   IslandMode.IDLE -> baseWidth
-                  IslandMode.EVENT_COMPACT -> 260.dp
-                  IslandMode.EVENT_EXPANDED -> 320.dp
-                  else -> 0.dp
+                  IslandMode.EVENT_COMPACT -> 270.dp
+                  IslandMode.EVENT_EXPANDED -> 340.dp
               }
               
               val targetHeight = when (mode) {
                   IslandMode.IDLE -> baseHeight
                   IslandMode.EVENT_COMPACT -> baseHeight
-                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 140.dp else 100.dp
-                  else -> 0.dp
+                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 150.dp else 120.dp
               }
 
-              val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 600f), label = "width")
-              val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 600f), label = "height")
+              val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "width")
+              val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "height")
 
               val borderColor = if (mode != IslandMode.IDLE && glow > 0.dp) event.color else Color.Transparent
 
@@ -438,71 +448,77 @@ jobs:
                       .height(animatedHeight)
                       .border(glow, borderColor, CircleShape)
                       .background(Color.Black, CircleShape),
-                  contentAlignment = Alignment.Center
+                  contentAlignment = Alignment.TopCenter // التثبيت من الأعلى ليتمدد للأسفل
               ) {
-                  androidx.compose.animation.AnimatedVisibility(
-                      visible = mode == IslandMode.EVENT_COMPACT,
-                      enter = fadeIn(animationSpec = tween(150)),
-                      exit = fadeOut(animationSpec = tween(150))
-                  ) {
-                      Row(
-                          modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                          verticalAlignment = Alignment.CenterVertically
+                  Box(modifier = Modifier.fillMaxSize()) {
+                      // محتوى الإشعار النحيف
+                      androidx.compose.animation.AnimatedVisibility(
+                          visible = mode == IslandMode.EVENT_COMPACT,
+                          enter = fadeIn(animationSpec = tween(150)),
+                          exit = fadeOut(animationSpec = tween(150)),
+                          modifier = Modifier.align(Alignment.Center)
+                      ) {
+                          Row(
+                              modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                              verticalAlignment = Alignment.CenterVertically
+                          ) {
+                              if (event.type == "MUSIC") {
+                                  AudioVisualizer(color = event.color)
+                              } else {
+                                  Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                                      Text(event.icon, fontSize = 10.sp)
+                                  }
+                              }
+                              Spacer(modifier = Modifier.width(8.dp))
+                              val combinedText = if(event.title.isNotEmpty() && event.text.isNotEmpty()) "${event.title} • ${event.text}" else event.title + event.text
+                              Text(text = combinedText, color = Color.White, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                          }
+                      }
+
+                      // محتوى الإشعار الموسع (يبدأ بعد مساحة الكاميرا الفعلية baseHeight)
+                      androidx.compose.animation.AnimatedVisibility(
+                          visible = mode == IslandMode.EVENT_EXPANDED,
+                          enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
+                          exit = fadeOut(animationSpec = tween(100)),
+                          modifier = Modifier.align(Alignment.TopCenter)
                       ) {
                           if (event.type == "MUSIC") {
-                              AudioVisualizer(color = event.color)
+                              Column(modifier = Modifier.fillMaxSize().padding(top = baseHeight, start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.Center) {
+                                  Row(verticalAlignment = Alignment.CenterVertically) {
+                                      Box(modifier = Modifier.size(44.dp).background(Color(0x331DB954), CircleShape), contentAlignment = Alignment.Center) {
+                                          AudioVisualizer(color = Color.White)
+                                      }
+                                      Spacer(modifier = Modifier.width(12.dp))
+                                      Column(modifier = Modifier.weight(1f)) {
+                                          Text(text = event.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                          Text(text = event.text, color = Color.LightGray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                      }
+                                      Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                          Text("⚙️", fontSize = 16.sp)
+                                      }
+                                  }
+                                  Spacer(modifier = Modifier.height(16.dp))
+                                  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape), contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
+                                      Box(modifier = Modifier.size(48.dp).background(Color(0xFFA8E5BA), CircleShape), contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
+                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape), contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
+                                  }
+                              }
                           } else {
-                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                                  Text(event.icon, fontSize = 10.sp)
+                              Column(modifier = Modifier.fillMaxSize().padding(top = baseHeight, start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.Center) {
+                                  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                      Box(modifier = Modifier.size(32.dp).background(Color(0x33FFFFFF), CircleShape), contentAlignment = Alignment.Center) {
+                                          Text(event.icon, fontSize = 14.sp)
+                                      }
+                                      Spacer(modifier = Modifier.width(12.dp))
+                                      Text(text = event.title, color = event.color, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                      Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                          Text("⚙️", fontSize = 14.sp)
+                                      }
+                                  }
+                                  Spacer(modifier = Modifier.height(10.dp))
+                                  Text(text = event.text, color = Color.White, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                               }
-                          }
-                          Spacer(modifier = Modifier.width(8.dp))
-                          val combinedText = if(event.title.isNotEmpty() && event.text.isNotEmpty()) "${event.title} • ${event.text}" else event.title + event.text
-                          Text(text = combinedText, color = Color.White, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                      }
-                  }
-
-                  androidx.compose.animation.AnimatedVisibility(
-                      visible = mode == IslandMode.EVENT_EXPANDED,
-                      enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
-                      exit = fadeOut(animationSpec = tween(100))
-                  ) {
-                      if (event.type == "MUSIC") {
-                          Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                              Row(verticalAlignment = Alignment.CenterVertically) {
-                                  Box(modifier = Modifier.size(44.dp).background(Color(0x331DB954), CircleShape), contentAlignment = Alignment.Center) {
-                                      AudioVisualizer(color = Color.White)
-                                  }
-                                  Spacer(modifier = Modifier.width(12.dp))
-                                  Column(modifier = Modifier.weight(1f)) {
-                                      Text(text = event.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                      Text(text = event.text, color = Color.LightGray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                  }
-                                  Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                      Text("⚙️", fontSize = 16.sp)
-                                  }
-                              }
-                              Spacer(modifier = Modifier.height(16.dp))
-                              Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                  Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
-                                  Box(modifier = Modifier.size(48.dp).background(Color(0xFFA8E5BA), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
-                                  Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape).clickable{}, contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
-                              }
-                          }
-                      } else {
-                          Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.Start) {
-                              Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                  Box(modifier = Modifier.size(32.dp).background(Color(0x33FFFFFF), CircleShape), contentAlignment = Alignment.Center) {
-                                      Text(event.icon, fontSize = 14.sp)
-                                  }
-                                  Spacer(modifier = Modifier.width(12.dp))
-                                  Text(text = event.title, color = event.color, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                                  Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                      Text("⚙️", fontSize = 14.sp)
-                                  }
-                              }
-                              Spacer(modifier = Modifier.height(10.dp))
-                              Text(text = event.text, color = Color.White, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                           }
                       }
                   }
@@ -533,11 +549,6 @@ jobs:
           import androidx.appcompat.app.AppCompatActivity
 
           class MainActivity : AppCompatActivity() {
-              
-              private fun restartActivity() {
-                  finish()
-                  startActivity(intent)
-              }
 
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
@@ -549,7 +560,8 @@ jobs:
                       }
                   }
 
-                  var currentLang = prefs.getString("lang", "fr") ?: "fr"
+                  // افتراضياً عربي، وإذا اختار فرنسي تتغير
+                  val currentLang = prefs.getString("lang", "ar") ?: "ar"
                   val isFr = currentLang == "fr"
 
                   val tTitle = if(isFr) "Paramètres de l'île 🏝️" else "إعدادات الجزيرة 🏝️"
@@ -561,7 +573,6 @@ jobs:
                   val tTestMsg = if(isFr) "Tester Notification 💬" else "تجربة إشعار منفصل 💬"
                   val tTestMus = if(isFr) "Tester Musique 🎵" else "تجربة مشغل الموسيقى 🎵"
                   val tStart = if(isFr) "Mettre à jour / Démarrer 🚀" else "تحديث / تشغيل الجزيرة 🚀"
-                  val tLangBtn = if(isFr) "🌍 التبديل إلى العربية" else "🌍 Passer au Français"
 
                   val dp = resources.displayMetrics.density
                   val bgDark = Color.parseColor("#101411")
@@ -577,31 +588,43 @@ jobs:
                   }
                   scrollView.addView(root)
                   
-                  val langBtnContainer = LinearLayout(this).apply {
+                  // أزرار اللغة (Material You)
+                  val langContainer = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
-                      gravity = Gravity.END or Gravity.CENTER_VERTICAL
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                      
-                      val btn = TextView(this@MainActivity).apply {
-                          text = tLangBtn
-                          textSize = 13f
-                          setTextColor(Color.WHITE)
-                          background = GradientDrawable().apply { setColor(pillInactive); cornerRadius = 16f * dp }
-                          setPadding((16*dp).toInt(), (8*dp).toInt(), (16*dp).toInt(), (8*dp).toInt())
+                      gravity = Gravity.CENTER
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = (16*dp).toInt() }
+                  }
+
+                  fun createLangChip(title: String, code: String, isSelected: Boolean): View {
+                      return TextView(this@MainActivity).apply {
+                          text = title
+                          textSize = 14f
+                          setTextColor(if (isSelected) textOnActive else Color.WHITE)
+                          typeface = android.graphics.Typeface.DEFAULT_BOLD
+                          background = GradientDrawable().apply { 
+                              setColor(if (isSelected) pillActive else pillInactive)
+                              cornerRadius = 20f * dp 
+                          }
+                          setPadding((24*dp).toInt(), (10*dp).toInt(), (24*dp).toInt(), (10*dp).toInt())
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { marginEnd = (12*dp).toInt() }
                           setOnClickListener {
-                              val newLang = if (isFr) "ar" else "fr"
-                              prefs.edit().putString("lang", newLang).apply()
-                              restartActivity()
+                              if (!isSelected) {
+                                  prefs.edit().putString("lang", code).apply()
+                                  finish()
+                                  startActivity(intent) // إعادة تشغيل فورية للصفحة
+                              }
                           }
                       }
-                      addView(btn)
                   }
-                  root.addView(langBtnContainer)
+
+                  langContainer.addView(createLangChip("العربية", "ar", currentLang == "ar"))
+                  langContainer.addView(createLangChip("Français", "fr", currentLang == "fr"))
+                  root.addView(langContainer)
 
                   root.addView(TextView(this).apply {
                       text = tTitle
                       textSize = 26f; setTextColor(textOnDark); gravity = Gravity.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      setPadding(0, (16*dp).toInt(), 0, (24*dp).toInt())
+                      setPadding(0, (8*dp).toInt(), 0, (24*dp).toInt())
                   })
 
                   fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
