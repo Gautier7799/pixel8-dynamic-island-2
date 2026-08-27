@@ -1,4 +1,4 @@
-name: Build Dynamic Island Nano Pro V2.3
+name: Build Dynamic Island Nano Pro V2.4
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 15; versionName = "2.3.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 16; versionName = "2.4.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -193,6 +193,7 @@ jobs:
           import androidx.compose.ui.platform.LocalConfiguration
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.text.style.TextOverflow
+          import androidx.compose.ui.unit.Dp
           import androidx.compose.ui.unit.dp
           import androidx.compose.ui.unit.sp
           import androidx.core.app.NotificationCompat
@@ -205,6 +206,7 @@ jobs:
           import androidx.savedstate.SavedStateRegistryController
           import androidx.savedstate.SavedStateRegistryOwner
           import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+          import kotlin.math.abs
 
           enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED }
 
@@ -272,7 +274,7 @@ jobs:
                           currentEventState.value = IslandEvent(type, title, text, icon, color)
                           islandModeState.value = IslandMode.EVENT_COMPACT 
                           handler.removeCallbacks(collapseRunnable)
-                          handler.postDelayed(collapseRunnable, 4500)
+                          handler.postDelayed(collapseRunnable, 4500L)
                       }
                   }
               }
@@ -281,14 +283,14 @@ jobs:
                   override fun onReceive(context: Context?, intent: Intent?) {
                       if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
                       if (intent?.action == Intent.ACTION_POWER_CONNECTED) {
-                          val bm = context?.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
-                          val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                          val bm = context?.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+                          val level = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 100
                           val isFr = prefs.getString("lang", "ar") == "fr"
                           val title = if (isFr) "En charge" else "جاري الشحن"
                           currentEventState.value = IslandEvent(type = "CHARGE", title = title, text = "${level}%", icon = "⚡", colorStr = "#4CAF50")
                           islandModeState.value = IslandMode.EVENT_COMPACT
                           handler.removeCallbacks(collapseRunnable)
-                          handler.postDelayed(collapseRunnable, 4000)
+                          handler.postDelayed(collapseRunnable, 4000L)
                       }
                   }
               }
@@ -382,7 +384,7 @@ jobs:
                           }
                           MotionEvent.ACTION_MOVE -> {
                               val dx = (event.rawX - initialTouchX).toInt(); val dy = (event.rawY - initialTouchY).toInt()
-                              if (Math.abs(dx) > touchSlop || Math.abs(dy) > touchSlop) { 
+                              if (abs(dx) > touchSlop || abs(dy) > touchSlop) { 
                                   isMoving = true; params.x = initialX + dx; params.y = initialY + dy; windowManager.updateViewLayout(composeView, params)
                               }
                               true
@@ -403,21 +405,19 @@ jobs:
 
                   composeView.setContent {
                       val config = LocalConfiguration.current
-                      if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          return@setContent
+                      if (config.orientation != Configuration.ORIENTATION_LANDSCAPE) {
+                          DynamicIslandContent(
+                              mode = islandModeState.value,
+                              event = currentEventState.value,
+                              baseWidth = islandWidthState.value,
+                              baseHeight = islandHeightState.value,
+                              glow = glowWidthState.value,
+                              onOpenSettings = {
+                                  islandModeState.value = IslandMode.IDLE
+                                  startActivity(Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+                              }
+                          )
                       }
-
-                      DynamicIslandContent(
-                          mode = islandModeState.value,
-                          event = currentEventState.value,
-                          baseWidth = islandWidthState.value,
-                          baseHeight = islandHeightState.value,
-                          glow = glowWidthState.value,
-                          onOpenSettings = {
-                              islandModeState.value = IslandMode.IDLE
-                              startActivity(Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
-                          }
-                      )
                   }
                   windowManager.addView(composeView, params)
               }
@@ -433,9 +433,8 @@ jobs:
 
           @Composable
           fun DynamicIslandContent(
-              mode: IslandMode, event: IslandEvent, baseWidth: androidx.compose.ui.unit.Dp, baseHeight: androidx.compose.ui.unit.Dp, glow: androidx.compose.ui.unit.Dp, onOpenSettings: () -> Unit
+              mode: IslandMode, event: IslandEvent, baseWidth: Dp, baseHeight: Dp, glow: Dp, onOpenSettings: () -> Unit
           ) {
-              // أبعاد متناسقة خصيصاً لهواتف Pixel (حجم مناسب وغير مبالغ فيه)
               val targetWidth = when (mode) {
                   IslandMode.IDLE -> baseWidth
                   IslandMode.EVENT_COMPACT -> 280.dp 
@@ -451,8 +450,7 @@ jobs:
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "width")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "height")
               
-              // انحناء ذكي: كبسولة في الصغر، وحواف هواتف بيكسل الناعمة في الكبر (Squircle)
-              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else baseHeight / 2, label = "radius")
+              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 28.dp else (baseHeight / 2f), label = "radius")
 
               val borderColor = if (mode != IslandMode.IDLE && glow > 0.dp) event.color else Color.Transparent
 
@@ -461,9 +459,8 @@ jobs:
                       .width(animatedWidth)
                       .height(animatedHeight)
                       .border(glow, borderColor, RoundedCornerShape(cornerRadius))
-                      .background(Color.Black, RoundedCornerShape(cornerRadius)),
+                      .background(Color.Black, RoundedCornerShape(cornerRadius))
               ) {
-                  // الوضع المصغر (Pixel Punch-Hole Adapter)
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_COMPACT,
                       enter = fadeIn(animationSpec = tween(150)),
@@ -473,9 +470,8 @@ jobs:
                       Row(
                           modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
                           verticalAlignment = Alignment.CenterVertically,
-                          horizontalArrangement = Arrangement.SpaceBetween // الأطراف فقط والمنتصف فارغ للكاميرا
+                          horizontalArrangement = Arrangement.SpaceBetween
                       ) {
-                          // الجانب الأيسر (أيقونة واسم التطبيق) - عرض محدود لتجنب الكاميرا
                           Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 110.dp)) {
                               if (event.type == "MUSIC") {
                                   Text("🎵", fontSize = 12.sp)
@@ -488,7 +484,6 @@ jobs:
                               Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                           }
                           
-                          // الجانب الأيمن (التفاصيل أو الموجات الصوتية)
                           Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.widthIn(max = 110.dp), horizontalArrangement = Arrangement.End) {
                               if (event.type == "MUSIC") {
                                   AudioVisualizer(color = event.color)
@@ -499,7 +494,6 @@ jobs:
                       }
                   }
 
-                  // الوضع الموسع (Material You Style - أسفل الكاميرا)
                   androidx.compose.animation.AnimatedVisibility(
                       visible = mode == IslandMode.EVENT_EXPANDED,
                       enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
@@ -507,7 +501,6 @@ jobs:
                       modifier = Modifier.align(Alignment.TopCenter)
                   ) {
                       Column(modifier = Modifier.fillMaxSize()) {
-                          // مساحة علوية لتفادي عدسة كاميرا البيكسل تماماً
                           Row(
                               modifier = Modifier.fillMaxWidth().height(baseHeight).padding(horizontal = 16.dp),
                               verticalAlignment = Alignment.CenterVertically,
@@ -516,12 +509,11 @@ jobs:
                               Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
                                   Text(event.icon, fontSize = 12.sp)
                               }
-                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(Color(0x22FFFFFFL)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
                                   Text("⚙️", fontSize = 12.sp)
                               }
                           }
                           
-                          // المحتوى الرئيسي أسفل الكاميرا
                           Column(
                               modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, bottom = 12.dp),
                               verticalArrangement = Arrangement.Center
@@ -536,9 +528,9 @@ jobs:
                                   }
                                   Spacer(modifier = Modifier.height(16.dp))
                                   Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape), contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
-                                      Box(modifier = Modifier.size(54.dp).background(Color(0xFFA8E5BA), CircleShape), contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
-                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape), contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
+                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFFL), CircleShape), contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
+                                      Box(modifier = Modifier.size(54.dp).background(Color(0xFFA8E5BAL), CircleShape), contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
+                                      Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFFL), CircleShape), contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
                                   }
                               } else {
                                   Text(text = event.title, color = event.color, fontSize = 15.sp, fontWeight = FontWeight.Bold)
