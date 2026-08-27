@@ -1,4 +1,4 @@
-name: Build Dynamic Island Nano Pro V2.1
+name: Build Dynamic Island Nano Pro V2.2
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 13; versionName = "2.1.0" }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 14; versionName = "2.2.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -172,7 +172,6 @@ jobs:
           import android.provider.Settings
           import android.view.Gravity
           import android.view.MotionEvent
-          import android.view.View
           import android.view.ViewConfiguration
           import android.view.WindowManager
           import androidx.compose.animation.*
@@ -182,6 +181,7 @@ jobs:
           import androidx.compose.foundation.clickable
           import androidx.compose.foundation.layout.*
           import androidx.compose.foundation.shape.CircleShape
+          import androidx.compose.foundation.shape.RoundedCornerShape
           import androidx.compose.material3.Text
           import androidx.compose.runtime.*
           import androidx.compose.ui.Alignment
@@ -189,6 +189,7 @@ jobs:
           import androidx.compose.ui.draw.clip
           import androidx.compose.ui.graphics.Color
           import androidx.compose.ui.platform.ComposeView
+          import androidx.compose.ui.platform.LocalConfiguration
           import androidx.compose.ui.text.font.FontWeight
           import androidx.compose.ui.text.style.TextOverflow
           import androidx.compose.ui.unit.dp
@@ -223,7 +224,7 @@ jobs:
               val anim2 by transition.animateFloat(initialValue = 0.9f, targetValue = 0.2f, animationSpec = infiniteRepeatable(animation = tween(250, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a2")
               val anim3 by transition.animateFloat(initialValue = 0.4f, targetValue = 0.9f, animationSpec = infiniteRepeatable(animation = tween(400, easing = LinearEasing), repeatMode = RepeatMode.Reverse), label = "a3")
 
-              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.height(12.dp)) {
+              Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.height(14.dp)) {
                   Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim1).background(color, CircleShape))
                   Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim2).background(color, CircleShape))
                   Box(modifier = Modifier.width(3.dp).fillMaxHeight(anim3).background(color, CircleShape))
@@ -284,18 +285,6 @@ jobs:
                           islandModeState.value = IslandMode.EVENT_COMPACT
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4000)
-                      }
-                  }
-              }
-
-              // الإخفاء التام في الوضع الأفقي
-              override fun onConfigurationChanged(newConfig: Configuration) {
-                  super.onConfigurationChanged(newConfig)
-                  if (::composeView.isInitialized) {
-                      if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                          composeView.visibility = View.GONE
-                      } else {
-                          composeView.visibility = View.VISIBLE
                       }
                   }
               }
@@ -397,6 +386,12 @@ jobs:
                   }
 
                   composeView.setContent {
+                      // إخفاء فوري في الوضع الأفقي عبر Compose
+                      val config = LocalConfiguration.current
+                      if (config.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                          return@setContent
+                      }
+
                       DynamicIslandContent(
                           mode = islandModeState.value,
                           event = currentEventState.value,
@@ -427,18 +422,21 @@ jobs:
           ) {
               val targetWidth = when (mode) {
                   IslandMode.IDLE -> baseWidth
-                  IslandMode.EVENT_COMPACT -> 270.dp
+                  IslandMode.EVENT_COMPACT -> 300.dp // عرض كافي لتجنب الكاميرا
                   IslandMode.EVENT_EXPANDED -> 340.dp
               }
               
               val targetHeight = when (mode) {
                   IslandMode.IDLE -> baseHeight
                   IslandMode.EVENT_COMPACT -> baseHeight
-                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 150.dp else 120.dp
+                  IslandMode.EVENT_EXPANDED -> if (event.type == "MUSIC") 170.dp else 130.dp // مساحة أكبر للأسفل
               }
 
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "width")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "height")
+              
+              // تحويل الشكل بذكاء: كبسولة في الصغر، ومربع ناعم في الكبر
+              val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 32.dp else baseHeight / 2, label = "radius")
 
               val borderColor = if (mode != IslandMode.IDLE && glow > 0.dp) event.color else Color.Transparent
 
@@ -446,78 +444,88 @@ jobs:
                   modifier = Modifier
                       .width(animatedWidth)
                       .height(animatedHeight)
-                      .border(glow, borderColor, CircleShape)
-                      .background(Color.Black, CircleShape),
-                  contentAlignment = Alignment.TopCenter // التثبيت من الأعلى ليتمدد للأسفل
+                      .border(glow, borderColor, RoundedCornerShape(cornerRadius))
+                      .background(Color.Black, RoundedCornerShape(cornerRadius)),
               ) {
-                  Box(modifier = Modifier.fillMaxSize()) {
-                      // محتوى الإشعار النحيف
-                      androidx.compose.animation.AnimatedVisibility(
-                          visible = mode == IslandMode.EVENT_COMPACT,
-                          enter = fadeIn(animationSpec = tween(150)),
-                          exit = fadeOut(animationSpec = tween(150)),
-                          modifier = Modifier.align(Alignment.Center)
+                  // محتوى الإشعار النحيف (تجنب الكاميرا بوضع العناصر على الأطراف)
+                  androidx.compose.animation.AnimatedVisibility(
+                      visible = mode == IslandMode.EVENT_COMPACT,
+                      enter = fadeIn(animationSpec = tween(150)),
+                      exit = fadeOut(animationSpec = tween(150)),
+                      modifier = Modifier.align(Alignment.Center)
+                  ) {
+                      Row(
+                          modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
+                          verticalAlignment = Alignment.CenterVertically,
+                          horizontalArrangement = Arrangement.SpaceBetween // أقصى اليمين وأقصى اليسار
                       ) {
-                          Row(
-                              modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                              verticalAlignment = Alignment.CenterVertically
-                          ) {
+                          // الجانب الأيسر (الأيقونة)
+                          Row(verticalAlignment = Alignment.CenterVertically) {
+                              if (event.type == "MUSIC") {
+                                  Text("🎵", fontSize = 13.sp)
+                              } else {
+                                  Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                                      Text(event.icon, fontSize = 11.sp)
+                                  }
+                              }
+                          }
+                          
+                          // الجانب الأيمن (النص)
+                          Row(verticalAlignment = Alignment.CenterVertically) {
                               if (event.type == "MUSIC") {
                                   AudioVisualizer(color = event.color)
                               } else {
-                                  Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                                      Text(event.icon, fontSize = 10.sp)
-                                  }
+                                  Text(text = event.title, color = event.color, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 90.dp))
                               }
-                              Spacer(modifier = Modifier.width(8.dp))
-                              val combinedText = if(event.title.isNotEmpty() && event.text.isNotEmpty()) "${event.title} • ${event.text}" else event.title + event.text
-                              Text(text = combinedText, color = Color.White, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                           }
                       }
+                  }
 
-                      // محتوى الإشعار الموسع (يبدأ بعد مساحة الكاميرا الفعلية baseHeight)
-                      androidx.compose.animation.AnimatedVisibility(
-                          visible = mode == IslandMode.EVENT_EXPANDED,
-                          enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
-                          exit = fadeOut(animationSpec = tween(100)),
-                          modifier = Modifier.align(Alignment.TopCenter)
-                      ) {
-                          if (event.type == "MUSIC") {
-                              Column(modifier = Modifier.fillMaxSize().padding(top = baseHeight, start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.Center) {
+                  // محتوى الإشعار الموسع (أسفل منطقة الكاميرا)
+                  androidx.compose.animation.AnimatedVisibility(
+                      visible = mode == IslandMode.EVENT_EXPANDED,
+                      enter = fadeIn(animationSpec = tween(200, delayMillis = 100)),
+                      exit = fadeOut(animationSpec = tween(100)),
+                      modifier = Modifier.align(Alignment.TopCenter)
+                  ) {
+                      Column(modifier = Modifier.fillMaxSize()) {
+                          // الصف العلوي (بمحاذاة الكاميرا على الأطراف)
+                          Row(
+                              modifier = Modifier.fillMaxWidth().height(baseHeight).padding(horizontal = 16.dp),
+                              verticalAlignment = Alignment.CenterVertically,
+                              horizontalArrangement = Arrangement.SpaceBetween
+                          ) {
+                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(event.color.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                                  Text(event.icon, fontSize = 12.sp)
+                              }
+                              Box(modifier = Modifier.size(baseHeight * 0.7f).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                  Text("⚙️", fontSize = 12.sp)
+                              }
+                          }
+                          
+                          // المحتوى الرئيسي (تحت الكاميرا)
+                          Column(
+                              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, bottom = 12.dp),
+                              verticalArrangement = Arrangement.Center
+                          ) {
+                              if (event.type == "MUSIC") {
                                   Row(verticalAlignment = Alignment.CenterVertically) {
-                                      Box(modifier = Modifier.size(44.dp).background(Color(0x331DB954), CircleShape), contentAlignment = Alignment.Center) {
-                                          AudioVisualizer(color = Color.White)
-                                      }
-                                      Spacer(modifier = Modifier.width(12.dp))
                                       Column(modifier = Modifier.weight(1f)) {
-                                          Text(text = event.title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                          Text(text = event.text, color = Color.LightGray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                          Text(text = event.title, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                          Text(text = event.text, color = Color.LightGray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                       }
-                                      Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                          Text("⚙️", fontSize = 16.sp)
-                                      }
+                                      AudioVisualizer(color = event.color)
                                   }
                                   Spacer(modifier = Modifier.height(16.dp))
                                   Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
                                       Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape), contentAlignment = Alignment.Center) { Text("⏮", fontSize = 16.sp) }
-                                      Box(modifier = Modifier.size(48.dp).background(Color(0xFFA8E5BA), CircleShape), contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
+                                      Box(modifier = Modifier.size(54.dp).background(Color(0xFFA8E5BA), CircleShape), contentAlignment = Alignment.Center) { Text("⏸", fontSize = 24.sp) }
                                       Box(modifier = Modifier.size(36.dp).background(Color(0x22FFFFFF), CircleShape), contentAlignment = Alignment.Center) { Text("⏭", fontSize = 16.sp) }
                                   }
-                              }
-                          } else {
-                              Column(modifier = Modifier.fillMaxSize().padding(top = baseHeight, start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.Center) {
-                                  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                                      Box(modifier = Modifier.size(32.dp).background(Color(0x33FFFFFF), CircleShape), contentAlignment = Alignment.Center) {
-                                          Text(event.icon, fontSize = 14.sp)
-                                      }
-                                      Spacer(modifier = Modifier.width(12.dp))
-                                      Text(text = event.title, color = event.color, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                                      Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0x22FFFFFF)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
-                                          Text("⚙️", fontSize = 14.sp)
-                                      }
-                                  }
-                                  Spacer(modifier = Modifier.height(10.dp))
-                                  Text(text = event.text, color = Color.White, fontSize = 13.sp, lineHeight = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                              } else {
+                                  Text(text = event.title, color = event.color, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                  Spacer(modifier = Modifier.height(4.dp))
+                                  Text(text = event.text, color = Color.White, fontSize = 14.sp, lineHeight = 20.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                               }
                           }
                       }
@@ -560,7 +568,6 @@ jobs:
                       }
                   }
 
-                  // افتراضياً عربي، وإذا اختار فرنسي تتغير
                   val currentLang = prefs.getString("lang", "ar") ?: "ar"
                   val isFr = currentLang == "fr"
 
@@ -588,7 +595,6 @@ jobs:
                   }
                   scrollView.addView(root)
                   
-                  // أزرار اللغة (Material You)
                   val langContainer = LinearLayout(this).apply {
                       orientation = LinearLayout.HORIZONTAL
                       gravity = Gravity.CENTER
@@ -611,7 +617,7 @@ jobs:
                               if (!isSelected) {
                                   prefs.edit().putString("lang", code).apply()
                                   finish()
-                                  startActivity(intent) // إعادة تشغيل فورية للصفحة
+                                  startActivity(intent) 
                               }
                           }
                       }
