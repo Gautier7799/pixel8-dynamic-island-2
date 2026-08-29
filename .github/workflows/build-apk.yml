@@ -1,4 +1,4 @@
-name: Build NOVA ISLAND Pro V1.7 (Dynamic Landscape & Layout)
+name: Build NOVA ISLAND Pro V1.8 (Capsule Alignment Fix)
 
 on:
   push:
@@ -59,7 +59,7 @@ jobs:
           android {
               namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 8; versionName = "1.7.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 9; versionName = "1.8.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -136,7 +136,6 @@ jobs:
                   val text = extras.getCharSequence("android.text")?.toString() ?: return
                   val intent = Intent("com.novaisland.pro.EVENT")
                   
-                  // Extract PendingIntent so we can open the app later
                   val contentIntent = sbn.notification.contentIntent
                   if (contentIntent != null) {
                       intent.putExtra("contentIntent", contentIntent)
@@ -401,11 +400,9 @@ jobs:
               onOpenAppClick: () -> Unit,
               onSettingsClick: () -> Unit
           ) {
-              // 1. DYNAMIC ORIENTATION DETECTION
               val configuration = LocalConfiguration.current
               val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
               
-              // 2. DYNAMIC LAYOUT CALCULATION based on orientation
               val targetWidth = when {
                   isLandscape -> 0.dp
                   mode == IslandMode.IDLE -> baseWidth
@@ -421,7 +418,6 @@ jobs:
                   else -> baseHeight
               }
               
-              // Smooth dynamic animations for Capsule size and Transparency
               val animatedWidth by animateDpAsState(targetValue = targetWidth, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = spring(dampingRatio = 0.65f, stiffness = 500f), label = "")
               val cornerRadius by animateDpAsState(targetValue = if (mode == IslandMode.EVENT_EXPANDED) 32.dp else (baseHeight / 2f), label = "")
@@ -429,19 +425,18 @@ jobs:
 
               Box(
                   modifier = Modifier
-                      // 3. Dynamic container sizing (becomes 0x0 in landscape, blocking no touches!)
                       .size(animatedWidth, animatedHeight) 
                       .alpha(alpha)
                       .background(Color.Black, RoundedCornerShape(cornerRadius))
                       .clickable(
                           interactionSource = remember { MutableInteractionSource() },
                           indication = null, 
-                          enabled = !isLandscape, // Disable clicks completely if in landscape
+                          enabled = !isLandscape, 
                           onClick = {
                               if (mode == IslandMode.EVENT_COMPACT) {
                                   onExpandClick()
                               } else if (mode == IslandMode.EVENT_EXPANDED) {
-                                  onOpenAppClick() // Opens the notification app intent
+                                  onOpenAppClick()
                               }
                           }
                       )
@@ -483,7 +478,6 @@ jobs:
                                       Text(text = event.text, color = Color.LightGray, fontSize = 14.sp, maxLines = 2, lineHeight = 18.sp)
                                   }
                               }
-                              // SETTINGS BUTTON
                               IconButton(onClick = onSettingsClick, modifier = Modifier.size(36.dp).background(Color.DarkGray.copy(alpha = 0.4f), CircleShape)) {
                                   Icon(Icons.Rounded.Settings, contentDescription = "Settings", tint = Color.White, modifier = Modifier.size(20.dp))
                               }
@@ -635,13 +629,16 @@ jobs:
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                   Spacer(modifier = Modifier.height(48.dp))
                   Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                  Text("Édition Pro V1.7", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                  Text("Édition Pro V1.8", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
                   Spacer(modifier = Modifier.height(24.dp))
 
                   Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)), shape = RoundedCornerShape(24.dp)) {
                       Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                          Box(modifier = Modifier.padding(top = 16.dp).size(20.dp).background(Color.Black, CircleShape))
-                          Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.95f), RoundedCornerShape(height.dp / 2)))
+                          // محاكاة للكاميرا: تم إنزالها لتطابق الأبعاد الواقعية للهواتف
+                          Box(modifier = Modifier.padding(top = 29.dp).size(20.dp).background(Color.Black, CircleShape))
+                          
+                          // الكبسولة: تم جعلها شبه شفافة (85%) لترى الكاميرا بداخلها وتضبط المكان بدقة
+                          Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(height.dp / 2)))
                           
                           Text("Laboratoire de taille", modifier = Modifier.align(Alignment.BottomStart).padding(16.dp), color = Color.DarkGray, fontWeight = FontWeight.Bold)
                       }
