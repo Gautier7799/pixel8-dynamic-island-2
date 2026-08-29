@@ -1,4 +1,4 @@
-name: Build & Publish NOVA ISLAND Pro V2.2 (Enterprise Edition)
+name: Build & Publish NOVA ISLAND Pro V2.3 (Enterprise Edition)
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate NOVA ISLAND Pro Project (V2.2)
+      - name: Generate NOVA ISLAND Pro Project (V2.3)
         run: |
           rm -rf app/src/main/res app/src/main/java .github/copilot-instructions.md
           mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/novaisland/pro app/src/main/res/mipmap-anydpi-v26 .github
@@ -84,7 +84,7 @@ jobs:
           android {
               namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 12; versionName = "2.2.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 13; versionName = "2.3.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -392,6 +392,14 @@ jobs:
                           event = currentEventState.value, 
                           baseWidth = islandWidthState.value, 
                           baseHeight = islandHeightState.value,
+                          onIdleClick = {
+                              if (currentEventState.value.title.isEmpty() || currentEventState.value.text.isEmpty()) {
+                                  currentEventState.value = IslandEvent("MSG", "Réception", "Aucune nouvelle notification", "📫", "#FFFFFF", null)
+                              }
+                              islandModeState.value = IslandMode.EVENT_EXPANDED
+                              handler.removeCallbacks(collapseRunnable)
+                              handler.postDelayed(collapseRunnable, 7000L)
+                          },
                           onExpandClick = {
                               if (currentEventState.value.type != "BATTERY") {
                                   islandModeState.value = IslandMode.EVENT_EXPANDED
@@ -400,10 +408,15 @@ jobs:
                               }
                           },
                           onOpenAppClick = {
-                              try { currentEventState.value.pendingIntent?.send(); islandModeState.value = IslandMode.IDLE; handler.removeCallbacks(collapseRunnable) } catch (e: Exception) {}
+                              try { 
+                                  currentEventState.value.pendingIntent?.send()
+                              } catch (e: Exception) {}
+                              islandModeState.value = IslandMode.IDLE
+                              handler.removeCallbacks(collapseRunnable)
                           },
                           onSettingsClick = {
-                              islandModeState.value = IslandMode.IDLE; handler.removeCallbacks(collapseRunnable)
+                              islandModeState.value = IslandMode.IDLE
+                              handler.removeCallbacks(collapseRunnable)
                               val intent = Intent(context, MainActivity::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP) }
                               context.startActivity(intent)
                           }
@@ -431,6 +444,7 @@ jobs:
               event: IslandEvent, 
               baseWidth: Dp, 
               baseHeight: Dp, 
+              onIdleClick: () -> Unit,
               onExpandClick: () -> Unit, 
               onOpenAppClick: () -> Unit,
               onSettingsClick: () -> Unit
@@ -468,7 +482,8 @@ jobs:
                           indication = null, 
                           enabled = !isLandscape, 
                           onClick = {
-                              if (mode == IslandMode.EVENT_COMPACT) onExpandClick()
+                              if (mode == IslandMode.IDLE) onIdleClick()
+                              else if (mode == IslandMode.EVENT_COMPACT) onExpandClick()
                               else if (mode == IslandMode.EVENT_EXPANDED) onOpenAppClick()
                           }
                       )
@@ -638,7 +653,7 @@ jobs:
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                   Spacer(modifier = Modifier.height(48.dp))
                   Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                  Text("Édition Pro V2.2 (Enterprise)", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
+                  Text("Édition Pro V2.3 (Enterprise)", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
                   Spacer(modifier = Modifier.height(24.dp))
 
                   Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)), shape = RoundedCornerShape(24.dp)) {
@@ -770,27 +785,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # إضافة رقم المحاولة (run_attempt) لضمان عدم تكرار الاسم أبداً عند إعادة التشغيل
-          VERSION_TAG="v2.2.${{ github.run_number }}.${{ github.run_attempt }}"
+          VERSION_TAG="v2.3.${{ github.run_number }}.${{ github.run_attempt }}"
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
-          APK_NAME="NovaIsland-Pro-V2.2-Enterprise.apk"
+          APK_NAME="NovaIsland-Pro-V2.3-Enterprise.apk"
           
           cp "$APK_PATH" "$APK_NAME"
           
           RELEASE_INTRO=$(cat <<EOF
           > **NOVA ISLAND Pro $VERSION_TAG (Enterprise Edition)**
 
-          ## Quoi de neuf dans V2.2 ?
-          - **Mise en place des Guidelines d'Intelligence Artificielle (AI Prompt)** : Le dépôt inclut désormais officiellement le fichier \`.github/copilot-instructions.md\` pour garantir que chaque future mise à jour respecte les standards de qualité, de confidentialité (Privacy Guard), et de sécurité d'interface.
-          - Inclus la fonction **Smart Charging** introduite en V2.1.
-          - Inclus la correction de précision du **Laboratoire de Capsule** (V1.8).
+          ## Quoi de neuf dans V2.3 ?
+          - **Capsule Interactive (Nouveau)** : La capsule est désormais interactive même au repos (IDLE). Un clic sur la capsule noire ouvre le menu de réception avec le message "Aucune nouvelle notification" s'il n'y a pas d'alerte en cours.
+          - **Mise en place des Guidelines (AI Prompt)** : Inclus pour la sécurité du code.
+          - **Smart Charging & Laboratoire** : Maintenus avec les dernières corrections de précision.
 
           ## Installation
           Téléchargez et installez l'APK : **[$APK_NAME](https://github.com/${{ github.repository }}/releases/download/$VERSION_TAG/$APK_NAME)**
           EOF
           )
           
-          # مسح الإصدار القديم في حال كان موجوداً كإجراء احترازي
           gh release delete "$VERSION_TAG" --cleanup-tag -y || true
           
           gh release create "$VERSION_TAG" "$APK_NAME" \
