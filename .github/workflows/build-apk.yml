@@ -23,7 +23,15 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+          cache-disabled: true
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Generate NOVA ISLAND Pro Project (V2.2)
         run: |
@@ -746,6 +754,9 @@ jobs:
               </application>
           </manifest>
           INNER_EOF
+          
+          # --- توليد ملفات Gradle الضرورية ---
+          gradle wrapper --gradle-version 8.4 --no-daemon
 
       # --- Build & Verification ---
       - name: Make Gradle executable
