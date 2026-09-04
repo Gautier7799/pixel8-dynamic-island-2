@@ -984,7 +984,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION_TAG="v3.0.0"
+          VERSION_TAG="v3.0.0-${{ github.run_number }}"
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
           APK_NAME="NovaIsland-Pro-V3.0.0-Ultimate.apk"
           
