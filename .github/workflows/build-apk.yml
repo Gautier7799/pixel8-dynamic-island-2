@@ -562,6 +562,7 @@ jobs:
           import android.content.Context
           import android.content.Intent
           import android.content.SharedPreferences
+          import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
           import android.text.TextUtils
@@ -628,8 +629,14 @@ jobs:
           fun MainScreen(prefs: SharedPreferences) {
               var selectedTab by remember { mutableStateOf(0) }
               val context = LocalContext.current
+              
               val isEnabled = remember { mutableStateOf(isAccessibilityServiceEnabled(context, NovaIslandService::class.java)) }
-              LaunchedEffect(Unit) { isEnabled.value = isAccessibilityServiceEnabled(context, NovaIslandService::class.java) }
+              val isNotificationEnabled = remember { mutableStateOf(Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")?.contains(context.packageName) == true) }
+              
+              LaunchedEffect(Unit) {
+                  isEnabled.value = isAccessibilityServiceEnabled(context, NovaIslandService::class.java)
+                  isNotificationEnabled.value = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")?.contains(context.packageName) == true
+              }
 
               Scaffold(
                   bottomBar = {
@@ -656,20 +663,20 @@ jobs:
                               Text("NOVA ISLAND", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
                               Text("Floating Dynamic Overlay", fontSize = 13.sp, color = Color.Gray)
                           }
-                          Surface(color = if(isEnabled.value) Color(0xFFE8F5E9) else Color(0xFFFFF3E0), shape = RoundedCornerShape(16.dp)) {
+                          Surface(color = if(isEnabled.value && isNotificationEnabled.value) Color(0xFFE8F5E9) else Color(0xFFFFF3E0), shape = RoundedCornerShape(16.dp)) {
                               Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                  Box(modifier = Modifier.size(8.dp).background(if(isEnabled.value) Color(0xFF4CAF50) else Color(0xFFFF9800), CircleShape))
+                                  Box(modifier = Modifier.size(8.dp).background(if(isEnabled.value && isNotificationEnabled.value) Color(0xFF4CAF50) else Color(0xFFFF9800), CircleShape))
                                   Spacer(modifier = Modifier.width(6.dp))
-                                  Text(if(isEnabled.value) "Running" else "Setup Needed", color = if(isEnabled.value) Color(0xFF2E7D32) else Color(0xFFEF6C00), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                  Text(if(isEnabled.value && isNotificationEnabled.value) "Running" else "Setup Needed", color = if(isEnabled.value && isNotificationEnabled.value) Color(0xFF2E7D32) else Color(0xFFEF6C00), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                               }
                           }
                       }
 
                       Box(modifier = Modifier.weight(1f)) {
                           when (selectedTab) {
-                              0 -> StudioScreen(isEnabled.value)
+                              0 -> StudioScreen(isEnabled.value, isNotificationEnabled.value)
                               1 -> LayoutScreen(prefs)
-                              2 -> SettingsScreen()
+                              2 -> SettingsScreen(isEnabled.value, isNotificationEnabled.value)
                           }
                       }
                   }
@@ -677,7 +684,7 @@ jobs:
           }
 
           @Composable
-          fun StudioScreen(isEnabled: Boolean) {
+          fun StudioScreen(isEnabled: Boolean, isNotificationEnabled: Boolean) {
               val context = LocalContext.current
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
                   
@@ -690,11 +697,11 @@ jobs:
                               Column(modifier = Modifier.weight(1f)) {
                                   Text("Smart Island", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                   Text("Master Switch", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-                                  Text(if(isEnabled) "Running perfectly" else "Required permissions missing", fontSize = 13.sp, color = Color.Gray, lineHeight = 16.sp)
+                                  Text(if(isEnabled && isNotificationEnabled) "Running perfectly" else "Required permissions missing", fontSize = 13.sp, color = Color.Gray, lineHeight = 16.sp)
                               }
-                              Switch(checked = isEnabled, onCheckedChange = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = MaterialTheme.colorScheme.primary))
+                              Switch(checked = isEnabled && isNotificationEnabled, onCheckedChange = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = MaterialTheme.colorScheme.primary))
                           }
-                          if(!isEnabled) {
+                          if(!isEnabled || !isNotificationEnabled) {
                               Spacer(modifier = Modifier.height(16.dp))
                               Surface(color = Color(0xFFFFF3E0), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().clickable { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) {
                                   Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
@@ -756,7 +763,7 @@ jobs:
                   Spacer(modifier = Modifier.height(16.dp))
                   Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                       DiagChip("Accessibility", isEnabled, Modifier.weight(1f))
-                      DiagChip("Notification", true, Modifier.weight(1f))
+                      DiagChip("Notification", isNotificationEnabled, Modifier.weight(1f))
                       DiagChip("Battery Saver", true, Modifier.weight(1f))
                   }
                   Spacer(modifier = Modifier.height(48.dp))
@@ -871,7 +878,7 @@ jobs:
           }
 
           @Composable
-          fun SettingsScreen() {
+          fun SettingsScreen(isEnabled: Boolean, isNotificationEnabled: Boolean) {
               val context = LocalContext.current
               Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
                   Text("Settings & Preferences", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
@@ -889,7 +896,10 @@ jobs:
 
                   Spacer(modifier = Modifier.height(24.dp))
                   Text("System & Core Services", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
-                  SettingCard(Icons.Rounded.Security, Color(0xFF81C784), "Permissions & System Setup", "Accessibility, notification access, and OEM killers", "Action Required", true) { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                  
+                  val diagBadge = if(isEnabled && isNotificationEnabled) "Healthy" else "Action Required"
+                  val diagColor = if(isEnabled && isNotificationEnabled) Color(0xFF4CAF50) else Color(0xFFEF6C00)
+                  SettingCard(Icons.Rounded.Security, Color(0xFF81C784), "Permissions & System Setup", "Accessibility, notification access, and OEM killers", diagBadge, !isEnabled || !isNotificationEnabled) { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
                   
                   Spacer(modifier = Modifier.height(24.dp))
                   Text("About & Community", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
