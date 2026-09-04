@@ -1,127 +1,106 @@
-name: Build Android APK
+name: Build Dynamic Island Light Pro
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
-    name: Build APK
+  build-apk:
+    name: Generate Android APK for Dynamic Island
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup Java JDK
-        uses: actions/setup-java@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
           java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
+          cache-disabled: true
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Initialize Android Project
+      - name: Generate Dynamic Island Compose Project
         run: |
-          mkdir -p app/src/main/java/com/dynamicisland/aipro
-          mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/mipmap-hdpi
-          
-          # إنتاج أيقونة شفافة بسيطة لتفادي أخطاء البناء
-          cat << 'INNER_EOF' > app/src/main/res/mipmap-hdpi/ic_launcher.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <vector xmlns:android="http://schemas.android.com/apk/res/android"
-              android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-              <path android:fillColor="#000000" android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
-          </vector>
+          rm -rf app/src/main/res app/src/main/java
+          mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/dynamicisland/aipro app/src/main/res/mipmap-anydpi-v26
+
+          cat << 'INNER_EOF' > gradle.properties
+          android.useAndroidX=true
+          android.enableJetifier=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
           INNER_EOF
-          
-          cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
-          <resources>
-              <string name="app_name">Nova Island Pro</string>
-          </resources>
-          INNER_EOF
-          
-          cat << 'INNER_EOF' > build.gradle.kts
-          buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-              dependencies {
-                  classpath("com.android.tools.build:gradle:8.1.2")
-                  classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
-              }
-          }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          INNER_EOF
-          
+
           cat << 'INNER_EOF' > settings.gradle.kts
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          rootProject.name = "DynamicIslandPro"
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name = "DynamicIslandAIPro"
           include(":app")
           INNER_EOF
-          
+
+          cat << 'INNER_EOF' > build.gradle.kts
+          plugins { id("com.android.application") version "8.2.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.22" apply false }
+          INNER_EOF
+
           cat << 'INNER_EOF' > app/build.gradle.kts
-          plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-          }
+          plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
           android {
               namespace = "com.dynamicisland.aipro"
               compileSdk = 34
-              defaultConfig {
-                  applicationId = "com.dynamicisland.aipro"
-                  minSdk = 26
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "1.0"
-              }
-              buildFeatures {
-                  compose = true
-              }
-              composeOptions {
-                  kotlinCompilerExtensionVersion = "1.5.1"
-              }
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
+              defaultConfig { applicationId = "com.dynamicisland.aipro"; minSdk = 28; targetSdk = 34; versionCode = 5; versionName = "1.4.0" }
+              compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+              kotlinOptions { jvmTarget = "17" }
+              buildFeatures { compose = true }
+              composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
           }
           dependencies {
               implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
-              implementation("androidx.activity:activity-compose:1.8.0")
-              implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+              implementation("androidx.appcompat:appcompat:1.6.1")
+              implementation("com.google.android.material:material:1.11.0")
+              
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+              implementation("androidx.lifecycle:lifecycle-service:2.7.0")
+              implementation("androidx.activity:activity-compose:1.8.2")
+              implementation(platform("androidx.compose:compose-bom:2024.02.00"))
               implementation("androidx.compose.ui:ui")
               implementation("androidx.compose.ui:ui-graphics")
-              implementation("androidx.compose.ui:ui-tooling-preview")
               implementation("androidx.compose.material3:material3")
-              implementation("androidx.lifecycle:lifecycle-service:2.6.2")
+              implementation("androidx.compose.foundation:foundation")
           }
           INNER_EOF
+
+          cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">Dynamic Island Pro</string>
+          </resources>
+          INNER_EOF
+
+          cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
+          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#000000"/></shape>
+          INNER_EOF
           
+          cat << 'INNER_EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#00FF88" android:pathData="M24,44h60v20h-60zM44,44a10,10 0 0,1 20,0a10,10 0 0,1 -20,0z"/>
+          </vector>
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
+          INNER_EOF
+
           cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/IslandNotificationListener.kt
           package com.dynamicisland.aipro
 
@@ -193,9 +172,9 @@ jobs:
           import android.os.BatteryManager
           import android.os.Handler
           import android.os.Looper
+          import android.provider.Settings
           import android.view.Gravity
           import android.view.MotionEvent
-          import android.view.View
           import android.view.WindowManager
           import androidx.compose.animation.animateContentSize
           import androidx.compose.animation.core.Spring
@@ -278,10 +257,10 @@ jobs:
                           val icon = intent.getStringExtra("icon") ?: "💬"
                           val color = intent.getStringExtra("color") ?: "#FFFFFF"
                           val pendingIntent = intent.getParcelableExtra<android.app.PendingIntent>("contentIntent")
-                             
+                          
                           currentEventState.value = IslandEvent(type, title, text, icon, color, pendingIntent)
                           islandModeState.value = IslandMode.EVENT_COMPACT 
-                             
+                          
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4000)
                       }
@@ -293,24 +272,36 @@ jobs:
                       if (intent?.action == Intent.ACTION_POWER_CONNECTED) {
                           val bm = context?.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
                           val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-                          currentEventState.value = IslandEvent(type = "BATTERY", title = "جاري الشحن", text = "$level%", icon = "⚡", colorStr = "#00FF00")
+                          
+                          // تحويل الشحن إلى إشعار ديناميكي موحد
+                          currentEventState.value = IslandEvent(
+                              type = "CHARGE",
+                              title = "جاري الشحن السريع",
+                              text = "مستوى البطارية: \$level%",
+                              icon = "⚡",
+                              colorStr = "#4CAF50"
+                          )
                           islandModeState.value = IslandMode.EVENT_COMPACT
+                          
                           handler.removeCallbacks(collapseRunnable)
-                          handler.postDelayed(collapseRunnable, 4000)
+                          handler.postDelayed(collapseRunnable, 3500)
                       }
                   }
               }
 
-              private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+              private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { sharedPreferences, key ->
                   when (key) {
-                      "width" -> islandWidthState.value = prefs.getInt("width", 130).dp
-                      "height" -> islandHeightState.value = prefs.getInt("height", 38).dp
-                      "radius" -> islandRadiusState.value = prefs.getInt("radius", 100).dp
-                      "glow" -> glowWidthState.value = prefs.getInt("glow", 2).dp
-                      "pos_x", "pos_y" -> {
-                          params.x = prefs.getInt("pos_x", 0)
-                          params.y = prefs.getInt("pos_y", 32)
-                          if (::composeView.isInitialized) windowManager.updateViewLayout(composeView, params)
+                      "width" -> islandWidthState.value = sharedPreferences.getInt("width", 130).dp
+                      "height" -> islandHeightState.value = sharedPreferences.getInt("height", 38).dp
+                      "radius" -> islandRadiusState.value = sharedPreferences.getInt("radius", 100).dp
+                      "glow" -> glowWidthState.value = sharedPreferences.getInt("glow", 2).dp
+                      "pos_x" -> {
+                          params.x = sharedPreferences.getInt("pos_x", 0)
+                          windowManager.updateViewLayout(composeView, params)
+                      }
+                      "pos_y" -> {
+                          params.y = sharedPreferences.getInt("pos_y", 32)
+                          windowManager.updateViewLayout(composeView, params)
                       }
                   }
               }
@@ -319,20 +310,36 @@ jobs:
                   super.onCreate()
                   savedStateRegistryController.performRestore(null)
                   
-                  prefs = getSharedPreferences("IslandPrefs", Context.MODE_PRIVATE)
+                  prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
+                  prefs.registerOnSharedPreferenceChangeListener(prefListener)
+                  
                   islandWidthState.value = prefs.getInt("width", 130).dp
                   islandHeightState.value = prefs.getInt("height", 38).dp
                   islandRadiusState.value = prefs.getInt("radius", 100).dp
                   glowWidthState.value = prefs.getInt("glow", 2).dp
-                  prefs.registerOnSharedPreferenceChangeListener(prefListener)
 
                   windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                  
+                  composeView = ComposeView(this)
+
+                  composeView.setViewTreeLifecycleOwner(this)
+                  composeView.setViewTreeViewModelStoreOwner(this)
+                  composeView.setViewTreeSavedStateRegistryOwner(this)
+
+                  registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
+
+                  if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                      registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
+                  } else {
+                      registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"))
+                  }
+
                   params = WindowManager.LayoutParams(
                       WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                      WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
+                              WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or 
+                              WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
                       PixelFormat.TRANSLUCENT
                   ).apply {
                       gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
@@ -340,41 +347,38 @@ jobs:
                       y = prefs.getInt("pos_y", 32)
                   }
 
-                  registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
-                  registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
-
-                  composeView = ComposeView(this).apply {
-                      setViewTreeLifecycleOwner(this@DynamicIslandService)
-                      setViewTreeViewModelStoreOwner(this@DynamicIslandService)
-                      setViewTreeSavedStateRegistryOwner(this@DynamicIslandService)
-                  }
-
-                  var initialY = 0f
+                  var initialX = 0
+                  var initialY = 0
+                  var initialTouchX = 0f
                   var initialTouchY = 0f
-                  var isDragging = false
+                  var isMoving = false
 
                   composeView.setOnTouchListener { _, event ->
                       when (event.action) {
                           MotionEvent.ACTION_DOWN -> {
-                              initialY = params.y.toFloat()
+                              initialX = params.x
+                              initialY = params.y
+                              initialTouchX = event.rawX
                               initialTouchY = event.rawY
-                              isDragging = false
+                              isMoving = false
                               true
                           }
                           MotionEvent.ACTION_MOVE -> {
-                              val diffY = event.rawY - initialTouchY
-                              if (Math.abs(diffY) > 10) isDragging = true
-                              if (isDragging) {
-                                  params.y = (initialY + diffY).toInt()
+                              val dx = (event.rawX - initialTouchX).toInt()
+                              val dy = (event.rawY - initialTouchY).toInt()
+                              if (Math.abs(dx) > 10 || Math.abs(dy) > 10) { 
+                                  isMoving = true
+                                  params.x = initialX + dx
+                                  params.y = initialY + dy
                                   windowManager.updateViewLayout(composeView, params)
                               }
                               true
                           }
                           MotionEvent.ACTION_UP -> {
-                              if (!isDragging) {
-                                  // Click detected
+                              if (!isMoving) {
                                   when (islandModeState.value) {
-                                      IslandMode.IDLE, IslandMode.EVENT_COMPACT -> {
+                                      IslandMode.IDLE -> {}
+                                      IslandMode.EVENT_COMPACT -> {
                                           islandModeState.value = IslandMode.EVENT_EXPANDED
                                           handler.removeCallbacks(collapseRunnable)
                                       }
@@ -524,74 +528,69 @@ jobs:
           import androidx.appcompat.app.AppCompatActivity
 
           class MainActivity : AppCompatActivity() {
-
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
-                  
-                  val prefs = getSharedPreferences("IslandPrefs", Context.MODE_PRIVATE)
+                  val prefs = getSharedPreferences("island_prefs", Context.MODE_PRIVATE)
                   val dp = resources.displayMetrics.density
-                  
-                  val bgDark = Color.parseColor("#090B0A")
-                  val pillActive = Color.parseColor("#C2F2B4") // أخضر فاتح مشع
-                  val textOnActive = Color.parseColor("#0D1C0F")
-                  val cardBg = Color.parseColor("#141815")
-                  
+
+                  val bgDark = Color.parseColor("#101411")
+                  val pillActive = Color.parseColor("#A8E5BA")
+                  val pillInactive = Color.parseColor("#2D322E")
+                  val textOnActive = Color.parseColor("#0F2015")
+                  val textOnDark = Color.parseColor("#E1E3DF")
+
                   val scrollView = ScrollView(this).apply {
                       setBackgroundColor(bgDark)
                       isFillViewport = true
                   }
-                  
+
                   val root = LinearLayout(this).apply {
                       orientation = LinearLayout.VERTICAL
-                      setPadding((24*dp).toInt(), (40*dp).toInt(), (24*dp).toInt(), (40*dp).toInt())
+                      setPadding((20*dp).toInt(), (32*dp).toInt(), (20*dp).toInt(), (32*dp).toInt())
                   }
                   scrollView.addView(root)
 
-                  // عنوان التطبيق
                   root.addView(TextView(this).apply {
-                      text = "Nova Island Pro"
-                      textSize = 32f
-                      setTextColor(Color.WHITE)
+                      text = "إعدادات الجزيرة 🏝️"
+                      textSize = 28f
+                      setTextColor(textOnDark)
+                      gravity = Gravity.CENTER
                       typeface = android.graphics.Typeface.DEFAULT_BOLD
-                      gravity = Gravity.CENTER_HORIZONTAL
-                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                          bottomMargin = (32*dp).toInt()
-                      }
+                      setPadding(0, 0, 0, (24*dp).toInt())
                   })
 
-                  // دالة لصناعة شريط تمرير (مستوحى من تصميم iOS Slider)
-                  fun createMaterialSlider(initialValue: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
-                      val containerHeight = (40*dp).toInt()
+                  fun createMaterialSlider(currentVal: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
+                      val containerHeight = (24 * dp).toInt() 
                       val container = FrameLayout(this@MainActivity).apply {
                           layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, containerHeight)
-                          background = GradientDrawable().apply {
-                              setColor(cardBg)
-                              cornerRadius = containerHeight / 2f
-                          }
+                          background = GradientDrawable().apply { setColor(pillInactive); cornerRadius = containerHeight / 2f }
                       }
+                      
                       val fillView = View(this@MainActivity).apply {
-                          background = GradientDrawable().apply {
-                              setColor(pillActive)
-                              cornerRadius = containerHeight / 2f
-                          }
+                          layoutParams = FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT)
+                          background = GradientDrawable().apply { setColor(pillActive); cornerRadius = containerHeight / 2f }
                       }
                       container.addView(fillView)
-                      
-                      var currentWidth = initialValue
-                      
+
+                      var currentWidth = currentVal
                       fun updateFillWidth(totalWidth: Int) {
                           if (totalWidth <= 0) return
-                          val progress = (currentWidth - min) / (max - min)
-                          val w = containerHeight + (progress * (totalWidth - containerHeight)).toInt()
-                          fillView.layoutParams = FrameLayout.LayoutParams(w, ViewGroup.LayoutParams.MATCH_PARENT)
+                          val progress = ((currentWidth - min) / (max - min)).coerceIn(0f, 1f)
+                          val fillWidth = (containerHeight + progress * (totalWidth - containerHeight)).toInt()
+                          fillView.layoutParams = FrameLayout.LayoutParams(fillWidth, ViewGroup.LayoutParams.MATCH_PARENT)
+                          fillView.requestLayout()
                       }
 
+                      container.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
+                          val width = right - left
+                          val oldWidth = oldRight - oldLeft
+                          if (width > 0 && width != oldWidth) updateFillWidth(width)
+                      }
                       container.post { updateFillWidth(container.width) }
 
                       container.setOnTouchListener { v, event ->
                           val totalWidth = v.width
                           if (totalWidth <= 0) return@setOnTouchListener false
-
                           var newWidth = event.x.toInt()
                           if (newWidth < containerHeight) newWidth = containerHeight
                           if (newWidth > totalWidth) newWidth = totalWidth
@@ -711,9 +710,9 @@ jobs:
                   
                   <service android:name=".DynamicIslandService" android:exported="false" />
                   
-                  <service android:name=".IslandNotificationListener" 
-                           android:label="Dynamic Island Notifications" 
-                           android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" 
+                  <service android:name=".IslandNotificationListener"
+                           android:label="Dynamic Island Notifications"
+                           android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
                            android:exported="true">
                       <intent-filter>
                           <action android:name="android.service.notification.NotificationListenerService" />
