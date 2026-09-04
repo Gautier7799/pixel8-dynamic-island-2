@@ -1,4 +1,4 @@
-name: Build & Publish NOVA ISLAND Pro V2.3 (Enterprise Edition)
+name: Build & Publish NOVA ISLAND Pro V3.0 (Ultimate Edition)
 
 on:
   push:
@@ -33,32 +33,18 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate NOVA ISLAND Pro Project (V2.3)
+      - name: Generate NOVA ISLAND Pro Project (V3.0 Ultimate)
         run: |
           rm -rf app/src/main/res app/src/main/java .github/copilot-instructions.md
           mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/novaisland/pro app/src/main/res/mipmap-anydpi-v26 .github
 
-          # --- AI GUIDELINES (دستور الجودة) ---
+          # --- AI GUIDELINES ---
           cat << 'INNER_EOF' > .github/copilot-instructions.md
           # Code Review Guidelines for Nova Island Pro
-
-          Apply these checks whenever reviewing code changes in Nova Island Pro:
-
-          1. **Privacy Guard**:
-             - Check if any new network calls or third-party SDKs are introduced.
-             - Confirm all notification data remains strictly on-device.
-
-          2. **Overlay & Touch Safety**:
-             - Verify WindowManager view removal on service destroy.
-             - Check soft-keyboard IME focus handling during inline reply (FLAG_NOT_FOCUSABLE <-> FLAG_ALT_FOCUSABLE_IM).
-
-          3. **Compose & Lifecycle**:
-             - Avoid side effects directly in composition.
-             - Verify state collection uses lifecycle-aware patterns.
-             - Use Material 3 color tokens and surface containers.
-
-          4. **Stability**:
-             - Zero crash tolerance. Isolate heavy tasks from the main Accessibility loop.
+          1. Privacy Guard: Confirm all notification data remains strictly on-device.
+          2. Overlay & Touch Safety: Verify WindowManager view removal on service destroy.
+          3. Compose & Lifecycle: Avoid side effects directly in composition.
+          4. Stability: Zero crash tolerance.
           INNER_EOF
 
           # --- Gradle & Project Setup ---
@@ -84,7 +70,7 @@ jobs:
           android {
               namespace = "com.novaisland.pro"
               compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 13; versionName = "2.3.0" }
+              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 20; versionName = "3.0.0" }
               compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
               buildFeatures { compose = true }
@@ -342,6 +328,10 @@ jobs:
                           handler.removeCallbacks(collapseRunnable)
                           handler.postDelayed(collapseRunnable, 4500L)
                       }
+                      else if (intent?.action == "com.novaisland.pro.CLEAR") {
+                          islandModeState.value = IslandMode.IDLE
+                          handler.removeCallbacks(collapseRunnable)
+                      }
                   }
               }
 
@@ -373,10 +363,14 @@ jobs:
                       setViewTreeSavedStateRegistryOwner(lifecycleOwner)
                   }
 
+                  val filter = IntentFilter().apply { 
+                      addAction("com.novaisland.pro.EVENT")
+                      addAction("com.novaisland.pro.CLEAR")
+                  }
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                      registerReceiver(eventReceiver, IntentFilter("com.novaisland.pro.EVENT"), Context.RECEIVER_EXPORTED)
+                      registerReceiver(eventReceiver, filter, Context.RECEIVER_EXPORTED)
                   } else {
-                      registerReceiver(eventReceiver, IntentFilter("com.novaisland.pro.EVENT"))
+                      registerReceiver(eventReceiver, filter)
                   }
                   registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
 
@@ -407,7 +401,7 @@ jobs:
                           baseHeight = islandHeightState.value,
                           onIdleClick = {
                               if (currentEventState.value.title.isEmpty() || currentEventState.value.text.isEmpty()) {
-                                  currentEventState.value = IslandEvent("MSG", "Réception", "Aucune nouvelle notification", "📫", "#FFFFFF", null)
+                                  currentEventState.value = IslandEvent("MSG", "NOVA System", "Aucune nouvelle notification", "📫", "#FFFFFF", null)
                               }
                               islandModeState.value = IslandMode.EVENT_EXPANDED
                               handler.removeCallbacks(collapseRunnable)
@@ -568,7 +562,6 @@ jobs:
           import android.content.Context
           import android.content.Intent
           import android.content.SharedPreferences
-          import android.os.Build
           import android.os.Bundle
           import android.provider.Settings
           import android.text.TextUtils
@@ -576,8 +569,10 @@ jobs:
           import androidx.activity.compose.setContent
           import androidx.compose.foundation.background
           import androidx.compose.foundation.clickable
-          import androidx.compose.foundation.isSystemInDarkTheme
           import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.lazy.grid.GridCells
+          import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+          import androidx.compose.foundation.lazy.grid.items
           import androidx.compose.foundation.rememberScrollState
           import androidx.compose.foundation.shape.CircleShape
           import androidx.compose.foundation.shape.RoundedCornerShape
@@ -601,19 +596,19 @@ jobs:
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   WindowCompat.setDecorFitsSystemWindows(window, false)
-                  
                   val prefs = getSharedPreferences("nova_prefs", Context.MODE_PRIVATE)
+                  
                   setContent { 
-                      val context = LocalContext.current
-                      val darkTheme = isSystemInDarkTheme()
-                      val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                      val colorScheme = when {
-                          dynamicColor && darkTheme -> dynamicDarkColorScheme(context)
-                          dynamicColor && !darkTheme -> dynamicLightColorScheme(context)
-                          darkTheme -> darkColorScheme()
-                          else -> lightColorScheme()
+                      MaterialTheme(
+                          colorScheme = lightColorScheme(
+                              background = Color(0xFFF7F8FA),
+                              surface = Color.White,
+                              primary = Color(0xFF2196F3),
+                              onBackground = Color(0xFF1E1E1E)
+                          )
+                      ) { 
+                          MainScreen(prefs) 
                       }
-                      MaterialTheme(colorScheme = colorScheme) { MainScreen(prefs) }
                   }
               }
           }
@@ -638,117 +633,298 @@ jobs:
 
               Scaffold(
                   bottomBar = {
-                      NavigationBar(containerColor = MaterialTheme.colorScheme.background) {
-                          NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Rounded.SquareFoot, null) }, label = { Text("Apparence") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.onPrimary, unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), selectedTextColor = MaterialTheme.colorScheme.primary, unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), indicatorColor = MaterialTheme.colorScheme.primary))
-                          NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Rounded.NotificationsActive, null) }, label = { Text("Événements") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.onPrimary, unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), selectedTextColor = MaterialTheme.colorScheme.primary, unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), indicatorColor = MaterialTheme.colorScheme.primary))
-                          NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Icon(Icons.Rounded.Settings, null) }, label = { Text("Système") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.onPrimary, unselectedIconColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), selectedTextColor = MaterialTheme.colorScheme.primary, unselectedTextColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), indicatorColor = MaterialTheme.colorScheme.primary))
+                      NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 8.dp) {
+                          NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Icon(Icons.Rounded.FlashOn, null) }, label = { Text("Studio") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent))
+                          NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Icon(Icons.Rounded.Tune, null) }, label = { Text("Notch & Layout") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent))
+                          NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Icon(Icons.Rounded.Settings, null) }, label = { Text("Settings") }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, unselectedIconColor = Color.Gray, indicatorColor = Color.Transparent))
                       }
                   }
               ) { padding ->
-                  Box(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                      when (selectedTab) {
-                          0 -> AppearanceScreen(prefs, isEnabled.value)
-                          1 -> EventsScreen()
-                          2 -> SystemScreen()
+                  Column(modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                      // Top Header
+                      Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp).padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                          Box(modifier = Modifier.size(52.dp).background(Color(0xFFE8EAF6), CircleShape), contentAlignment = Alignment.Center) {
+                              Box(modifier = Modifier.size(30.dp).background(Color.Black, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                                  Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                      Box(modifier = Modifier.size(4.dp).background(Color.White, CircleShape))
+                                      Box(modifier = Modifier.size(4.dp).background(Color(0xFF4CAF50), CircleShape))
+                                  }
+                              }
+                          }
+                          Spacer(modifier = Modifier.width(16.dp))
+                          Column(modifier = Modifier.weight(1f)) {
+                              Text("NOVA ISLAND", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                              Text("Floating Dynamic Overlay", fontSize = 13.sp, color = Color.Gray)
+                          }
+                          Surface(color = if(isEnabled.value) Color(0xFFE8F5E9) else Color(0xFFFFF3E0), shape = RoundedCornerShape(16.dp)) {
+                              Row(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                  Box(modifier = Modifier.size(8.dp).background(if(isEnabled.value) Color(0xFF4CAF50) else Color(0xFFFF9800), CircleShape))
+                                  Spacer(modifier = Modifier.width(6.dp))
+                                  Text(if(isEnabled.value) "Running" else "Setup Needed", color = if(isEnabled.value) Color(0xFF2E7D32) else Color(0xFFEF6C00), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                              }
+                          }
+                      }
+
+                      Box(modifier = Modifier.weight(1f)) {
+                          when (selectedTab) {
+                              0 -> StudioScreen(isEnabled.value)
+                              1 -> LayoutScreen(prefs)
+                              2 -> SettingsScreen()
+                          }
                       }
                   }
               }
           }
 
           @Composable
-          fun AppearanceScreen(prefs: SharedPreferences, isEnabled: Boolean) {
+          fun StudioScreen(isEnabled: Boolean) {
+              val context = LocalContext.current
+              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+                  
+                  // Master Switch Card
+                  Card(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+                      Column(modifier = Modifier.padding(20.dp)) {
+                          Row(verticalAlignment = Alignment.CenterVertically) {
+                              Box(modifier = Modifier.size(48.dp).background(Color(0xFFE3F2FD), RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.FlashOn, null, tint = MaterialTheme.colorScheme.primary) }
+                              Spacer(modifier = Modifier.width(16.dp))
+                              Column(modifier = Modifier.weight(1f)) {
+                                  Text("Smart Island", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                  Text("Master Switch", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+                                  Text(if(isEnabled) "Running perfectly" else "Required permissions missing", fontSize = 13.sp, color = Color.Gray, lineHeight = 16.sp)
+                              }
+                              Switch(checked = isEnabled, onCheckedChange = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = MaterialTheme.colorScheme.primary))
+                          }
+                          if(!isEnabled) {
+                              Spacer(modifier = Modifier.height(16.dp))
+                              Surface(color = Color(0xFFFFF3E0), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().clickable { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }) {
+                                  Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                                      Icon(Icons.Rounded.WarningAmber, null, tint = Color(0xFFEF6C00), modifier = Modifier.size(18.dp))
+                                      Spacer(modifier = Modifier.width(8.dp))
+                                      Text("Grant required permissions to enable ->", color = Color(0xFFEF6C00), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                  }
+                              }
+                          }
+                      }
+                  }
+
+                  // Dynamic Simulation Lab
+                  Text("Dynamic Simulation Lab", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                  Text("1-Tap test and simulate any dynamic island mode", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 16.dp))
+                  
+                  val simItems = listOf(
+                      Triple("Music Player", Icons.Rounded.MusicNote, Color(0xFFF48FB1)),
+                      Triple("Incoming Call", Icons.Rounded.Call, Color(0xFF81C784)),
+                      Triple("Notification", Icons.Rounded.Notifications, Color(0xFF64B5F6)),
+                      Triple("Battery Charge", Icons.Rounded.BatteryChargingFull, Color(0xFF81C784)),
+                      Triple("Live Activity", Icons.Rounded.Navigation, Color(0xFFBA68C8)),
+                      Triple("Turn Navigation", Icons.Rounded.Explore, Color(0xFF4DB6AC)),
+                      Triple("File Transfer", Icons.Rounded.Download, Color(0xFF4DD0E1)),
+                      Triple("Hotspot Share", Icons.Rounded.WifiTethering, Color(0xFFFFB74D))
+                  )
+
+                  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                      for (i in simItems.indices step 2) {
+                          Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                              SimButton(simItems[i], modifier = Modifier.weight(1f))
+                              if(i+1 < simItems.size) SimButton(simItems[i+1], modifier = Modifier.weight(1f)) else Spacer(modifier = Modifier.weight(1f))
+                          }
+                      }
+                  }
+
+                  Spacer(modifier = Modifier.height(24.dp))
+                  OutlinedButton(
+                      onClick = { context.sendBroadcast(Intent("com.novaisland.pro.CLEAR")) }, 
+                      modifier = Modifier.fillMaxWidth().height(52.dp), 
+                      colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFD32F2F)), 
+                      border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                      shape = RoundedCornerShape(16.dp)
+                  ) {
+                      Icon(Icons.Rounded.DeleteOutline, null, modifier = Modifier.size(20.dp)); Spacer(modifier = Modifier.width(8.dp))
+                      Text("Clear All Test Notifications", fontWeight = FontWeight.Bold)
+                  }
+
+                  // System Diagnostics
+                  Spacer(modifier = Modifier.height(32.dp))
+                  Row(verticalAlignment = Alignment.CenterVertically) {
+                      Box(modifier = Modifier.size(40.dp).background(Color(0xFFE3F2FD), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Shield, null, tint = MaterialTheme.colorScheme.primary) }
+                      Spacer(modifier = Modifier.width(12.dp))
+                      Column {
+                          Text("System Diagnostics", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+                          Text("Hardware permissions & background health", fontSize = 13.sp, color = Color.Gray)
+                      }
+                  }
+                  Spacer(modifier = Modifier.height(16.dp))
+                  Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                      DiagChip("Accessibility", isEnabled, Modifier.weight(1f))
+                      DiagChip("Notification", true, Modifier.weight(1f))
+                      DiagChip("Battery Saver", true, Modifier.weight(1f))
+                  }
+                  Spacer(modifier = Modifier.height(48.dp))
+              }
+          }
+
+          @Composable
+          fun SimButton(item: Triple<String, ImageVector, Color>, modifier: Modifier) {
+              val context = LocalContext.current
+              Card(modifier = modifier.height(64.dp).clickable {
+                  val i = Intent("com.novaisland.pro.EVENT")
+                  when(item.first) {
+                      "Music Player" -> { i.putExtra("type", "MUSIC"); i.putExtra("title", "Starboy"); i.putExtra("text", "The Weeknd"); i.putExtra("icon", "🎵"); i.putExtra("color", "#FF4081") }
+                      "Incoming Call" -> { i.putExtra("type", "MSG"); i.putExtra("title", "Incoming Call"); i.putExtra("text", "Mom Calling..."); i.putExtra("icon", "📞"); i.putExtra("color", "#4CAF50") }
+                      "Battery Charge" -> { i.putExtra("type", "BATTERY"); i.putExtra("title", "Charging"); i.putExtra("text", "85%"); i.putExtra("icon", "⚡"); i.putExtra("color", "#4CAF50") }
+                      "Live Activity" -> { i.putExtra("type", "MSG"); i.putExtra("title", "Live Activity"); i.putExtra("text", "Uber arriving in 2 min"); i.putExtra("icon", "🚗"); i.putExtra("color", "#9C27B0") }
+                      "Turn Navigation" -> { i.putExtra("type", "MSG"); i.putExtra("title", "Navigation"); i.putExtra("text", "Turn right in 500m"); i.putExtra("icon", "🧭"); i.putExtra("color", "#009688") }
+                      "File Transfer" -> { i.putExtra("type", "MSG"); i.putExtra("title", "Downloading..."); i.putExtra("text", "File.zip - 45%"); i.putExtra("icon", "⬇️"); i.putExtra("color", "#00BCD4") }
+                      "Hotspot Share" -> { i.putExtra("type", "MSG"); i.putExtra("title", "Personal Hotspot"); i.putExtra("text", "1 Device Connected"); i.putExtra("icon", "🔗"); i.putExtra("color", "#FF9800") }
+                      else -> { i.putExtra("type", "MSG"); i.putExtra("title", "Notification"); i.putExtra("text", "New message received"); i.putExtra("icon", "💬"); i.putExtra("color", "#2196F3") }
+                  }
+                  context.sendBroadcast(i)
+              }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+                  Row(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                      Box(modifier = Modifier.size(36.dp).background(item.third.copy(alpha = 0.15f), CircleShape), contentAlignment = Alignment.Center) { Icon(item.second, null, tint = item.third, modifier = Modifier.size(20.dp)) }
+                      Spacer(modifier = Modifier.width(12.dp))
+                      Text(item.first, fontWeight = FontWeight.Bold, fontSize = 13.sp, lineHeight = 16.sp, modifier = Modifier.weight(1f))
+                  }
+              }
+          }
+
+          @Composable
+          fun DiagChip(title: String, active: Boolean, modifier: Modifier) {
+              val color = if(active) Color(0xFF4CAF50) else Color(0xFFFF9800)
+              Surface(color = color.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.3f)), modifier = modifier.height(64.dp)) {
+                  Column(modifier = Modifier.padding(8.dp).fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                      Text(title, color = color, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1)
+                      Row(verticalAlignment = Alignment.CenterVertically) {
+                          Box(modifier = Modifier.size(6.dp).background(color, CircleShape)); Spacer(modifier = Modifier.width(6.dp))
+                          Text(if(active) "Healthy" else "Needed", color = color, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                      }
+                  }
+              }
+          }
+
+          @Composable
+          fun LayoutScreen(prefs: SharedPreferences) {
               var width by remember { mutableStateOf(prefs.getInt("width", 77).toFloat()) }
               var height by remember { mutableStateOf(prefs.getInt("height", 28).toFloat()) }
               var posX by remember { mutableStateOf(prefs.getInt("pos_x", 0).toFloat()) }
               var posY by remember { mutableStateOf(prefs.getInt("pos_y", 28).toFloat()) }
-              val context = LocalContext.current
 
-              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-                  Spacer(modifier = Modifier.height(48.dp))
-                  Text("NOVA ISLAND", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                  Text("Édition Pro V2.3 (Enterprise)", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f))
-                  Spacer(modifier = Modifier.height(24.dp))
+              fun applyPreset(w: Float, h: Float, x: Float, y: Float) {
+                  width = w; height = h; posX = x; posY = y
+                  prefs.edit().putInt("width", w.toInt()).putInt("height", h.toInt()).putInt("pos_x", x.toInt()).putInt("pos_y", y.toInt()).apply()
+              }
 
-                  Card(modifier = Modifier.fillMaxWidth().height(180.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0)), shape = RoundedCornerShape(24.dp)) {
-                      Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                          Box(modifier = Modifier.padding(top = 29.dp).size(20.dp).background(Color.Black, CircleShape))
-                          Box(modifier = Modifier.offset(x = posX.dp, y = posY.dp).width(width.dp).height(height.dp).background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(height.dp / 2)))
-                          Text("Laboratoire de taille", modifier = Modifier.align(Alignment.BottomStart).padding(16.dp), color = Color.DarkGray, fontWeight = FontWeight.Bold)
+              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+                  Text("Quick Layout Presets", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
+                  Text("Instant 1-tap positioning calibrated to your device", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 20.dp))
+
+                  val presets = listOf(
+                      Triple("Center Hole", "Centered punch hole camera", Icons.Rounded.CenterFocusWeak) to { applyPreset(80f, 28f, 0f, 28f) },
+                      Triple("Wide Island", "Spacious expanded layout", Icons.Rounded.SettingsOverscan) to { applyPreset(160f, 32f, 0f, 28f) },
+                      Triple("Left Corner", "Left-aligned punch hole", Icons.Rounded.AlignHorizontalLeft) to { applyPreset(80f, 28f, -100f, 28f) },
+                      Triple("Right Corner", "Right-aligned camera hole", Icons.Rounded.AlignHorizontalRight) to { applyPreset(80f, 28f, 100f, 28f) },
+                      Triple("Compact Pill", "Minimal discreet footprint", Icons.Rounded.Minimize) to { applyPreset(60f, 24f, 0f, 28f) }
+                  )
+
+                  Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                      for (i in presets.indices step 2) {
+                          Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+                              PresetCard(presets[i], modifier = Modifier.weight(1f))
+                              if(i+1 < presets.size) PresetCard(presets[i+1], modifier = Modifier.weight(1f)) else Spacer(modifier = Modifier.weight(1f))
+                          }
                       }
                   }
 
-                  Spacer(modifier = Modifier.height(24.dp))
-                  SliderControl("Position X (Gauche / Droite)", posX, -200f, 200f) { posX = it; prefs.edit().putInt("pos_x", it.toInt()).apply() }
-                  SliderControl("Position Y (Haut / Bas)", posY, -200f, 200f) { posY = it; prefs.edit().putInt("pos_y", it.toInt()).apply() }
-                  SliderControl("Largeur de l'île", width, 30f, 300f) { width = it; prefs.edit().putInt("width", it.toInt()).apply() }
-                  SliderControl("Hauteur de l'île", height, 10f, 100f) { height = it; prefs.edit().putInt("height", it.toInt()).apply() }
-                  Spacer(modifier = Modifier.height(24.dp))
+                  Spacer(modifier = Modifier.height(32.dp))
+                  Text("Advanced Tuning Studio", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(bottom = 16.dp))
                   
-                  if (!isEnabled) {
-                      Button(onClick = { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), shape = RoundedCornerShape(16.dp)) {
-                          Icon(Icons.Rounded.Warning, null, tint = MaterialTheme.colorScheme.onError); Spacer(modifier = Modifier.width(8.dp)); Text("Activer le moteur NOVA (Requis)", fontSize = 16.sp, color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Bold)
-                      }
-                  } else {
-                      Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), shape = RoundedCornerShape(16.dp)) {
-                          Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.onPrimaryContainer); Spacer(modifier = Modifier.width(8.dp)); Text("Moteur NOVA Actif et Stable", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold) }
+                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(24.dp), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)) {
+                      Column(modifier = Modifier.padding(20.dp)) {
+                          SliderControl("X Position (Left/Right)", posX, -200f, 200f) { posX = it; prefs.edit().putInt("pos_x", it.toInt()).apply() }
+                          SliderControl("Y Position (Up/Down)", posY, -200f, 200f) { posY = it; prefs.edit().putInt("pos_y", it.toInt()).apply() }
+                          SliderControl("Island Width", width, 30f, 300f) { width = it; prefs.edit().putInt("width", it.toInt()).apply() }
+                          SliderControl("Island Height", height, 10f, 100f) { height = it; prefs.edit().putInt("height", it.toInt()).apply() }
                       }
                   }
-                  Spacer(modifier = Modifier.height(64.dp)) 
+                  Spacer(modifier = Modifier.height(48.dp))
+              }
+          }
+
+          @Composable
+          fun PresetCard(item: Pair<Triple<String, String, ImageVector>, () -> Unit>, modifier: Modifier) {
+              Card(modifier = modifier.height(130.dp).clickable { item.second() }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+                  Column(modifier = Modifier.padding(16.dp)) {
+                      Box(modifier = Modifier.size(40.dp).background(Color(0xFFE8EAF6), CircleShape), contentAlignment = Alignment.Center) { Icon(item.first.third, null, tint = Color(0xFF3F51B5)) }
+                      Spacer(modifier = Modifier.height(12.dp))
+                      Text(item.first.first, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                      Text(item.first.second, fontSize = 12.sp, color = Color.Gray, lineHeight = 14.sp)
+                  }
               }
           }
 
           @Composable
           fun SliderControl(label: String, value: Float, min: Float, max: Float, onValueChange: (Float) -> Unit) {
-              Column(modifier = Modifier.padding(vertical = 6.dp)) {
-                  Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) { Text(label, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Medium, fontSize = 14.sp); Text(value.toInt().toString(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                      IconButton(onClick = { onValueChange((value - 1f).coerceAtLeast(min)) }, modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) { Icon(Icons.Rounded.Remove, "-", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                      Slider(value = value, onValueChange = onValueChange, valueRange = min..max, modifier = Modifier.weight(1f).padding(horizontal = 8.dp), colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant))
-                      IconButton(onClick = { onValueChange((value + 1f).coerceAtMost(max)) }, modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) { Icon(Icons.Rounded.Add, "+", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
-                  }
+              Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                  Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) { Text(label, fontWeight = FontWeight.Bold, fontSize = 13.sp); Text(value.toInt().toString(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }
+                  Slider(value = value, onValueChange = onValueChange, valueRange = min..max, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary))
               }
           }
 
           @Composable
-          fun EventsScreen() {
+          fun SettingsScreen() {
               val context = LocalContext.current
-              Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-                  Spacer(modifier = Modifier.height(48.dp)); Text("Événements", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground); Spacer(modifier = Modifier.height(24.dp))
-                  Text("Tester l'animation", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(24.dp)) {
-                      Row(modifier = Modifier.padding(20.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                          Box(modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.background, CircleShape).clickable { val i = Intent("com.novaisland.pro.EVENT"); i.putExtra("type", "MSG"); i.putExtra("title", "NOVA PRO"); i.putExtra("text", "L'île fonctionne!"); i.putExtra("icon", "🚀"); i.putExtra("color", "#00E676"); context.sendBroadcast(i) }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Message, null, tint = MaterialTheme.colorScheme.primary) }
-                          Box(modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.background, CircleShape).clickable { val i = Intent("com.novaisland.pro.EVENT"); i.putExtra("type", "MUSIC"); i.putExtra("title", "Starboy"); i.putExtra("text", "The Weeknd"); i.putExtra("icon", "🎵"); i.putExtra("color", "#00E676"); context.sendBroadcast(i) }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.LibraryMusic, null, tint = MaterialTheme.colorScheme.primary) }
-                          Box(modifier = Modifier.size(56.dp).background(MaterialTheme.colorScheme.background, CircleShape).clickable { val i = Intent("com.novaisland.pro.EVENT"); i.putExtra("type", "BATTERY"); i.putExtra("title", "En charge"); i.putExtra("text", "85%"); i.putExtra("icon", "⚡"); i.putExtra("color", "#00E676"); context.sendBroadcast(i) }, contentAlignment = Alignment.Center) { Icon(Icons.Rounded.BatteryChargingFull, null, tint = MaterialTheme.colorScheme.primary) }
-                      }
+              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
+                  Text("Settings & Preferences", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
+                  Text("Configure island behaviors, colors, gesture access", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 24.dp))
+
+                  Text("Island Behaviors & Launcher", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                  SettingCard(Icons.Rounded.Notifications, Color(0xFF64B5F6), "Notifications & Privacy Rules", "Lock screen visibility, auto-expansion, app filters", "Standard", null) { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                  SettingCard(Icons.Rounded.Apps, Color(0xFF4DD0E1), "App Shortcuts Launcher", "Quick-launch pinned apps from collapsed island", "8/8 Pinned", null)
+                  SettingCard(Icons.Rounded.History, Color(0xFF4DB6AC), "Notification History & Logs", "View and search saved notifications with day/time grouping", "Logging Active", true)
+
+                  Spacer(modifier = Modifier.height(24.dp))
+                  Text("Appearance & Controls", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                  SettingCard(Icons.Rounded.Palette, Color(0xFFBA68C8), "Appearance, Opacity & Colors", "Adjust background transparency, album backdrop, and vibrant themes", "100% Opacity", true)
+                  SettingCard(Icons.Rounded.Swipe, Color(0xFF7986CB), "Gesture Controls & Playground", "Swipe Up to dismiss, Swipe Down for multi-window", null, null)
+
+                  Spacer(modifier = Modifier.height(24.dp))
+                  Text("System & Core Services", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                  SettingCard(Icons.Rounded.Security, Color(0xFF81C784), "Permissions & System Setup", "Accessibility, notification access, and OEM killers", "Action Required", true) { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                  
+                  Spacer(modifier = Modifier.height(24.dp))
+                  Text("About & Community", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 12.dp))
+                  SettingCard(Icons.Rounded.Info, Color(0xFFF06292), "About NOVA ISLAND Pro", "Version v3.0.0 Ultimate • Contributors & Commits", "Open Source", true)
+                  SettingCard(Icons.Rounded.People, Color(0xFFFFB74D), "Support & Feature Requests", "Star on GitHub, report issues, and join community", null, null)
+
+                  Spacer(modifier = Modifier.height(32.dp))
+                  Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                      Text("Made with ", color = Color.Gray, fontSize = 12.sp)
+                      Icon(Icons.Rounded.Favorite, null, tint = Color(0xFFE53935), modifier = Modifier.size(14.dp))
+                      Text(" for Nova Island Pro", color = Color.Gray, fontSize = 12.sp)
                   }
+                  Spacer(modifier = Modifier.height(48.dp))
               }
           }
 
           @Composable
-          fun SystemScreen() {
-              val context = LocalContext.current
-              Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
-                  Spacer(modifier = Modifier.height(48.dp)); Text("Système", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground); Spacer(modifier = Modifier.height(24.dp))
-                  Text("Gestion", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                  Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant), shape = RoundedCornerShape(24.dp)) {
-                      Column(modifier = Modifier.padding(16.dp)) {
-                          SettingItem(Icons.Rounded.AccessibilityNew, "Droits d'accessibilité", "Gérer les permissions système", { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }); HorizontalDivider(color = MaterialTheme.colorScheme.background)
-                          SettingItem(Icons.Rounded.NotificationsActive, "Droits de notification", "Permettre la lecture des messages", { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }); HorizontalDivider(color = MaterialTheme.colorScheme.background)
-                          SettingItem(Icons.Rounded.BatteryAlert, "Économiseur de batterie", "Ignorer pour empêcher l'arrêt", { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) })
+          fun SettingCard(icon: ImageVector, color: Color, title: String, subtitle: String, badgeText: String?, showRedDot: Boolean?, onClick: () -> Unit = {}) {
+              Card(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).clickable { onClick() }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
+                  Row(modifier = Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                      Box(modifier = Modifier.size(48.dp).background(color.copy(alpha = 0.15f), RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = color) }
+                      Spacer(modifier = Modifier.width(16.dp))
+                      Column(modifier = Modifier.weight(1f)) {
+                          Text(title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                          Text(subtitle, fontSize = 13.sp, color = Color.Gray, lineHeight = 16.sp, modifier = Modifier.padding(top = 2.dp))
+                          if(badgeText != null) {
+                              Surface(color = if(badgeText == "Action Required") Color(0xFFFFF3E0) else Color(0xFFE3F2FD), shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+                                  Text(badgeText, color = if(badgeText == "Action Required") Color(0xFFEF6C00) else MaterialTheme.colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                              }
+                          }
                       }
+                      Spacer(modifier = Modifier.width(8.dp))
+                      if(showRedDot == true) Box(modifier = Modifier.size(8.dp).background(Color(0xFFE53935), CircleShape))
+                      else Icon(Icons.Rounded.ChevronRight, null, tint = Color.LightGray)
                   }
-                  Spacer(modifier = Modifier.height(64.dp)) 
-              }
-          }
-
-          @Composable
-          fun SettingItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit = {}) {
-              Row(modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                  Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.background, CircleShape), contentAlignment = Alignment.Center) { Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp)) }
-                  Spacer(modifier = Modifier.width(16.dp))
-                  Column(modifier = Modifier.weight(1f)) { Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground, fontSize = 15.sp); Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), lineHeight = 16.sp) }
-                  Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
               }
           }
           INNER_EOF
@@ -798,19 +974,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION_TAG="v2.3.${{ github.run_number }}.${{ github.run_attempt }}"
+          VERSION_TAG="v3.0.0"
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
-          APK_NAME="NovaIsland-Pro-V2.3-Enterprise.apk"
+          APK_NAME="NovaIsland-Pro-V3.0.0-Ultimate.apk"
           
           cp "$APK_PATH" "$APK_NAME"
           
           RELEASE_INTRO=$(cat <<EOF
-          > **NOVA ISLAND Pro $VERSION_TAG (Enterprise Edition)**
+          > **NOVA ISLAND Pro $VERSION_TAG (Ultimate Edition) 🚀**
 
-          ## Quoi de neuf dans V2.3 ?
-          - **Capsule Interactive (Nouveau)** : La capsule est désormais interactive même au repos (IDLE). Un clic sur la capsule noire ouvre le menu de réception avec le message "Aucune nouvelle notification" s'il n'y a pas d'alerte en cours.
-          - **Mise en place des Guidelines (AI Prompt)** : Inclus pour la sécurité du code.
-          - **Smart Charging & Laboratoire** : Maintenus avec les dernières corrections de précision.
+          ## Quoi de neuf dans V3.0 ?
+          - **Nouvelle interface "Studio" complète** : Contrôle centralisé et Simulation Lab (simuler n'importe quel test).
+          - **Smart Color Engine** : L'île reconnaît les applications et adapte sa couleur automatiquement (WhatsApp en vert, Messenger en bleu, etc.).
+          - **Ouvrir & Interactivité** : Bouton "Ouvrir" fonctionnel pour ouvrir le message et la bulle interactive même au repos.
+          - **Quick Layout Presets** : Changement rapide du style de l'île (Center, Wide, Compact, etc.).
 
           ## Installation
           Téléchargez et installez l'APK : **[$APK_NAME](https://github.com/${{ github.repository }}/releases/download/$VERSION_TAG/$APK_NAME)**
@@ -820,5 +997,5 @@ jobs:
           gh release delete "$VERSION_TAG" --cleanup-tag -y || true
           
           gh release create "$VERSION_TAG" "$APK_NAME" \
-            --title "NOVA ISLAND Pro $VERSION_TAG (Enterprise Edition)" \
+            --title "NOVA ISLAND Pro $VERSION_TAG (Ultimate Edition)" \
             --notes "$RELEASE_INTRO"
