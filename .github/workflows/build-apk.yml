@@ -979,25 +979,33 @@ jobs:
       - name: Run Clean & Debug Build
         run: ./gradlew clean assembleDebug --no-daemon --stacktrace
 
+      # --- Upload Artifact for Actions Tab Download ---
+      - name: Upload APK to Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovaIsland-Pro-V3.0.0-Ultimate
+          path: app/build/outputs/apk/debug/app-debug.apk
+
       # --- Publish GitHub Release (The Professional CI/CD Step) ---
       - name: Publish GitHub Release automatically
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION_TAG="v3.0.0-${{ github.run_number }}"
+          VERSION_TAG="v3.0.0-build-${{ github.run_number }}"
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
           APK_NAME="NovaIsland-Pro-V3.0.0-Ultimate.apk"
           
           cp "$APK_PATH" "$APK_NAME"
           
           RELEASE_INTRO=$(cat <<EOF
-          > **NOVA ISLAND Pro $VERSION_TAG (Ultimate Edition) 🚀**
+          > **NOVA ISLAND Pro V3.0 (Ultimate Edition) 🚀**
 
           ## Quoi de neuf dans V3.0 ?
-          - **Nouvelle interface "Studio" complète** : Contrôle centralisé et Simulation Lab (simuler n'importe quel test).
-          - **Smart Color Engine** : L'île reconnaît les applications et adapte sa couleur automatiquement (WhatsApp en vert, Messenger en bleu, etc.).
-          - **Ouvrir & Interactivité** : Bouton "Ouvrir" fonctionnel pour ouvrir le message et la bulle interactive même au repos.
-          - **Quick Layout Presets** : Changement rapide du style de l'île (Center, Wide, Compact, etc.).
+          - **Nouvelle interface "Studio" complète** : Contrôle centralisé et Simulation Lab.
+          - **Smart Color Engine** : Couleurs intelligentes pour WhatsApp, Messenger, etc.
+          - **Ouvrir & Interactivité** : Bouton "Ouvrir" fonctionnel.
+          - **Quick Layout Presets** : Changement rapide du style de l'île.
+          - **Smart Permissions** : Diagnostique complet du système.
 
           ## Installation
           Téléchargez et installez l'APK : **[$APK_NAME](https://github.com/${{ github.repository }}/releases/download/$VERSION_TAG/$APK_NAME)**
@@ -1007,5 +1015,5 @@ jobs:
           gh release delete "$VERSION_TAG" --cleanup-tag -y || true
           
           gh release create "$VERSION_TAG" "$APK_NAME" \
-            --title "NOVA ISLAND Pro $VERSION_TAG (Ultimate Edition)" \
+            --title "NOVA ISLAND Pro V3.0 (Ultimate Edition)" \
             --notes "$RELEASE_INTRO"
