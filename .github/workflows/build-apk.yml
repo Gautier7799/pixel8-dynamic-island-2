@@ -1,482 +1,728 @@
-name: Build Nova Island Pro (Smart Intent Fix)
+name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build-apk:
-    name: Generate Nova Island Pro APK
+  build:
+    name: Build APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
         with:
+          distribution: 'zulu'
           java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.4'
-          cache-disabled: true
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Nova Island Project
+      - name: Initialize Android Project
         run: |
-          rm -rf app/src/main/res app/src/main/java
-          mkdir -p app/src/main/res/values app/src/main/res/xml app/src/main/res/layout app/src/main/res/drawable app/src/main/java/com/novaisland/pro app/src/main/res/mipmap app/src/main/res/mipmap-anydpi-v26
-
-          cat << 'EOF' > gradle.properties
-          android.useAndroidX=true
-          android.enableJetifier=true
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-          EOF
-
-          cat << 'EOF' > settings.gradle.kts
-          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name = "NovaIslandPro"
-          include(":app")
-          EOF
-
-          cat << 'EOF' > build.gradle.kts
-          plugins { id("com.android.application") version "8.2.2" apply false; id("org.jetbrains.kotlin.android") version "1.9.22" apply false }
-          EOF
-
-          cat << 'EOF' > app/build.gradle.kts
-          plugins { id("com.android.application"); id("org.jetbrains.kotlin.android") }
-          android {
-              namespace = "com.novaisland.pro"
-              compileSdk = 34
-              defaultConfig { applicationId = "com.novaisland.pro"; minSdk = 28; targetSdk = 34; versionCode = 10; versionName = "1.0.0" }
-              compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-              kotlinOptions { jvmTarget = "17" }
-          }
-          dependencies {
-              implementation("androidx.core:core-ktx:1.12.0")
-              implementation("androidx.appcompat:appcompat:1.6.1")
-              implementation("com.google.android.material:material:1.11.0")
-              implementation("androidx.cardview:cardview:1.0.0")
-          }
-          EOF
-
-          cat << 'EOF' > app/src/main/res/values/strings.xml
+          mkdir -p app/src/main/java/com/dynamicisland/aipro
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/mipmap-hdpi
+          
+          # إنتاج أيقونة شفافة بسيطة لتفادي أخطاء البناء
+          cat << 'INNER_EOF' > app/src/main/res/mipmap-hdpi/ic_launcher.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#000000" android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
+          </vector>
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">Nova Island Pro</string>
           </resources>
-          EOF
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > build.gradle.kts
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath("com.android.tools.build:gradle:8.1.2")
+                  classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0")
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > settings.gradle.kts
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "DynamicIslandPro"
+          include(":app")
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+          }
+          android {
+              namespace = "com.dynamicisland.aipro"
+              compileSdk = 34
+              defaultConfig {
+                  applicationId = "com.dynamicisland.aipro"
+                  minSdk = 26
+                  targetSdk = 34
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+              buildFeatures {
+                  compose = true
+              }
+              composeOptions {
+                  kotlinCompilerExtensionVersion = "1.5.1"
+              }
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          dependencies {
+              implementation("androidx.core:core-ktx:1.12.0")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+              implementation("androidx.activity:activity-compose:1.8.0")
+              implementation(platform("androidx.compose:compose-bom:2023.10.01"))
+              implementation("androidx.compose.ui:ui")
+              implementation("androidx.compose.ui:ui-graphics")
+              implementation("androidx.compose.ui:ui-tooling-preview")
+              implementation("androidx.compose.material3:material3")
+              implementation("androidx.lifecycle:lifecycle-service:2.6.2")
+          }
+          INNER_EOF
+          
+          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/IslandNotificationListener.kt
+          package com.dynamicisland.aipro
 
-          # --- أيقونة الإعدادات ---
-          cat << 'EOF' > app/src/main/res/drawable/ic_settings.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFF" android:pathData="M19.14,12.94c0.04,-0.3 0.06,-0.61 0.06,-0.94c0,-0.32 -0.02,-0.64 -0.06,-0.94l2.03,-1.58c0.18,-0.14 0.23,-0.41 0.12,-0.61l-1.92,-3.32c-0.12,-0.22 -0.37,-0.29 -0.59,-0.22l-2.39,0.96c-0.5,-0.38 -1.03,-0.7 -1.62,-0.94L14.4,2.81c-0.04,-0.24 -0.24,-0.41 -0.48,-0.41h-3.84c-0.24,0 -0.43,0.17 -0.47,0.41L9.25,5.35C8.66,5.59 8.12,5.92 7.63,6.29L5.24,5.33c-0.22,-0.08 -0.47,0 -0.59,0.22L2.73,8.87C2.62,9.08 2.66,9.34 2.86,9.48l2.03,1.58C4.84,11.36 4.8,11.69 4.8,12s0.02,0.64 0.06,0.94l-2.03,1.58c-0.18,0.14 -0.23,0.41 -0.12,0.61l1.92,3.32c0.12,0.22 0.37,0.29 0.59,0.22l2.39,-0.96c0.5,0.38 1.03,0.7 1.62,0.94l0.36,2.54c0.05,0.24 0.24,0.41 0.48,0.41h3.84c0.24,0 0.43,-0.17 0.47,-0.41l0.36,-2.54c0.59,-0.24 1.13,-0.56 1.62,-0.94l2.39,0.96c0.22,0.08 0.47,0 0.59,-0.22l1.92,-3.32c0.12,-0.22 0.07,-0.49 -0.12,-0.61L19.14,12.94zM12,15.6c-1.98,0 -3.6,-1.62 -3.6,-3.6s1.62,-3.6 3.6,-3.6s3.6,1.62 3.6,3.6S13.98,15.6 12,15.6z"/></vector>
-          EOF
-
-          # --- تصميم النافذة العائمة (الجزيرة) ---
-          cat << 'EOF' > app/src/main/res/layout/island_layout.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:padding="8dp">
-
-              <androidx.cardview.widget.CardView
-                  android:id="@+id/islandCard"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  app:cardBackgroundColor="#000000"
-                  app:cardCornerRadius="40dp"
-                  app:cardElevation="10dp"
-                  android:clickable="true"
-                  android:focusable="true">
-
-                  <LinearLayout
-                      android:id="@+id/islandContent"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:orientation="vertical"
-                      android:padding="16dp">
-
-                      <!-- الصف العلوي: الأيقونة، النصوص، الإعدادات -->
-                      <LinearLayout
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:orientation="horizontal"
-                          android:gravity="center_vertical">
-
-                          <ImageView
-                              android:id="@+id/appIcon"
-                              android:layout_width="40dp"
-                              android:layout_height="40dp"
-                              android:background="@drawable/circle_bg"
-                              android:padding="4dp"
-                              android:src="@mipmap/ic_launcher_round" />
-
-                          <LinearLayout
-                              android:layout_width="0dp"
-                              android:layout_height="wrap_content"
-                              android:layout_weight="1"
-                              android:orientation="vertical"
-                              android:layout_marginStart="12dp"
-                              android:layout_marginEnd="12dp">
-
-                              <TextView
-                                  android:id="@+id/appName"
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:text="Messenger"
-                                  android:textColor="#FFFFFF"
-                                  android:textSize="17sp"
-                                  android:textStyle="bold" />
-
-                              <TextView
-                                  android:id="@+id/notifText"
-                                  android:layout_width="wrap_content"
-                                  android:layout_height="wrap_content"
-                                  android:text="Nouveau message"
-                                  android:textColor="#B3B3B3"
-                                  android:textSize="14sp"
-                                  android:maxLines="1"
-                                  android:ellipsize="end" />
-                          </LinearLayout>
-
-                          <ImageView
-                              android:id="@+id/settingsBtn"
-                              android:layout_width="36dp"
-                              android:layout_height="36dp"
-                              android:background="@drawable/circle_dark_bg"
-                              android:padding="6dp"
-                              android:src="@drawable/ic_settings" />
-                      </LinearLayout>
-
-                      <!-- زر الفتح -->
-                      <LinearLayout
-                          android:id="@+id/actionContainer"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:gravity="end"
-                          android:layout_marginTop="16dp">
-
-                          <TextView
-                              android:id="@+id/btnOpen"
-                              android:layout_width="wrap_content"
-                              android:layout_height="42dp"
-                              android:background="@drawable/btn_white_rounded"
-                              android:gravity="center"
-                              android:paddingStart="24dp"
-                              android:paddingEnd="24dp"
-                              android:text="Ouvrir"
-                              android:textColor="#000000"
-                              android:textSize="16sp"
-                              android:textStyle="bold" />
-                      </LinearLayout>
-
-                  </LinearLayout>
-              </androidx.cardview.widget.CardView>
-          </FrameLayout>
-          EOF
-
-          # --- خلفيات برمجية للأزرار ---
-          cat << 'EOF' > app/src/main/res/drawable/circle_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval"><solid android:color="#FFFFFF"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/circle_dark_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval"><solid android:color="#2C2C2C"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/btn_white_rounded.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#FFFFFF"/><corners android:radius="21dp"/></shape>
-          EOF
-
-          # --- واجهة التطبيق الرئيسية لمنح الصلاحيات ---
-          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical"
-              android:gravity="center"
-              android:padding="24dp"
-              android:background="#121212">
-
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="Nova Island Pro"
-                  android:textSize="32sp"
-                  android:textStyle="bold"
-                  android:textColor="#FFFFFF"
-                  android:layout_marginBottom="40dp"/>
-
-              <Button
-                  android:id="@+id/btnOverlay"
-                  android:layout_width="match_parent"
-                  android:layout_height="60dp"
-                  android:text="1. تفعيل الظهور فوق التطبيقات"
-                  android:layout_marginBottom="16dp"
-                  android:backgroundTint="#2C2C2C"
-                  android:textColor="#FFFFFF"/>
-
-              <Button
-                  android:id="@+id/btnListener"
-                  android:layout_width="match_parent"
-                  android:layout_height="60dp"
-                  android:text="2. تفعيل قراءة الإشعارات"
-                  android:backgroundTint="#2C2C2C"
-                  android:textColor="#FFFFFF"/>
-                  
-              <TextView
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="بمجرد تفعيل الصلاحيتين، ستظهر الجزيرة عند وصول أي إشعار جديد."
-                  android:textColor="#888888"
-                  android:gravity="center"
-                  android:layout_marginTop="32dp"/>
-          </LinearLayout>
-          EOF
-
-          cat << 'EOF' > app/src/main/java/com/novaisland/pro/MainActivity.kt
-          package com.novaisland.pro
-
+          import android.app.Notification
           import android.content.Intent
-          import android.os.Bundle
-          import android.provider.Settings
-          import android.widget.Button
-          import androidx.appcompat.app.AppCompatActivity
-          import androidx.core.app.NotificationManagerCompat
+          import android.service.notification.NotificationListenerService
+          import android.service.notification.StatusBarNotification
 
-          class MainActivity : AppCompatActivity() {
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-                  setContentView(R.layout.activity_main)
+          class IslandNotificationListener : NotificationListenerService() {
+              override fun onNotificationPosted(sbn: StatusBarNotification) {
+                  val extras = sbn.notification.extras
+                  val title = extras.getString("android.title") ?: return
+                  val text = extras.getCharSequence("android.text")?.toString() ?: return
+                  val pkg = sbn.packageName
+                  
+                  // تجاهل المجموعات
+                  if ((sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
-                  findViewById<Button>(R.id.btnOverlay).setOnClickListener {
-                      if (!Settings.canDrawOverlays(this)) {
-                          startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+                  // التحقق إذا كان الإشعار عبارة عن مقطع موسيقي
+                  val isMedia = extras.containsKey(Notification.EXTRA_MEDIA_SESSION) || extras.getString(Notification.EXTRA_TEMPLATE) == "android.app.Notification\$MediaStyle"
+                  
+                  val intent = Intent("com.dynamicisland.aipro.NEW_EVENT")
+                  sbn.notification.contentIntent?.let { intent.putExtra("contentIntent", it) }
+                  
+                  if (isMedia) {
+                      intent.putExtra("type", "MUSIC")
+                      intent.putExtra("title", title) // اسم الأغنية
+                      intent.putExtra("text", text)   // اسم الفنان
+                      intent.putExtra("icon", "🎵")
+                      intent.putExtra("color", "#1DB954") // لون أخضر للموسيقى
+                  } else {
+                      // إشعار عادي
+                      if (sbn.isOngoing) return // تجاهل الإشعارات المستمرة غير الموسيقية
+                      
+                      val colorHex = when {
+                          pkg.contains("facebook") || pkg.contains("messenger") -> "#1877F2"
+                          pkg.contains("whatsapp") -> "#25D366"
+                          pkg.contains("instagram") -> "#E1306C"
+                          pkg.contains("twitter") || pkg.contains("x") -> "#1DA1F2"
+                          pkg.contains("snapchat") -> "#FFFC00"
+                          pkg.contains("tiktok") -> "#00F2FE"
+                          pkg.contains("youtube") -> "#FF0000"
+                          pkg.contains("gmail") -> "#EA4335"
+                          pkg.contains("telegram") -> "#0088CC"
+                          else -> "#FFFFFF"
                       }
+                      
+                      intent.putExtra("type", "MSG")
+                      intent.putExtra("title", title)
+                      intent.putExtra("text", text)
+                      intent.putExtra("icon", "💬")
+                      intent.putExtra("color", colorHex)
                   }
+                  
+                  sendBroadcast(intent)
+              }
+          }
+          INNER_EOF
 
-                  findViewById<Button>(R.id.btnListener).setOnClickListener {
-                      val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(this)
-                      if (!enabledListeners.contains(packageName)) {
-                          startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/DynamicIslandService.kt
+          package com.dynamicisland.aipro
+
+          import android.content.BroadcastReceiver
+          import android.content.Context
+          import android.content.Intent
+          import android.content.IntentFilter
+          import android.content.SharedPreferences
+          import android.graphics.PixelFormat
+          import android.os.BatteryManager
+          import android.os.Handler
+          import android.os.Looper
+          import android.view.Gravity
+          import android.view.MotionEvent
+          import android.view.View
+          import android.view.WindowManager
+          import androidx.compose.animation.animateContentSize
+          import androidx.compose.animation.core.Spring
+          import androidx.compose.animation.core.spring
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.border
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.rememberScrollState
+          import androidx.compose.foundation.shape.CircleShape
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.foundation.verticalScroll
+          import androidx.compose.material3.Text
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.draw.clip
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.platform.ComposeView
+          import androidx.compose.ui.text.font.FontWeight
+          import androidx.compose.ui.text.style.TextOverflow
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
+          import androidx.lifecycle.LifecycleService
+          import androidx.lifecycle.ViewModelStore
+          import androidx.lifecycle.ViewModelStoreOwner
+          import androidx.lifecycle.setViewTreeLifecycleOwner
+          import androidx.lifecycle.setViewTreeViewModelStoreOwner
+          import androidx.savedstate.SavedStateRegistry
+          import androidx.savedstate.SavedStateRegistryController
+          import androidx.savedstate.SavedStateRegistryOwner
+          import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+
+          enum class IslandMode { IDLE, EVENT_COMPACT, EVENT_EXPANDED }
+
+          data class IslandEvent(
+              val type: String = "MSG",
+              val title: String = "",
+              val text: String = "",
+              val icon: String = "💬",
+              val colorStr: String = "#FFFFFF",
+              val pendingIntent: android.app.PendingIntent? = null
+          ) {
+              val color: Color get() = try { Color(android.graphics.Color.parseColor(colorStr)) } catch(e:Exception){ Color.White }
+          }
+
+          class DynamicIslandService : LifecycleService(), ViewModelStoreOwner, SavedStateRegistryOwner {
+
+              private lateinit var windowManager: WindowManager
+              private lateinit var composeView: ComposeView
+              private lateinit var params: WindowManager.LayoutParams
+              private lateinit var prefs: SharedPreferences
+
+              private val store = ViewModelStore()
+              private val savedStateRegistryController = SavedStateRegistryController.create(this)
+              override val viewModelStore: ViewModelStore get() = store
+              override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
+
+              private val islandModeState = mutableStateOf(IslandMode.IDLE)
+              private val currentEventState = mutableStateOf(IslandEvent())
+
+              private val islandWidthState = mutableStateOf(130.dp)
+              private val islandHeightState = mutableStateOf(38.dp)
+              private val islandRadiusState = mutableStateOf(100.dp)
+              private val glowWidthState = mutableStateOf(2.dp)
+
+              private val handler = Handler(Looper.getMainLooper())
+              private val collapseRunnable = Runnable { 
+                  if (islandModeState.value == IslandMode.EVENT_COMPACT) {
+                      islandModeState.value = IslandMode.IDLE 
+                  }
+              }
+
+              private val eventReceiver = object : BroadcastReceiver() {
+                  override fun onReceive(context: Context?, intent: Intent?) {
+                      if (intent?.action == "com.dynamicisland.aipro.NEW_EVENT") {
+                          val type = intent.getStringExtra("type") ?: "MSG"
+                          val title = intent.getStringExtra("title") ?: ""
+                          val text = intent.getStringExtra("text") ?: ""
+                          val icon = intent.getStringExtra("icon") ?: "💬"
+                          val color = intent.getStringExtra("color") ?: "#FFFFFF"
+                          val pendingIntent = intent.getParcelableExtra<android.app.PendingIntent>("contentIntent")
+                             
+                          currentEventState.value = IslandEvent(type, title, text, icon, color, pendingIntent)
+                          islandModeState.value = IslandMode.EVENT_COMPACT 
+                             
+                          handler.removeCallbacks(collapseRunnable)
+                          handler.postDelayed(collapseRunnable, 4000)
                       }
                   }
               }
-          }
-          EOF
 
-          # 🔥 Service: هنا يكمن السحر وإصلاح الـ Intent بسلاسة تامة 🔥
-          cat << 'EOF' > app/src/main/java/com/novaisland/pro/IslandService.kt
-          package com.novaisland.pro
+              private val powerReceiver = object : BroadcastReceiver() {
+                  override fun onReceive(context: Context?, intent: Intent?) {
+                      if (intent?.action == Intent.ACTION_POWER_CONNECTED) {
+                          val bm = context?.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+                          val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+                          currentEventState.value = IslandEvent(type = "BATTERY", title = "جاري الشحن", text = "$level%", icon = "⚡", colorStr = "#00FF00")
+                          islandModeState.value = IslandMode.EVENT_COMPACT
+                          handler.removeCallbacks(collapseRunnable)
+                          handler.postDelayed(collapseRunnable, 4000)
+                      }
+                  }
+              }
 
-          import android.animation.ValueAnimator
-          import android.app.Notification
-          import android.app.PendingIntent
-          import android.content.Context
-          import android.graphics.PixelFormat
-          import android.os.Handler
-          import android.os.Looper
-          import android.service.notification.NotificationListenerService
-          import android.service.notification.StatusBarNotification
-          import android.view.Gravity
-          import android.view.LayoutInflater
-          import android.view.View
-          import android.view.WindowManager
-          import android.view.animation.OvershootInterpolator
-          import android.widget.ImageView
-          import android.widget.LinearLayout
-          import android.widget.TextView
-          import androidx.cardview.widget.CardView
-
-          class IslandService : NotificationListenerService() {
-
-              private lateinit var windowManager: WindowManager
-              private lateinit var islandView: View
-              private lateinit var layoutParams: WindowManager.LayoutParams
-              
-              private lateinit var appNameTxt: TextView
-              private lateinit var notifTextTxt: TextView
-              private lateinit var appIconImg: ImageView
-              private lateinit var actionContainer: LinearLayout
-              private lateinit var islandCard: CardView
-              private lateinit var btnOpen: TextView
-              
-              private var isExpanded = false
-              private val handler = Handler(Looper.getMainLooper())
-              
-              // 🔥 هذا هو المتغير الذي سيحفظ أمر الفتح (Intent) 🔥
-              private var currentPendingIntent: PendingIntent? = null
-              private var collapseRunnable = Runnable { collapseIsland() }
+              private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                  when (key) {
+                      "width" -> islandWidthState.value = prefs.getInt("width", 130).dp
+                      "height" -> islandHeightState.value = prefs.getInt("height", 38).dp
+                      "radius" -> islandRadiusState.value = prefs.getInt("radius", 100).dp
+                      "glow" -> glowWidthState.value = prefs.getInt("glow", 2).dp
+                      "pos_x", "pos_y" -> {
+                          params.x = prefs.getInt("pos_x", 0)
+                          params.y = prefs.getInt("pos_y", 32)
+                          if (::composeView.isInitialized) windowManager.updateViewLayout(composeView, params)
+                      }
+                  }
+              }
 
               override fun onCreate() {
                   super.onCreate()
-                  windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                  islandView = LayoutInflater.from(this).inflate(R.layout.island_layout, null)
+                  savedStateRegistryController.performRestore(null)
                   
-                  appNameTxt = islandView.findViewById(R.id.appName)
-                  notifTextTxt = islandView.findViewById(R.id.notifText)
-                  appIconImg = islandView.findViewById(R.id.appIcon)
-                  actionContainer = islandView.findViewById(R.id.actionContainer)
-                  islandCard = islandView.findViewById(R.id.islandCard)
-                  btnOpen = islandView.findViewById(R.id.btnOpen)
+                  prefs = getSharedPreferences("IslandPrefs", Context.MODE_PRIVATE)
+                  islandWidthState.value = prefs.getInt("width", 130).dp
+                  islandHeightState.value = prefs.getInt("height", 38).dp
+                  islandRadiusState.value = prefs.getInt("radius", 100).dp
+                  glowWidthState.value = prefs.getInt("glow", 2).dp
+                  prefs.registerOnSharedPreferenceChangeListener(prefListener)
 
-                  layoutParams = WindowManager.LayoutParams(
+                  windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                  
+                  params = WindowManager.LayoutParams(
                       WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.WRAP_CONTENT,
                       WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                       PixelFormat.TRANSLUCENT
-                  )
-                  layoutParams.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-                  layoutParams.y = 50 
-                  
-                  // 🔥 تنفيذ الفتح عند الضغط على الجزيرة أو زر Ouvrir 🔥
-                  val openAction = View.OnClickListener {
-                      try {
-                          currentPendingIntent?.send()
-                          collapseIsland()
-                      } catch (e: Exception) {
-                          e.printStackTrace()
-                      }
+                  ).apply {
+                      gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                      x = prefs.getInt("pos_x", 0)
+                      y = prefs.getInt("pos_y", 32)
                   }
-                  
-                  islandCard.setOnClickListener(openAction)
-                  btnOpen.setOnClickListener(openAction)
-                  
-                  // إخفاء الجزيرة في البداية (حجم صفر)
-                  islandView.alpha = 0f
-                  islandView.scaleX = 0.5f
-                  islandView.scaleY = 0.5f
-                  
-                  try {
-                      windowManager.addView(islandView, layoutParams)
-                  } catch (e: Exception) {}
-              }
 
-              override fun onNotificationPosted(sbn: StatusBarNotification) {
-                  // نتجاهل الإشعارات المستمرة (مثل الموسيقى أو الشحن)
-                  if (!sbn.isClearable) return
+                  registerReceiver(eventReceiver, IntentFilter("com.dynamicisland.aipro.NEW_EVENT"), Context.RECEIVER_EXPORTED)
+                  registerReceiver(powerReceiver, IntentFilter(Intent.ACTION_POWER_CONNECTED))
 
-                  val notification = sbn.notification
-                  val extras = notification.extras
-                  
-                  val title = extras.getString(Notification.EXTRA_TITLE)
-                  val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
-                  
-                  if (title.isNullOrEmpty() && text.isNullOrEmpty()) return
+                  composeView = ComposeView(this).apply {
+                      setViewTreeLifecycleOwner(this@DynamicIslandService)
+                      setViewTreeViewModelStoreOwner(this@DynamicIslandService)
+                      setViewTreeSavedStateRegistryOwner(this@DynamicIslandService)
+                  }
 
-                  // 🔥 حفظ الـ PendingIntent لاستخدامه عند الضغط 🔥
-                  currentPendingIntent = notification.contentIntent
-                  
-                  handler.post {
-                      appNameTxt.text = title ?: "الإشعار"
-                      notifTextTxt.text = text ?: ""
-                      
-                      try {
-                          val iconContext = createPackageContext(sbn.packageName, 0)
-                          val drawable = notification.smallIcon?.loadDrawable(iconContext)
-                          if (drawable != null) {
-                              appIconImg.setImageDrawable(drawable)
-                          } else {
-                              appIconImg.setImageResource(R.mipmap.ic_launcher_round)
+                  var initialY = 0f
+                  var initialTouchY = 0f
+                  var isDragging = false
+
+                  composeView.setOnTouchListener { _, event ->
+                      when (event.action) {
+                          MotionEvent.ACTION_DOWN -> {
+                              initialY = params.y.toFloat()
+                              initialTouchY = event.rawY
+                              isDragging = false
+                              true
                           }
-                      } catch (e: Exception) {
-                          appIconImg.setImageResource(R.mipmap.ic_launcher_round)
+                          MotionEvent.ACTION_MOVE -> {
+                              val diffY = event.rawY - initialTouchY
+                              if (Math.abs(diffY) > 10) isDragging = true
+                              if (isDragging) {
+                                  params.y = (initialY + diffY).toInt()
+                                  windowManager.updateViewLayout(composeView, params)
+                              }
+                              true
+                          }
+                          MotionEvent.ACTION_UP -> {
+                              if (!isDragging) {
+                                  // Click detected
+                                  when (islandModeState.value) {
+                                      IslandMode.IDLE, IslandMode.EVENT_COMPACT -> {
+                                          islandModeState.value = IslandMode.EVENT_EXPANDED
+                                          handler.removeCallbacks(collapseRunnable)
+                                      }
+                                      IslandMode.EVENT_EXPANDED -> islandModeState.value = IslandMode.IDLE
+                                  }
+                              } else {
+                                  prefs.edit().putInt("pos_x", params.x).putInt("pos_y", params.y).apply()
+                              }
+                              true
+                          }
+                          else -> false
                       }
-                      
-                      expandIsland()
                   }
-              }
 
-              private fun expandIsland() {
-                  handler.removeCallbacks(collapseRunnable)
-                  if (!isExpanded) {
-                      isExpanded = true
-                      islandView.animate()
-                          .alpha(1f)
-                          .scaleX(1f)
-                          .scaleY(1f)
-                          .setDuration(400)
-                          .setInterpolator(OvershootInterpolator(1.2f))
-                          .start()
+                  composeView.setContent {
+                      DynamicIslandContent(
+                          mode = islandModeState.value,
+                          event = currentEventState.value,
+                          width = islandWidthState.value,
+                          height = islandHeightState.value,
+                          radius = islandRadiusState.value,
+                          glow = glowWidthState.value,
+                          onOpenSettings = {
+                              islandModeState.value = IslandMode.IDLE
+                              val intent = Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                              startActivity(intent)
+                          }
+                      )
                   }
-                  // إخفاء تلقائي بعد 5 ثوانٍ
-                  handler.postDelayed(collapseRunnable, 5000)
-              }
 
-              private fun collapseIsland() {
-                  if (isExpanded) {
-                      isExpanded = false
-                      islandView.animate()
-                          .alpha(0f)
-                          .scaleX(0.5f)
-                          .scaleY(0.5f)
-                          .setDuration(300)
-                          .start()
-                  }
-              }
-
-              override fun onNotificationRemoved(sbn: StatusBarNotification) {
-                  // إذا تم مسح الإشعار من شريط الإشعارات، نخفي الجزيرة
-                  if (currentPendingIntent == sbn.notification.contentIntent) {
-                      handler.post { collapseIsland() }
-                  }
+                  windowManager.addView(composeView, params)
               }
 
               override fun onDestroy() {
                   super.onDestroy()
-                  if (::islandView.isInitialized) {
-                      windowManager.removeView(islandView)
+                  unregisterReceiver(powerReceiver)
+                  unregisterReceiver(eventReceiver)
+                  prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
+                  if (::composeView.isInitialized) windowManager.removeView(composeView)
+              }
+          }
+
+          @Composable
+          fun DynamicIslandContent(
+              mode: IslandMode,
+              event: IslandEvent,
+              width: androidx.compose.ui.unit.Dp,
+              height: androidx.compose.ui.unit.Dp,
+              radius: androidx.compose.ui.unit.Dp,
+              glow: androidx.compose.ui.unit.Dp,
+              onOpenSettings: () -> Unit
+          ) {
+              val targetWidth = when (mode) {
+                  IslandMode.EVENT_COMPACT -> 340.dp
+                  IslandMode.EVENT_EXPANDED -> 340.dp
+                  else -> width
+              }
+              
+              val borderModifier = if (mode != IslandMode.IDLE && glow > 0.dp) {
+                  Modifier.border(width = glow, color = event.color, shape = RoundedCornerShape(radius))
+              } else {
+                  Modifier
+              }
+
+              Box(
+                  modifier = Modifier
+                      .width(targetWidth)
+                      .then(
+                          if (mode == IslandMode.EVENT_EXPANDED) 
+                              Modifier.heightIn(min = 100.dp, max = 350.dp) // ديناميكي بناءً على النص
+                          else 
+                              Modifier.height(if (mode == IslandMode.EVENT_COMPACT) 70.dp else height)
+                      )
+                      .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f))
+                      .then(borderModifier)
+                      .background(Color.Black, shape = RoundedCornerShape(radius))
+                      .clickable {
+                          try {
+                              event.pendingIntent?.send()
+                          } catch (e: Exception) {
+                              e.printStackTrace()
+                          }
+                      },
+                  contentAlignment = Alignment.TopCenter
+              ) {
+                  when (mode) {
+                      IslandMode.IDLE -> { /* فارغة تماماً */ }
+                      IslandMode.EVENT_COMPACT -> {
+                          Row(
+                              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                              verticalAlignment = Alignment.CenterVertically
+                          ) {
+                              Box(modifier = Modifier.size(36.dp).background(Color(0xFF1E2320), CircleShape), contentAlignment = Alignment.Center) {
+                                  Text(event.icon, fontSize = 16.sp)
+                              }
+                              Spacer(modifier = Modifier.width(12.dp))
+                              Column(modifier = Modifier.weight(1f)) {
+                                  Text(text = event.title, color = event.color, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                  Text(text = event.text, color = Color.LightGray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                              }
+                          }
+                      }
+                      IslandMode.EVENT_EXPANDED -> {
+                          Column(
+                              modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+                              horizontalAlignment = Alignment.Start
+                          ) {
+                              Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                  Box(modifier = Modifier.size(32.dp).background(Color(0xFF1E2320), CircleShape), contentAlignment = Alignment.Center) {
+                                      Text(event.icon, fontSize = 14.sp)
+                                  }
+                                  Spacer(modifier = Modifier.width(12.dp))
+                                  Text(text = event.title, color = event.color, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                  
+                                  // زر إعدادات الهاتف الداخلي
+                                  Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFF2D322E)).clickable { onOpenSettings() }, contentAlignment = Alignment.Center) {
+                                      Text("⚙️", fontSize = 16.sp)
+                                  }
+                              }
+                              Spacer(modifier = Modifier.height(12.dp))
+                              // عرض النص كاملاً بدون حدود (Unlimited)
+                              Text(text = event.text, color = Color.White, fontSize = 15.sp, lineHeight = 22.sp)
+                          }
+                      }
                   }
               }
           }
-          EOF
+          INNER_EOF
 
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          cat << 'INNER_EOF' > app/src/main/java/com/dynamicisland/aipro/MainActivity.kt
+          package com.dynamicisland.aipro
+
+          import android.content.Context
+          import android.content.Intent
+          import android.net.Uri
+          import android.os.Bundle
+          import android.provider.Settings
+          import android.view.Gravity
+          import android.view.View
+          import android.view.ViewGroup
+          import android.widget.FrameLayout
+          import android.widget.LinearLayout
+          import android.widget.ScrollView
+          import android.widget.TextView
+          import android.graphics.Color
+          import android.graphics.drawable.GradientDrawable
+          import androidx.appcompat.app.AppCompatActivity
+
+          class MainActivity : AppCompatActivity() {
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  
+                  val prefs = getSharedPreferences("IslandPrefs", Context.MODE_PRIVATE)
+                  val dp = resources.displayMetrics.density
+                  
+                  val bgDark = Color.parseColor("#090B0A")
+                  val pillActive = Color.parseColor("#C2F2B4") // أخضر فاتح مشع
+                  val textOnActive = Color.parseColor("#0D1C0F")
+                  val cardBg = Color.parseColor("#141815")
+                  
+                  val scrollView = ScrollView(this).apply {
+                      setBackgroundColor(bgDark)
+                      isFillViewport = true
+                  }
+                  
+                  val root = LinearLayout(this).apply {
+                      orientation = LinearLayout.VERTICAL
+                      setPadding((24*dp).toInt(), (40*dp).toInt(), (24*dp).toInt(), (40*dp).toInt())
+                  }
+                  scrollView.addView(root)
+
+                  // عنوان التطبيق
+                  root.addView(TextView(this).apply {
+                      text = "Nova Island Pro"
+                      textSize = 32f
+                      setTextColor(Color.WHITE)
+                      typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      gravity = Gravity.CENTER_HORIZONTAL
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                          bottomMargin = (32*dp).toInt()
+                      }
+                  })
+
+                  // دالة لصناعة شريط تمرير (مستوحى من تصميم iOS Slider)
+                  fun createMaterialSlider(initialValue: Float, min: Float, max: Float, onUpdate: (Float) -> Unit): View {
+                      val containerHeight = (40*dp).toInt()
+                      val container = FrameLayout(this@MainActivity).apply {
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, containerHeight)
+                          background = GradientDrawable().apply {
+                              setColor(cardBg)
+                              cornerRadius = containerHeight / 2f
+                          }
+                      }
+                      val fillView = View(this@MainActivity).apply {
+                          background = GradientDrawable().apply {
+                              setColor(pillActive)
+                              cornerRadius = containerHeight / 2f
+                          }
+                      }
+                      container.addView(fillView)
+                      
+                      var currentWidth = initialValue
+                      
+                      fun updateFillWidth(totalWidth: Int) {
+                          if (totalWidth <= 0) return
+                          val progress = (currentWidth - min) / (max - min)
+                          val w = containerHeight + (progress * (totalWidth - containerHeight)).toInt()
+                          fillView.layoutParams = FrameLayout.LayoutParams(w, ViewGroup.LayoutParams.MATCH_PARENT)
+                      }
+
+                      container.post { updateFillWidth(container.width) }
+
+                      container.setOnTouchListener { v, event ->
+                          val totalWidth = v.width
+                          if (totalWidth <= 0) return@setOnTouchListener false
+
+                          var newWidth = event.x.toInt()
+                          if (newWidth < containerHeight) newWidth = containerHeight
+                          if (newWidth > totalWidth) newWidth = totalWidth
+                          
+                          fillView.layoutParams = FrameLayout.LayoutParams(newWidth, ViewGroup.LayoutParams.MATCH_PARENT)
+                          fillView.requestLayout()
+                          
+                          val progress = (newWidth - containerHeight).toFloat() / (totalWidth - containerHeight).toFloat()
+                          currentWidth = min + (progress * (max - min))
+                          onUpdate(currentWidth)
+                          true
+                      }
+                      return container
+                  }
+
+                  fun createSliderSection(title: String, initial: Float, min: Float, max: Float, onUpdate: (Float) -> Unit) {
+                      val label = TextView(this@MainActivity).apply {
+                          text = title + ": " + initial.toInt()
+                          textSize = 14f
+                          setTextColor(Color.WHITE)
+                          setPadding(0, 0, 0, (8*dp).toInt())
+                      }
+                      val slider = createMaterialSlider(initial, min, max) { newVal ->
+                          label.text = title + ": " + newVal.toInt()
+                          onUpdate(newVal)
+                      }
+                      val section = LinearLayout(this@MainActivity).apply {
+                          orientation = LinearLayout.VERTICAL
+                          layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                              bottomMargin = (20*dp).toInt()
+                          }
+                      }
+                      section.addView(label)
+                      section.addView(slider)
+                      root.addView(section)
+                  }
+
+                  createSliderSection("سمك الضوء المتفاعل (Glow)", prefs.getInt("glow", 2).toFloat(), 0f, 10f) {
+                      prefs.edit().putInt("glow", it.toInt()).apply()
+                  }
+                  createSliderSection("العرض (Width)", prefs.getInt("width", 130).toFloat(), 30f, 400f) {
+                      prefs.edit().putInt("width", it.toInt()).apply()
+                  }
+                  createSliderSection("الارتفاع (Height)", prefs.getInt("height", 38).toFloat(), 10f, 150f) {
+                      prefs.edit().putInt("height", it.toInt()).apply()
+                  }
+                  createSliderSection("الاستدارة (Corner Radius)", prefs.getInt("radius", 100).toFloat(), 0f, 150f) {
+                      prefs.edit().putInt("radius", it.toInt()).apply()
+                  }
+                  createSliderSection("يمين / يسار (X Axis)", prefs.getInt("pos_x", 0).toFloat(), -600f, 600f) {
+                      prefs.edit().putInt("pos_x", it.toInt()).apply()
+                  }
+                  createSliderSection("أعلى / أسفل (Y Axis)", prefs.getInt("pos_y", 32).toFloat(), -800f, 500f) {
+                      prefs.edit().putInt("pos_y", it.toInt()).apply()
+                  }
+
+                  root.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 1f) }) 
+
+                  val notifBtn = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      background = GradientDrawable().apply { setColor(Color.parseColor("#1E2320")); cornerRadius = 24f * dp }
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (56*dp).toInt())
+                      gravity = Gravity.CENTER
+                      addView(TextView(context).apply {
+                          text = "صلاحية الإشعارات 💬"
+                          textSize = 15f
+                          setTextColor(Color.WHITE)
+                          typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      })
+                      setOnClickListener {
+                          startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+                      }
+                  }
+                  root.addView(notifBtn)
+
+                  val btn = LinearLayout(this).apply {
+                      orientation = LinearLayout.HORIZONTAL
+                      background = GradientDrawable().apply { setColor(pillActive); cornerRadius = 24f * dp }
+                      layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (56*dp).toInt()).apply {
+                          topMargin = (12*dp).toInt()
+                      }
+                      gravity = Gravity.CENTER
+                      addView(TextView(context).apply {
+                          text = "تحديث الجزيرة 🚀"
+                          textSize = 16f
+                          setTextColor(textOnActive)
+                          typeface = android.graphics.Typeface.DEFAULT_BOLD
+                      })
+                      setOnClickListener {
+                          if (!Settings.canDrawOverlays(this@MainActivity)) {
+                              val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                              startActivity(intent)
+                          } else {
+                              startService(Intent(this@MainActivity, DynamicIslandService::class.java))
+                          }
+                      }
+                  }
+                  root.addView(btn)
+
+                  setContentView(scrollView)
+              }
+          }
+          INNER_EOF
+
+          cat << 'INNER_EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
               
-              <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-              <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
-                  <activity android:name=".MainActivity" android:exported="true">
-                      <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+              <application android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher">
+                  <activity android:name=".MainActivity" android:exported="true" android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
                   </activity>
                   
-                  <service android:name=".IslandService" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+                  <service android:name=".DynamicIslandService" android:exported="false" />
+                  
+                  <service android:name=".IslandNotificationListener" 
+                           android:label="Dynamic Island Notifications" 
+                           android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" 
+                           android:exported="true">
                       <intent-filter>
                           <action android:name="android.service.notification.NotificationListenerService" />
                       </intent-filter>
                   </service>
               </application>
           </manifest>
-          EOF
+          INNER_EOF
           
-          # إنشاء أيقونات التطبيق
-          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_bg.xml
-          <shape xmlns:android="http://schemas.android.com/apk/res/android"><solid android:color="#000000"/></shape>
-          EOF
-          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_fg.xml
-          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108"><path android:fillColor="#FFFFFF" android:pathData="M34,54h40v10h-40zM34,34h40v10h-40zM34,74h20v10h-20z"/></vector>
-          EOF
-          cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
-          EOF
-          cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-          <?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg"/><foreground android:drawable="@drawable/ic_launcher_fg"/></adaptive-icon>
-          EOF
-
           gradle wrapper --gradle-version 8.4 --no-daemon
 
       - name: Grant Execute Permission for Gradlew
@@ -489,11 +735,11 @@ jobs:
         run: |
           ./gradlew assembleDebug --no-daemon --stacktrace -x test -x lint
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/*.apk release-output/Nova-Island-Pro.apk
+          cp app/build/outputs/apk/debug/*.apk release-output/Dynamic-Island-Pro.apk
 
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Nova-Island-Pro-V45
-          path: release-output/Nova-Island-Pro.apk
+          name: Dynamic-Island-Pro
+          path: release-output/Dynamic-Island-Pro.apk
           retention-days: 5
